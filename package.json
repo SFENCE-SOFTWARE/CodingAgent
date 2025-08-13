@@ -1,0 +1,170 @@
+{
+  "name": "codding-agent",
+  "displayName": "CodingAgent",
+  "description": "AI coding assistant using Ollama backend with GitHub Copilot Chat-like interface",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.103.0"
+  },
+  "categories": [
+    "AI",
+    "Other"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "codingagent.openChat",
+        "title": "Open Chat",
+        "category": "CodingAgent",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "codingagent.refreshModels",
+        "title": "Refresh Available Models",
+        "category": "CodingAgent",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "codingagent.clearChat",
+        "title": "Clear Chat History",
+        "category": "CodingAgent",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "codingagent.setMode",
+        "title": "Set Agent Mode",
+        "category": "CodingAgent",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "codingagent.setModel",
+        "title": "Set AI Model",
+        "category": "CodingAgent",
+        "icon": "$(robot)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "codingagent",
+          "title": "CodingAgent",
+          "icon": "media/chat-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "codingagent": [
+        {
+          "type": "webview",
+          "id": "codingagent-chat-view",
+          "name": "Chat",
+          "icon": "$(comment-discussion)",
+          "contextualTitle": "CodingAgent Chat"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "codingagent.refreshModels",
+          "when": "view == codingagent-chat-view",
+          "group": "navigation"
+        },
+        {
+          "command": "codingagent.clearChat",
+          "when": "view == codingagent-chat-view",
+          "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "codingagent.openChat"
+        },
+        {
+          "command": "codingagent.refreshModels"
+        },
+        {
+          "command": "codingagent.clearChat"
+        },
+        {
+          "command": "codingagent.setMode"
+        },
+        {
+          "command": "codingagent.setModel"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "CodingAgent",
+      "properties": {
+        "codingagent.ollama.host": {
+          "type": "string",
+          "default": "localhost",
+          "description": "Ollama server host/IP address"
+        },
+        "codingagent.ollama.port": {
+          "type": "number",
+          "default": 11434,
+          "description": "Ollama server port"
+        },
+        "codingagent.currentMode": {
+          "type": "string",
+          "default": "Coder",
+          "enum": ["Coder", "Ask", "Architect"],
+          "description": "Current agent mode"
+        },
+        "codingagent.currentModel": {
+          "type": "string",
+          "default": "llama3:8b",
+          "description": "Current Ollama model to use"
+        },
+        "codingagent.showThinking": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show model reasoning/thinking process"
+        },
+        "codingagent.modes": {
+          "type": "object",
+          "default": {
+            "Coder": {
+              "systemMessage": "You are an expert programming assistant. You can read, write, and execute code. Use the available tools to help with coding tasks.",
+              "allowedTools": ["read_file", "write_file", "list_files", "get_file_size", "execute_terminal"],
+              "fallbackMessage": "I'm ready to help with your coding tasks. What would you like me to do?"
+            },
+            "Ask": {
+              "systemMessage": "You are a helpful AI assistant. Answer questions clearly and concisely.",
+              "allowedTools": ["read_file", "list_files", "get_file_size", "read_webpage", "read_pdf"],
+              "fallbackMessage": "I'm here to answer your questions. What would you like to know?"
+            },
+            "Architect": {
+              "systemMessage": "You are a software architect assistant. Help design systems, review architecture, and provide technical guidance.",
+              "allowedTools": ["read_file", "list_files", "get_file_size", "read_webpage", "read_pdf"],
+              "fallbackMessage": "I'm ready to help with architecture and design decisions. What system are you working on?"
+            }
+          },
+          "description": "Configuration for different agent modes"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.102.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "@typescript-eslint/eslint-plugin": "^8.39.0",
+    "@typescript-eslint/parser": "^8.39.0",
+    "eslint": "^9.32.0",
+    "typescript": "^5.9.2",
+    "@vscode/test-cli": "^0.0.11",
+    "@vscode/test-electron": "^2.5.2"
+  }
+}

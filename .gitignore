@@ -1,0 +1,53 @@
+# Node modules
+node_modules/
+
+# Build output
+out/
+
+# VS Code extension packaging
+*.vsix
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test output
+.vscode-test/
+
+# Environment files
+.env
+.env.*
+
+# MacOS
+.DS_Store
+
+# VS Code settings
+.vscode/
+
+# Coverage
+coverage/
+
+# Misc
+*.log
+*.tmp
+*.swp
+
+# Ignore ollama models (if any local cache)
+ollama_models/
+
+# Ignore generated files
+*.tsbuildinfo
+
+# Ignore media cache
+media/*.png
+media/*.jpg
+media/*.jpeg
+media/*.gif
+
+# Ignore lock files
+package-lock.json
+yarn.lock
+
+# Ignore dist
+/dist/
