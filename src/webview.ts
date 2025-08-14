@@ -20,6 +20,14 @@ export function getWebviewContent(
     vscode.Uri.joinPath(extensionUri, 'media', 'chat-icon.svg')
   );
 
+  const settingsIconUri = webview.asWebviewUri(
+    vscode.Uri.joinPath(extensionUri, 'media', 'settings-icon.svg')
+  );
+
+  const clearIconUri = webview.asWebviewUri(
+    vscode.Uri.joinPath(extensionUri, 'media', 'clear-icon.svg')
+  );
+
   return /* html */`
     <!DOCTYPE html>
     <html lang="en">
@@ -38,20 +46,12 @@ export function getWebviewContent(
             <img src="${iconUri}" alt="CodingAgent" class="header-icon">
             <span class="header-title">CodingAgent</span>
           </div>
-          <div class="header-controls">
-            <select id="modeSelect" class="control-select" title="Agent Mode">
-              <option value="Coder">🛠️ Coder</option>
-              <option value="Ask">❓ Ask</option>
-              <option value="Architect">🏗️ Architect</option>
-            </select>
-            <select id="modelSelect" class="control-select" title="AI Model">
-              <option value="llama3:8b">llama3:8b</option>
-            </select>
-            <button id="refreshModels" class="control-btn" title="Refresh Models">
-              <span class="codicon codicon-refresh"></span>
+          <div class="header-right">
+            <button id="settingsBtn" class="header-btn" title="Open Settings">
+              <img src="${settingsIconUri}" alt="Settings" width="16" height="16">
             </button>
-            <button id="clearChat" class="control-btn" title="Clear Chat">
-              <span class="codicon codicon-trash"></span>
+            <button id="clearBtn" class="header-btn" title="Clear Chat">
+              <img src="${clearIconUri}" alt="Clear" width="16" height="16">
             </button>
           </div>
         </div>
@@ -75,17 +75,23 @@ export function getWebviewContent(
 
         <!-- Input Container -->
         <div class="input-container">
-          <div class="input-wrapper">
-            <textarea 
-              id="messageInput" 
-              placeholder="Ask me anything..." 
-              rows="1"
-              class="message-input"
-            ></textarea>
+          <div class="controls-row">
+            <select id="modeSelect" class="control-select" title="Agent Mode">
+              <!-- Modes will be populated dynamically -->
+            </select>
+            <select id="modelSelect" class="control-select" title="AI Model">
+              <option value="llama3:8b">llama3:8b</option>
+            </select>
             <button id="sendButton" class="send-button" title="Send Message">
               <span class="codicon codicon-send"></span>
             </button>
           </div>
+          <textarea 
+            id="messageInput" 
+            placeholder="Ask me anything..." 
+            rows="3"
+            class="message-input"
+          ></textarea>
           <div class="input-hint">
             <span class="hint-text">Press Ctrl+Enter to send • Use @filename to reference files</span>
           </div>

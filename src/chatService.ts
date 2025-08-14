@@ -3,6 +3,7 @@
 import * as vscode from 'vscode';
 import { OllamaService } from './ollama';
 import { ToolsService } from './tools';
+import { LoggingService } from './loggingService';
 import { 
   ChatMessage, 
   OllamaChatMessage, 
@@ -15,25 +16,20 @@ export class ChatService {
   private messages: ChatMessage[] = [];
   private ollama: OllamaService;
   private tools: ToolsService;
+  private logging: LoggingService;
 
   constructor() {
     this.ollama = new OllamaService();
     this.tools = new ToolsService();
+    this.logging = LoggingService.getInstance();
   }
 
-  async sendMessage(content: string): Promise<ChatMessage[]> {
-    const userMessage: ChatMessage = {
-      id: this.generateId(),
-      role: 'user',
-      content,
-      timestamp: Date.now()
-    };
-
-    this.messages.push(userMessage);
-
+  async processMessage(content: string): Promise<ChatMessage[]> {
+    // This assumes user message is already added via addUserMessage
+    const currentMode = this.ollama.getCurrentMode();
+    const currentModel = this.ollama.getCurrentModel();
+    
     try {
-      const currentMode = this.ollama.getCurrentMode();
-      const currentModel = this.ollama.getCurrentModel();
       const modeConfig = this.ollama.getModeConfiguration(currentMode);
       
       // Get available tools for current mode
@@ -78,7 +74,28 @@ export class ChatService {
         tools: allowedTools.length > 0 ? allowedTools : undefined
       };
 
+      const startTime = Date.now();
       const response = await this.ollama.sendChat(request);
+      const endTime = Date.now();
+      
+      // Log the communication (standard logging)
+      this.logging.logAiCommunication(request, response, {
+        model: currentModel,
+        mode: currentMode,
+        timestamp: startTime,
+        duration: endTime - startTime,
+        context: 'initial'
+      });
+
+      // Log raw JSON if log mode is enabled
+      this.logging.logRawJsonCommunication(request, response, {
+        model: currentModel,
+        mode: currentMode,
+        timestamp: startTime,
+        duration: endTime - startTime,
+        context: 'initial'
+      });
+
       const assistantMessage = response.choices[0]?.message;
 
       if (!assistantMessage) {
@@ -87,7 +104,8 @@ export class ChatService {
 
       // Handle tool calls if present
       if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
-        return await this.handleToolCalls(assistantMessage, request);
+        const toolResults = await this.handleToolCalls(assistantMessage, request);
+        return toolResults;
       }
 
       // Regular response without tool calls
@@ -100,9 +118,27 @@ export class ChatService {
       };
 
       this.messages.push(chatMessage);
-      return [userMessage, chatMessage];
+      return [chatMessage];
 
     } catch (error) {
+      // Log the error (standard logging)
+      this.logging.logAiCommunication({}, null, {
+        model: currentModel,
+        mode: currentMode,
+        timestamp: Date.now(),
+        error: error instanceof Error ? error.message : String(error),
+        context: 'initial'
+      });
+
+      // Log raw JSON error if log mode is enabled
+      this.logging.logRawJsonCommunication({}, null, {
+        model: currentModel,
+        mode: currentMode,
+        timestamp: Date.now(),
+        error: error instanceof Error ? error.message : String(error),
+        context: 'initial'
+      });
+
       const errorMessage: ChatMessage = {
         id: this.generateId(),
         role: 'error',
@@ -111,7 +147,7 @@ export class ChatService {
       };
 
       this.messages.push(errorMessage);
-      return [userMessage, errorMessage];
+      return [errorMessage];
     }
   }
 
@@ -172,7 +208,28 @@ export class ChatService {
           messages: toolMessages
         };
 
+        const followUpStartTime = Date.now();
         const followUpResponse = await this.ollama.sendChat(followUpRequest);
+        const followUpEndTime = Date.now();
+
+        // Log the follow-up communication (standard logging)
+        this.logging.logAiCommunication(followUpRequest, followUpResponse, {
+          model: this.ollama.getCurrentModel(),
+          mode: this.ollama.getCurrentMode(),
+          timestamp: followUpStartTime,
+          duration: followUpEndTime - followUpStartTime,
+          context: 'tool-follow-up'
+        });
+
+        // Log raw JSON for follow-up if log mode is enabled
+        this.logging.logRawJsonCommunication(followUpRequest, followUpResponse, {
+          model: this.ollama.getCurrentModel(),
+          mode: this.ollama.getCurrentMode(),
+          timestamp: followUpStartTime,
+          duration: followUpEndTime - followUpStartTime,
+          context: 'tool-follow-up'
+        });
+
         const finalMessage = followUpResponse.choices[0]?.message;
 
         if (finalMessage) {
@@ -189,6 +246,24 @@ export class ChatService {
         }
 
       } catch (error) {
+        // Log the follow-up error (standard logging)
+        this.logging.logAiCommunication({}, null, {
+          model: this.ollama.getCurrentModel(),
+          mode: this.ollama.getCurrentMode(),
+          timestamp: Date.now(),
+          error: error instanceof Error ? error.message : String(error),
+          context: 'tool-follow-up'
+        });
+
+        // Log raw JSON error for follow-up if log mode is enabled
+        this.logging.logRawJsonCommunication({}, null, {
+          model: this.ollama.getCurrentModel(),
+          mode: this.ollama.getCurrentMode(),
+          timestamp: Date.now(),
+          error: error instanceof Error ? error.message : String(error),
+          context: 'tool-follow-up'
+        });
+
         const errorMessage: ChatMessage = {
           id: this.generateId(),
           role: 'error',
@@ -202,6 +277,18 @@ export class ChatService {
     }
 
     return results;
+  }
+
+  addUserMessage(content: string): ChatMessage {
+    const userMessage: ChatMessage = {
+      id: this.generateId(),
+      role: 'user',
+      content,
+      timestamp: Date.now()
+    };
+    
+    this.messages.push(userMessage);
+    return userMessage;
   }
 
   getMessages(): ChatMessage[] {

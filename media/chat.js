@@ -9,18 +9,20 @@
   const sendButton = document.getElementById('sendButton');
   const modeSelect = document.getElementById('modeSelect');
   const modelSelect = document.getElementById('modelSelect');
-  const refreshModelsButton = document.getElementById('refreshModels');
-  const clearChatButton = document.getElementById('clearChat');
+  const settingsBtn = document.getElementById('settingsBtn');
+  const clearBtn = document.getElementById('clearBtn');
   
   let isLoading = false;
   let currentMode = 'Coder';
   let currentModel = 'llama3:8b';
+  let isThinkingExpanded = true;
   
   // Initialize
   function init() {
     setupEventListeners();
     requestConfiguration();
     requestAvailableModels();
+    requestAvailableModes();
   }
   
   function setupEventListeners() {
@@ -53,13 +55,12 @@
       });
     });
     
-    // Refresh models
-    refreshModelsButton.addEventListener('click', () => {
-      requestAvailableModels();
+    // Settings and clear buttons
+    settingsBtn.addEventListener('click', () => {
+      vscode.postMessage({ type: 'openSettings' });
     });
     
-    // Clear chat
-    clearChatButton.addEventListener('click', () => {
+    clearBtn.addEventListener('click', () => {
       if (confirm('Are you sure you want to clear the chat history?')) {
         vscode.postMessage({ type: 'clearChat' });
         clearMessages();
@@ -75,6 +76,15 @@
   function sendMessage() {
     const content = messageInput.value.trim();
     if (!content || isLoading) return;
+    
+    // Add user message immediately to ensure it shows up
+    const userMessage = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: content,
+      timestamp: Date.now()
+    };
+    addMessage(userMessage);
     
     setLoading(true);
     messageInput.value = '';
@@ -171,14 +181,35 @@
     
     const header = document.createElement('div');
     header.className = 'thinking-header';
-    header.innerHTML = '<span class="codicon codicon-lightbulb"></span> Model Thinking';
+    
+    const headerLeft = document.createElement('div');
+    headerLeft.className = 'thinking-header-left';
+    headerLeft.innerHTML = '<span class="codicon codicon-lightbulb"></span> Model Thinking';
+    
+    const toggle = document.createElement('button');
+    toggle.className = 'thinking-toggle';
+    toggle.textContent = '−';
+    
+    header.appendChild(headerLeft);
+    header.appendChild(toggle);
     
     const content = document.createElement('div');
     content.className = 'thinking-content';
     content.textContent = reasoning;
     
+    // Auto-collapse after response
+    setTimeout(() => {
+      if (isThinkingExpanded) {
+        content.classList.add('collapsed');
+        toggle.textContent = '+';
+        isThinkingExpanded = false;
+      }
+    }, 500);
+    
     header.addEventListener('click', () => {
       content.classList.toggle('collapsed');
+      toggle.textContent = content.classList.contains('collapsed') ? '+' : '−';
+      isThinkingExpanded = !content.classList.contains('collapsed');
     });
     
     container.appendChild(header);
@@ -304,6 +335,10 @@
   function requestAvailableModels() {
     vscode.postMessage({ type: 'getAvailableModels' });
   }
+
+  function requestAvailableModes() {
+    vscode.postMessage({ type: 'getAvailableModes' });
+  }
   
   function updateConfiguration(config) {
     currentMode = config.mode;
@@ -332,6 +367,98 @@
       currentModel = models[0];
     }
   }
+
+  function updateAvailableModes(modes) {
+    const currentSelection = modeSelect.value;
+    modeSelect.innerHTML = '';
+    
+    modes.forEach(mode => {
+      const option = document.createElement('option');
+      option.value = mode;
+      option.textContent = mode;
+      modeSelect.appendChild(option);
+    });
+    
+    // Restore selection if possible
+    if (modes.includes(currentSelection)) {
+      modeSelect.value = currentSelection;
+      currentMode = currentSelection;
+    } else if (modes.length > 0) {
+      modeSelect.value = modes[0];
+      currentMode = modes[0];
+    }
+  }
+
+  function showThinking(content) {
+    let thinkingContainer = messagesContainer.querySelector('.thinking-container');
+    
+    if (!thinkingContainer) {
+      thinkingContainer = document.createElement('div');
+      thinkingContainer.className = 'thinking-container';
+      
+      const header = document.createElement('div');
+      header.className = 'thinking-header';
+      
+      const headerLeft = document.createElement('div');
+      headerLeft.className = 'thinking-header-left';
+      headerLeft.innerHTML = '<span class="codicon codicon-lightbulb"></span> Model Thinking';
+      
+      const toggle = document.createElement('button');
+      toggle.className = 'thinking-toggle';
+      toggle.textContent = '−';
+      
+      header.appendChild(headerLeft);
+      header.appendChild(toggle);
+      
+      const content = document.createElement('div');
+      content.className = 'thinking-content';
+      
+      header.addEventListener('click', () => {
+        content.classList.toggle('collapsed');
+        toggle.textContent = content.classList.contains('collapsed') ? '+' : '−';
+        isThinkingExpanded = !content.classList.contains('collapsed');
+      });
+      
+      thinkingContainer.appendChild(header);
+      thinkingContainer.appendChild(content);
+      messagesContainer.appendChild(thinkingContainer);
+    }
+    
+    const thinkingContent = thinkingContainer.querySelector('.thinking-content');
+    thinkingContent.textContent = content;
+    thinkingContent.classList.remove('collapsed');
+    
+    const toggle = thinkingContainer.querySelector('.thinking-toggle');
+    toggle.textContent = '−';
+    isThinkingExpanded = true;
+    
+    scrollToBottom();
+  }
+
+  function updateThinking(content) {
+    const thinkingContainer = messagesContainer.querySelector('.thinking-container');
+    if (thinkingContainer) {
+      const thinkingContent = thinkingContainer.querySelector('.thinking-content');
+      thinkingContent.textContent = content;
+      if (isThinkingExpanded) {
+        scrollToBottom();
+      }
+    }
+  }
+
+  function hideThinking() {
+    const thinkingContainer = messagesContainer.querySelector('.thinking-container');
+    if (thinkingContainer) {
+      // Auto-collapse after a delay
+      setTimeout(() => {
+        const thinkingContent = thinkingContainer.querySelector('.thinking-content');
+        const toggle = thinkingContainer.querySelector('.thinking-toggle');
+        thinkingContent.classList.add('collapsed');
+        toggle.textContent = '+';
+        isThinkingExpanded = false;
+      }, 500);
+    }
+  }
   
   // Handle messages from the extension
   window.addEventListener('message', event => {
@@ -350,12 +477,28 @@
         setLoading(message.loading);
         break;
         
+      case 'showThinking':
+        showThinking(message.thinking);
+        break;
+        
+      case 'updateThinking':
+        updateThinking(message.thinking);
+        break;
+        
+      case 'hideThinking':
+        hideThinking();
+        break;
+        
       case 'updateConfiguration':
         updateConfiguration(message.config);
         break;
         
       case 'updateAvailableModels':
         updateAvailableModels(message.models);
+        break;
+        
+      case 'updateAvailableModes':
+        updateAvailableModes(message.modes);
         break;
         
       case 'showError':

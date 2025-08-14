@@ -36,27 +36,13 @@
   color: var(--vscode-foreground);
 }
 
-.header-controls {
+.header-right {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
-.control-select {
-  background-color: var(--vscode-dropdown-background);
-  color: var(--vscode-dropdown-foreground);
-  border: 1px solid var(--vscode-dropdown-border);
-  border-radius: 2px;
-  padding: 4px 8px;
-  font-size: 12px;
-  min-width: 80px;
-}
-
-.control-select:focus {
-  outline: 1px solid var(--vscode-focusBorder);
-}
-
-.control-btn {
+.header-btn {
   background-color: var(--vscode-button-secondaryBackground);
   color: var(--vscode-button-secondaryForeground);
   border: none;
@@ -66,10 +52,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 28px;
+  height: 28px;
 }
 
-.control-btn:hover {
+.header-btn:hover {
   background-color: var(--vscode-button-secondaryHoverBackground);
+}
+
+.header-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* Messages Container */
@@ -226,13 +219,33 @@
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
   background-color: var(--vscode-panel-background);
   border-bottom: 1px solid var(--vscode-panel-border);
 }
 
 .thinking-header:hover {
   background-color: var(--vscode-list-hoverBackground);
+}
+
+.thinking-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.thinking-toggle {
+  background: none;
+  border: none;
+  color: var(--vscode-foreground);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .thinking-content {
@@ -319,6 +332,28 @@
   border-top: 1px solid var(--vscode-panel-border);
   background-color: var(--vscode-panel-background);
   padding: 12px;
+}
+
+.controls-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  align-items: center;
+}
+
+.control-select {
+  flex: 1;
+  background-color: var(--vscode-dropdown-background);
+  color: var(--vscode-dropdown-foreground);
+  border: 1px solid var(--vscode-dropdown-border);
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-size: 12px;
+  min-width: 80px;
+}
+
+.control-select:focus {
+  outline: 1px solid var(--vscode-focusBorder);
 }
 
 .input-wrapper {
@@ -460,7 +495,7 @@
 
 /* Responsive Design */
 @media (max-width: 400px) {
-  .header-controls {
+  .controls-row {
     flex-wrap: wrap;
     gap: 4px;
   }

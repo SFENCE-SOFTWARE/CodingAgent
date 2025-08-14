@@ -3,6 +3,7 @@
 import * as vscode from 'vscode';
 import { ChatViewProvider } from './chatViewProvider';
 import { OllamaService } from './ollama';
+import { SettingsPanel } from './settingsPanel';
 
 export function activate(context: vscode.ExtensionContext) {
   console.log('CodingAgent extension is now active!');
@@ -95,6 +96,18 @@ export function activate(context: vscode.ExtensionContext) {
           `Failed to fetch models: ${error instanceof Error ? error.message : String(error)}`
         );
       }
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('codingagent.openSettings', () => {
+      vscode.commands.executeCommand('workbench.action.openSettings', 'codingagent');
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('codingagent.openSettingsPanel', () => {
+      SettingsPanel.createOrShow(context.extensionUri);
     })
   );
 

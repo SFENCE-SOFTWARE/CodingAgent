@@ -42,6 +42,18 @@
         "title": "Set AI Model",
         "category": "CodingAgent",
         "icon": "$(robot)"
+      },
+      {
+        "command": "codingagent.openSettings",
+        "title": "Open Settings",
+        "category": "CodingAgent",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "codingagent.openSettingsPanel",
+        "title": "Open Settings Panel",
+        "category": "CodingAgent",
+        "icon": "$(gear)"
       }
     ],
     "viewsContainers": {
@@ -92,6 +104,12 @@
         },
         {
           "command": "codingagent.setModel"
+        },
+        {
+          "command": "codingagent.openSettings"
+        },
+        {
+          "command": "codingagent.openSettingsPanel"
         }
       ]
     },
@@ -130,20 +148,55 @@
             "Coder": {
               "systemMessage": "You are an expert programming assistant. You can read, write, and execute code. Use the available tools to help with coding tasks.",
               "allowedTools": ["read_file", "write_file", "list_files", "get_file_size", "execute_terminal"],
-              "fallbackMessage": "I'm ready to help with your coding tasks. What would you like me to do?"
+              "fallbackMessage": "I'm ready to help with your coding tasks. What would you like me to do?",
+              "temperature": 0.1,
+              "topP": 0.9,
+              "description": "Expert coding assistant with file and terminal access"
             },
             "Ask": {
               "systemMessage": "You are a helpful AI assistant. Answer questions clearly and concisely.",
               "allowedTools": ["read_file", "list_files", "get_file_size", "read_webpage", "read_pdf"],
-              "fallbackMessage": "I'm here to answer your questions. What would you like to know?"
+              "fallbackMessage": "I'm here to answer your questions. What would you like to know?",
+              "temperature": 0.3,
+              "topP": 0.9,
+              "description": "General purpose assistant for questions and research"
             },
             "Architect": {
               "systemMessage": "You are a software architect assistant. Help design systems, review architecture, and provide technical guidance.",
               "allowedTools": ["read_file", "list_files", "get_file_size", "read_webpage", "read_pdf"],
-              "fallbackMessage": "I'm ready to help with architecture and design decisions. What system are you working on?"
+              "fallbackMessage": "I'm ready to help with architecture and design decisions. What system are you working on?",
+              "temperature": 0.2,
+              "topP": 0.85,
+              "description": "Software architecture and system design specialist"
             }
           },
           "description": "Configuration for different agent modes"
+        },
+        "codingagent.logging.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable logging of AI communication"
+        },
+        "codingagent.logging.filePath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to log file (empty = workspace/.codingagent/logs)"
+        },
+        "codingagent.logging.verbosity": {
+          "type": "string",
+          "default": "Standard",
+          "enum": ["Minimal", "Standard", "Verbose"],
+          "description": "Logging verbosity level"
+        },
+        "codingagent.logging.logMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable raw JSON logging mode for Ollama communication"
+        },
+        "codingagent.logging.logModeFilePath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to raw JSON log file (empty = workspace/.codingagent/logs/ollama-raw-json.log)"
         }
       }
     }
