@@ -170,12 +170,19 @@ export class ChatService {
     this.messages.push(assistantChatMessage);
     results.push(assistantChatMessage);
 
-    // Execute each tool call
+    // Execute tools in a loop until we get a final response
     const toolMessages: OllamaChatMessage[] = [...originalRequest.messages];
     toolMessages.push(assistantMessage);
 
-    if (assistantMessage.tool_calls) {
-      for (const toolCall of assistantMessage.tool_calls) {
+    let currentMessage = assistantMessage;
+    let iterationCount = 0;
+    const maxIterations = 10; // Prevent infinite loops
+
+    while (currentMessage.tool_calls && currentMessage.tool_calls.length > 0 && iterationCount < maxIterations) {
+      iterationCount++;
+
+      // Execute each tool call in the current message
+      for (const toolCall of currentMessage.tool_calls) {
         try {
           const args = JSON.parse(toolCall.function.arguments);
           const toolResult = await this.tools.executeTool(toolCall.function.name, args);
@@ -201,7 +208,7 @@ export class ChatService {
         }
       }
 
-      // Send updated conversation back to model for final response
+      // Send updated conversation back to model for next response
       try {
         const followUpRequest: OllamaChatRequest = {
           ...originalRequest,
@@ -218,7 +225,7 @@ export class ChatService {
           mode: this.ollama.getCurrentMode(),
           timestamp: followUpStartTime,
           duration: followUpEndTime - followUpStartTime,
-          context: 'tool-follow-up'
+          context: `tool-follow-up-${iterationCount}`
         });
 
         // Log raw JSON for follow-up if log mode is enabled
@@ -227,22 +234,31 @@ export class ChatService {
           mode: this.ollama.getCurrentMode(),
           timestamp: followUpStartTime,
           duration: followUpEndTime - followUpStartTime,
-          context: 'tool-follow-up'
+          context: `tool-follow-up-${iterationCount}`
         });
 
-        const finalMessage = followUpResponse.choices[0]?.message;
+        currentMessage = followUpResponse.choices[0]?.message;
 
-        if (finalMessage) {
-          const finalChatMessage: ChatMessage = {
+        if (!currentMessage) {
+          throw new Error('No response from model in tool call iteration');
+        }
+
+        // If this response has tool calls, add it to the conversation and continue the loop
+        if (currentMessage.tool_calls && currentMessage.tool_calls.length > 0) {
+          toolMessages.push(currentMessage);
+          
+          // Add intermediate tool call message to results
+          const intermediateChatMessage: ChatMessage = {
             id: this.generateId(),
             role: 'assistant',
-            content: finalMessage.content || 'No response after tool execution',
+            content: currentMessage.content || 'Executing additional tools...',
             timestamp: Date.now(),
-            reasoning: finalMessage.reasoning
+            toolCalls: currentMessage.tool_calls,
+            reasoning: currentMessage.reasoning
           };
-
-          this.messages.push(finalChatMessage);
-          results.push(finalChatMessage);
+          
+          this.messages.push(intermediateChatMessage);
+          results.push(intermediateChatMessage);
         }
 
       } catch (error) {
@@ -252,7 +268,7 @@ export class ChatService {
           mode: this.ollama.getCurrentMode(),
           timestamp: Date.now(),
           error: error instanceof Error ? error.message : String(error),
-          context: 'tool-follow-up'
+          context: `tool-follow-up-${iterationCount}`
         });
 
         // Log raw JSON error for follow-up if log mode is enabled
@@ -261,19 +277,45 @@ export class ChatService {
           mode: this.ollama.getCurrentMode(),
           timestamp: Date.now(),
           error: error instanceof Error ? error.message : String(error),
-          context: 'tool-follow-up'
+          context: `tool-follow-up-${iterationCount}`
         });
 
         const errorMessage: ChatMessage = {
           id: this.generateId(),
           role: 'error',
-          content: `Error in follow-up response: ${error instanceof Error ? error.message : String(error)}`,
+          content: `Error in follow-up response (iteration ${iterationCount}): ${error instanceof Error ? error.message : String(error)}`,
           timestamp: Date.now()
         };
 
         this.messages.push(errorMessage);
         results.push(errorMessage);
+        break; // Exit the loop on error
       }
+    }
+
+    // Add final message if we have one (without tool calls)
+    if (currentMessage && (!currentMessage.tool_calls || currentMessage.tool_calls.length === 0)) {
+      const finalChatMessage: ChatMessage = {
+        id: this.generateId(),
+        role: 'assistant',
+        content: currentMessage.content || 'Process completed',
+        timestamp: Date.now(),
+        reasoning: currentMessage.reasoning
+      };
+
+      this.messages.push(finalChatMessage);
+      results.push(finalChatMessage);
+    } else if (iterationCount >= maxIterations) {
+      // Handle case where we hit the iteration limit
+      const timeoutMessage: ChatMessage = {
+        id: this.generateId(),
+        role: 'error',
+        content: `Tool call process stopped after ${maxIterations} iterations to prevent infinite loops.`,
+        timestamp: Date.now()
+      };
+
+      this.messages.push(timeoutMessage);
+      results.push(timeoutMessage);
     }
 
     return results;
