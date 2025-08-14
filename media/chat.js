@@ -16,6 +16,8 @@
   let currentMode = 'Coder';
   let currentModel = 'llama3:8b';
   let isThinkingExpanded = true;
+  let enableStreaming = true;
+  let streamingMessages = new Map(); // Track streaming messages
   
   // Initialize
   function init() {
@@ -136,7 +138,14 @@
     
     const roleSpan = document.createElement('span');
     roleSpan.className = 'message-role';
-    roleSpan.textContent = message.role;
+    
+    // Dynamic assistant label with model name
+    if (message.role === 'assistant') {
+      const modelName = message.model || currentModel || 'Unknown';
+      roleSpan.textContent = `LLM ${modelName}`;
+    } else {
+      roleSpan.textContent = message.role;
+    }
     
     const timestampSpan = document.createElement('span');
     timestampSpan.className = 'message-timestamp';
@@ -343,9 +352,195 @@
   function updateConfiguration(config) {
     currentMode = config.mode;
     currentModel = config.model;
+    enableStreaming = config.enableStreaming !== undefined ? config.enableStreaming : true;
     
     modeSelect.value = currentMode;
     modelSelect.value = currentModel;
+  }
+
+  function createStreamingMessage(messageId, model) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'message assistant streaming';
+    messageDiv.setAttribute('data-message-id', messageId);
+    
+    // Message header
+    const headerDiv = document.createElement('div');
+    headerDiv.className = 'message-header';
+    
+    const avatarDiv = document.createElement('div');
+    avatarDiv.className = 'message-avatar assistant';
+    avatarDiv.textContent = '🤖';
+    
+    const roleSpan = document.createElement('span');
+    roleSpan.className = 'message-role';
+    roleSpan.textContent = `LLM ${model || currentModel || 'Unknown'}`;
+    
+    const timestampSpan = document.createElement('span');
+    timestampSpan.className = 'message-timestamp';
+    timestampSpan.textContent = formatTimestamp(Date.now());
+    
+    headerDiv.appendChild(avatarDiv);
+    headerDiv.appendChild(roleSpan);
+    headerDiv.appendChild(timestampSpan);
+    
+    // Thinking section (initially hidden)
+    const thinkingDiv = document.createElement('div');
+    thinkingDiv.className = 'thinking-container';
+    thinkingDiv.style.display = 'none';
+    
+    const thinkingHeader = document.createElement('div');
+    thinkingHeader.className = 'thinking-header';
+    
+    const thinkingHeaderLeft = document.createElement('div');
+    thinkingHeaderLeft.className = 'thinking-header-left';
+    thinkingHeaderLeft.innerHTML = '<span class="codicon codicon-lightbulb"></span> Model Thinking';
+    
+    const thinkingToggle = document.createElement('button');
+    thinkingToggle.className = 'thinking-toggle';
+    thinkingToggle.textContent = '−';
+    
+    thinkingHeader.appendChild(thinkingHeaderLeft);
+    thinkingHeader.appendChild(thinkingToggle);
+    
+    const thinkingContent = document.createElement('div');
+    thinkingContent.className = 'thinking-content';
+    
+    thinkingHeader.addEventListener('click', () => {
+      thinkingContent.classList.toggle('collapsed');
+      thinkingToggle.textContent = thinkingContent.classList.contains('collapsed') ? '+' : '−';
+    });
+    
+    thinkingDiv.appendChild(thinkingHeader);
+    thinkingDiv.appendChild(thinkingContent);
+    
+    // Message content
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content';
+    contentDiv.innerHTML = '<div class="streaming-cursor">▊</div>';
+    
+    // Tool calls container (initially hidden)
+    const toolCallsDiv = document.createElement('div');
+    toolCallsDiv.className = 'tool-calls-container';
+    toolCallsDiv.style.display = 'none';
+    
+    messageDiv.appendChild(headerDiv);
+    messageDiv.appendChild(thinkingDiv);
+    messageDiv.appendChild(contentDiv);
+    messageDiv.appendChild(toolCallsDiv);
+    
+    // Store references for easy access
+    streamingMessages.set(messageId, {
+      element: messageDiv,
+      contentDiv: contentDiv,
+      thinkingDiv: thinkingDiv,
+      thinkingContent: thinkingContent,
+      toolCallsDiv: toolCallsDiv,
+      accumulatedContent: '',
+      accumulatedThinking: ''
+    });
+    
+    // Remove welcome message if it exists
+    const welcomeMessage = messagesContainer.querySelector('.welcome-message');
+    if (welcomeMessage) {
+      welcomeMessage.remove();
+    }
+    
+    messagesContainer.appendChild(messageDiv);
+    scrollToBottom();
+    
+    return messageDiv;
+  }
+
+  function updateStreamingContent(messageId, content) {
+    const streamingData = streamingMessages.get(messageId);
+    if (!streamingData) return;
+    
+    streamingData.accumulatedContent = content;
+    streamingData.contentDiv.innerHTML = formatMessageContent(content) + '<div class="streaming-cursor">▊</div>';
+    scrollToBottom();
+  }
+
+  function updateStreamingThinking(messageId, thinking) {
+    const streamingData = streamingMessages.get(messageId);
+    if (!streamingData) return;
+    
+    streamingData.accumulatedThinking = thinking;
+    streamingData.thinkingContent.textContent = thinking;
+    
+    // Show thinking section if we have content
+    if (thinking && thinking.trim()) {
+      streamingData.thinkingDiv.style.display = 'block';
+    }
+    
+    scrollToBottom();
+  }
+
+  function addStreamingToolCalls(messageId, toolCalls) {
+    const streamingData = streamingMessages.get(messageId);
+    if (!streamingData) return;
+    
+    // Add new tool calls to the container
+    toolCalls.forEach(toolCall => {
+      const toolDiv = document.createElement('div');
+      toolDiv.className = 'tool-call';
+      
+      const nameDiv = document.createElement('div');
+      nameDiv.className = 'tool-call-name';
+      nameDiv.textContent = `🔧 ${toolCall.function.name}`;
+      
+      const argsDiv = document.createElement('div');
+      argsDiv.className = 'tool-call-args';
+      argsDiv.textContent = toolCall.function.arguments;
+      
+      toolDiv.appendChild(nameDiv);
+      toolDiv.appendChild(argsDiv);
+      streamingData.toolCallsDiv.appendChild(toolDiv);
+    });
+    
+    // Show tool calls container
+    streamingData.toolCallsDiv.style.display = 'block';
+    scrollToBottom();
+  }
+
+  function finishStreamingMessage(messageId, isComplete) {
+    const streamingData = streamingMessages.get(messageId);
+    if (!streamingData) return;
+    
+    // Remove streaming cursor
+    streamingData.contentDiv.innerHTML = formatMessageContent(streamingData.accumulatedContent);
+    
+    // Remove streaming class
+    streamingData.element.classList.remove('streaming');
+    
+    // Auto-collapse thinking after a delay
+    if (streamingData.accumulatedThinking && streamingData.thinkingDiv.style.display !== 'none') {
+      setTimeout(() => {
+        const thinkingContent = streamingData.thinkingContent;
+        const toggle = streamingData.thinkingDiv.querySelector('.thinking-toggle');
+        thinkingContent.classList.add('collapsed');
+        toggle.textContent = '+';
+      }, 1000);
+    }
+    
+    // Clean up
+    streamingMessages.delete(messageId);
+    scrollToBottom();
+  }
+
+  function handleStreamingError(messageId, error) {
+    const streamingData = streamingMessages.get(messageId);
+    if (!streamingData) return;
+    
+    // Update content with error
+    streamingData.contentDiv.innerHTML = `<div class="error-content">Error: ${error}</div>`;
+    
+    // Remove streaming cursor and class
+    streamingData.element.classList.remove('streaming');
+    streamingData.element.classList.add('error');
+    
+    // Clean up
+    streamingMessages.delete(messageId);
+    scrollToBottom();
   }
   
   function updateAvailableModels(models) {
@@ -514,6 +709,31 @@
         
       case 'clearMessages':
         clearMessages();
+        break;
+
+      // Streaming message handlers
+      case 'streamingStart':
+        createStreamingMessage(message.messageId, message.model);
+        break;
+
+      case 'streamingContent':
+        updateStreamingContent(message.messageId, message.content);
+        break;
+
+      case 'streamingThinking':
+        updateStreamingThinking(message.messageId, message.thinking);
+        break;
+
+      case 'streamingToolCalls':
+        addStreamingToolCalls(message.messageId, message.toolCalls);
+        break;
+
+      case 'streamingEnd':
+        finishStreamingMessage(message.messageId, message.isComplete);
+        break;
+
+      case 'streamingError':
+        handleStreamingError(message.messageId, message.error);
         break;
     }
   });

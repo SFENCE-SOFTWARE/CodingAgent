@@ -493,6 +493,105 @@
   line-height: 1;
 }
 
+/* Streaming Styles */
+.message.streaming {
+  opacity: 1;
+  animation: none;
+}
+
+.streaming-cursor {
+  display: inline-block;
+  background-color: var(--vscode-foreground);
+  width: 2px;
+  height: 1.2em;
+  margin-left: 2px;
+  animation: blink 1s infinite;
+  vertical-align: baseline;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+.message.streaming .message-content {
+  min-height: 1.5em;
+}
+
+.error-content {
+  color: var(--vscode-errorForeground);
+  background-color: var(--vscode-inputValidation-errorBackground);
+  border: 1px solid var(--vscode-inputValidation-errorBorder);
+  border-radius: 4px;
+  padding: 8px;
+  margin: 4px 0;
+}
+
+/* Enhanced thinking styles for better positioning and collapsed state */
+.thinking-container {
+  background-color: var(--vscode-editor-inactiveSelectionBackground);
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 6px;
+  margin: 8px 0;
+  overflow: hidden;
+}
+
+.thinking-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: var(--vscode-sideBar-background);
+  cursor: pointer;
+  user-select: none;
+}
+
+.thinking-header:hover {
+  background-color: var(--vscode-list-hoverBackground);
+}
+
+.thinking-header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9em;
+  color: var(--vscode-descriptionForeground);
+}
+
+.thinking-toggle {
+  background: none;
+  border: none;
+  color: var(--vscode-foreground);
+  cursor: pointer;
+  font-family: monospace;
+  font-size: 14px;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.thinking-toggle:hover {
+  background-color: var(--vscode-toolbar-hoverBackground);
+}
+
+.thinking-content {
+  padding: 12px;
+  font-size: 0.9em;
+  color: var(--vscode-editor-foreground);
+  background-color: var(--vscode-editor-background);
+  font-family: var(--vscode-editor-font-family);
+  line-height: 1.4;
+  white-space: pre-wrap;
+  max-height: 200px;
+  overflow-y: auto;
+  transition: max-height 0.3s ease, padding 0.3s ease;
+}
+
+.thinking-content.collapsed {
+  max-height: 0;
+  padding: 0 12px;
+  overflow: hidden;
+}
+
 /* Responsive Design */
 @media (max-width: 400px) {
   .controls-row {

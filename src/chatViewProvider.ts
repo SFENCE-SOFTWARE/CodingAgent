@@ -3,7 +3,7 @@
 import * as vscode from 'vscode';
 import { ChatService } from './chatService';
 import { getWebviewContent } from './webview';
-import { ChatMessage } from './types';
+import { ChatMessage, StreamingUpdate } from './types';
 
 export class ChatViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'codingagent-chat-view';
@@ -13,6 +13,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
   constructor(private readonly context: vscode.ExtensionContext) {
     this.chatService = new ChatService();
+    
+    // Set up streaming callback
+    this.chatService.setStreamingCallback((update: StreamingUpdate) => {
+      this.handleStreamingUpdate(update);
+    });
     
     // Listen for configuration changes
     vscode.workspace.onDidChangeConfiguration((event) => {
@@ -26,6 +31,60 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         }
       }
     });
+  }
+
+  private handleStreamingUpdate(update: StreamingUpdate) {
+    if (!this._view) return;
+
+    switch (update.type) {
+      case 'start':
+        this.sendMessage({
+          type: 'streamingStart',
+          messageId: update.messageId,
+          model: update.model
+        });
+        break;
+
+      case 'content':
+        this.sendMessage({
+          type: 'streamingContent',
+          messageId: update.messageId,
+          content: update.content
+        });
+        break;
+
+      case 'thinking':
+        this.sendMessage({
+          type: 'streamingThinking',
+          messageId: update.messageId,
+          thinking: update.thinking
+        });
+        break;
+
+      case 'tool_calls':
+        this.sendMessage({
+          type: 'streamingToolCalls',
+          messageId: update.messageId,
+          toolCalls: update.toolCalls
+        });
+        break;
+
+      case 'end':
+        this.sendMessage({
+          type: 'streamingEnd',
+          messageId: update.messageId,
+          isComplete: update.isComplete
+        });
+        break;
+
+      case 'error':
+        this.sendMessage({
+          type: 'streamingError',
+          messageId: update.messageId,
+          error: update.error
+        });
+        break;
+    }
   }
 
   public resolveWebviewView(
@@ -167,7 +226,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       config: {
         mode: this.chatService.getCurrentMode(),
         model: this.chatService.getCurrentModel(),
-        showThinking: this.chatService.getShowThinking()
+        showThinking: this.chatService.getShowThinking(),
+        enableStreaming: this.chatService.getEnableStreaming()
       }
     });
   }

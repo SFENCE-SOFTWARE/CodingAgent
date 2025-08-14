@@ -7,6 +7,8 @@ import { LoggingService } from './loggingService';
 import { 
   ChatMessage, 
   OllamaChatMessage, 
+  OllamaStreamChunk,
+  StreamingUpdate,
   ToolCall, 
   ToolDefinition,
   OllamaChatRequest 
@@ -17,6 +19,7 @@ export class ChatService {
   private ollama: OllamaService;
   private tools: ToolsService;
   private logging: LoggingService;
+  private streamingCallback?: (update: StreamingUpdate) => void;
 
   constructor() {
     this.ollama = new OllamaService();
@@ -24,10 +27,15 @@ export class ChatService {
     this.logging = LoggingService.getInstance();
   }
 
+  setStreamingCallback(callback: (update: StreamingUpdate) => void): void {
+    this.streamingCallback = callback;
+  }
+
   async processMessage(content: string): Promise<ChatMessage[]> {
     // This assumes user message is already added via addUserMessage
     const currentMode = this.ollama.getCurrentMode();
     const currentModel = this.ollama.getCurrentModel();
+    const enableStreaming = this.ollama.getEnableStreaming();
     
     try {
       const modeConfig = this.ollama.getModeConfiguration(currentMode);
@@ -75,50 +83,12 @@ export class ChatService {
       };
 
       const startTime = Date.now();
-      const response = await this.ollama.sendChat(request);
-      const endTime = Date.now();
-      
-      // Log the communication (standard logging)
-      this.logging.logAiCommunication(request, response, {
-        model: currentModel,
-        mode: currentMode,
-        timestamp: startTime,
-        duration: endTime - startTime,
-        context: 'initial'
-      });
 
-      // Log raw JSON if log mode is enabled
-      this.logging.logRawJsonCommunication(request, response, {
-        model: currentModel,
-        mode: currentMode,
-        timestamp: startTime,
-        duration: endTime - startTime,
-        context: 'initial'
-      });
-
-      const assistantMessage = response.choices[0]?.message;
-
-      if (!assistantMessage) {
-        throw new Error('No response from model');
+      if (enableStreaming) {
+        return await this.processStreamingMessage(request, currentModel, currentMode, startTime);
+      } else {
+        return await this.processNonStreamingMessage(request, currentModel, currentMode, startTime);
       }
-
-      // Handle tool calls if present
-      if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
-        const toolResults = await this.handleToolCalls(assistantMessage, request);
-        return toolResults;
-      }
-
-      // Regular response without tool calls
-      const chatMessage: ChatMessage = {
-        id: this.generateId(),
-        role: 'assistant',
-        content: assistantMessage.content || 'No content in response',
-        timestamp: Date.now(),
-        reasoning: assistantMessage.reasoning
-      };
-
-      this.messages.push(chatMessage);
-      return [chatMessage];
 
     } catch (error) {
       // Log the error (standard logging)
@@ -151,24 +121,254 @@ export class ChatService {
     }
   }
 
+  private async processNonStreamingMessage(
+    request: OllamaChatRequest,
+    currentModel: string,
+    currentMode: string,
+    startTime: number
+  ): Promise<ChatMessage[]> {
+    const response = await this.ollama.sendChat(request);
+    const endTime = Date.now();
+    
+    // Log the communication (standard logging)
+    this.logging.logAiCommunication(request, response, {
+      model: currentModel,
+      mode: currentMode,
+      timestamp: startTime,
+      duration: endTime - startTime,
+      context: 'initial'
+    });
+
+    // Log raw JSON if log mode is enabled
+    this.logging.logRawJsonCommunication(request, response, {
+      model: currentModel,
+      mode: currentMode,
+      timestamp: startTime,
+      duration: endTime - startTime,
+      context: 'initial'
+    });
+
+    const assistantMessage = response.choices[0]?.message;
+
+    if (!assistantMessage) {
+      throw new Error('No response from model');
+    }
+
+    // Handle tool calls if present
+    if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
+      const toolResults = await this.handleToolCalls(assistantMessage, request);
+      return toolResults;
+    }
+
+    // Regular response without tool calls
+    const chatMessage: ChatMessage = {
+      id: this.generateId(),
+      role: 'assistant',
+      content: assistantMessage.content || 'No content in response',
+      timestamp: Date.now(),
+      reasoning: assistantMessage.reasoning,
+      model: currentModel
+    };
+
+    this.messages.push(chatMessage);
+    return [chatMessage];
+  }
+
+  private async processStreamingMessage(
+    request: OllamaChatRequest,
+    currentModel: string,
+    currentMode: string,
+    startTime: number
+  ): Promise<ChatMessage[]> {
+    const messageId = this.generateId();
+    let accumulatedContent = '';
+    let accumulatedThinking = '';
+    let toolCalls: ToolCall[] = [];
+    let finishReason = '';
+    let streamedChunks: OllamaStreamChunk[] = [];
+
+    // Create initial message
+    const chatMessage: ChatMessage = {
+      id: messageId,
+      role: 'assistant',
+      content: '',
+      timestamp: Date.now(),
+      model: currentModel,
+      isStreaming: true
+    };
+
+    this.messages.push(chatMessage);
+
+    // Send start event
+    if (this.streamingCallback) {
+      this.streamingCallback({
+        type: 'start',
+        messageId,
+        model: currentModel
+      });
+    }
+
+    try {
+      for await (const chunk of this.ollama.sendChatStream(request)) {
+        streamedChunks.push(chunk);
+        const delta = chunk.choices[0]?.delta;
+        
+        if (!delta) continue;
+
+        // Handle content updates
+        if (delta.content) {
+          accumulatedContent += delta.content;
+          chatMessage.content = accumulatedContent;
+          
+          if (this.streamingCallback) {
+            this.streamingCallback({
+              type: 'content',
+              messageId,
+              content: accumulatedContent
+            });
+          }
+        }
+
+        // Handle thinking/reasoning updates
+        if (delta.reasoning) {
+          accumulatedThinking += delta.reasoning;
+          chatMessage.reasoning = accumulatedThinking;
+          
+          if (this.streamingCallback) {
+            this.streamingCallback({
+              type: 'thinking',
+              messageId,
+              thinking: accumulatedThinking
+            });
+          }
+        }
+
+        // Handle tool calls
+        if (delta.tool_calls) {
+          toolCalls.push(...delta.tool_calls);
+          chatMessage.toolCalls = toolCalls;
+          
+          if (this.streamingCallback) {
+            this.streamingCallback({
+              type: 'tool_calls',
+              messageId,
+              toolCalls: delta.tool_calls
+            });
+          }
+        }
+
+        // Handle finish reason
+        if (chunk.choices[0]?.finish_reason) {
+          finishReason = chunk.choices[0].finish_reason;
+        }
+      }
+
+      const endTime = Date.now();
+
+      // Create complete response for logging
+      const completeResponse = {
+        id: messageId,
+        object: 'chat.completion',
+        created: Math.floor(startTime / 1000),
+        model: currentModel,
+        choices: [{
+          index: 0,
+          message: {
+            role: 'assistant' as const,
+            content: accumulatedContent,
+            reasoning: accumulatedThinking,
+            tool_calls: toolCalls.length > 0 ? toolCalls : undefined
+          },
+          finish_reason: finishReason
+        }]
+      };
+
+      // Log the communication (standard logging)
+      this.logging.logAiCommunication(request, completeResponse, {
+        model: currentModel,
+        mode: currentMode,
+        timestamp: startTime,
+        duration: endTime - startTime,
+        context: 'initial'
+      });
+
+      // Log raw JSON if log mode is enabled - log the complete response, not individual chunks
+      this.logging.logRawJsonCommunication(request, completeResponse, {
+        model: currentModel,
+        mode: currentMode,
+        timestamp: startTime,
+        duration: endTime - startTime,
+        context: 'initial'
+      });
+
+      // Update final message state
+      chatMessage.isStreaming = false;
+
+      // Send end event
+      if (this.streamingCallback) {
+        this.streamingCallback({
+          type: 'end',
+          messageId,
+          isComplete: true
+        });
+      }
+
+      // Handle tool calls if present
+      if (toolCalls.length > 0) {
+        const assistantMessage: OllamaChatMessage = {
+          role: 'assistant',
+          content: accumulatedContent,
+          reasoning: accumulatedThinking,
+          tool_calls: toolCalls
+        };
+        
+        const toolResults = await this.handleToolCalls(assistantMessage, request, messageId);
+        return toolResults;
+      }
+
+      return [chatMessage];
+
+    } catch (error) {
+      // Send error event
+      if (this.streamingCallback) {
+        this.streamingCallback({
+          type: 'error',
+          messageId,
+          error: error instanceof Error ? error.message : String(error)
+        });
+      }
+
+      // Update message with error
+      chatMessage.isStreaming = false;
+      chatMessage.content = `Error: ${error instanceof Error ? error.message : String(error)}`;
+      chatMessage.role = 'error';
+
+      return [chatMessage];
+    }
+  }
+
   private async handleToolCalls(
     assistantMessage: OllamaChatMessage, 
-    originalRequest: OllamaChatRequest
+    originalRequest: OllamaChatRequest,
+    existingMessageId?: string
   ): Promise<ChatMessage[]> {
     const results: ChatMessage[] = [];
 
-    // Add assistant message with tool calls
-    const assistantChatMessage: ChatMessage = {
-      id: this.generateId(),
-      role: 'assistant',
-      content: assistantMessage.content || 'Executing tools...',
-      timestamp: Date.now(),
-      toolCalls: assistantMessage.tool_calls,
-      reasoning: assistantMessage.reasoning
-    };
-    
-    this.messages.push(assistantChatMessage);
-    results.push(assistantChatMessage);
+    // Add assistant message with tool calls (only if not already streaming)
+    if (!existingMessageId) {
+      const assistantChatMessage: ChatMessage = {
+        id: this.generateId(),
+        role: 'assistant',
+        content: assistantMessage.content || 'Executing tools...',
+        timestamp: Date.now(),
+        toolCalls: assistantMessage.tool_calls,
+        reasoning: assistantMessage.reasoning,
+        model: this.ollama.getCurrentModel()
+      };
+      
+      this.messages.push(assistantChatMessage);
+      results.push(assistantChatMessage);
+    }
 
     // Execute tools in a loop until we get a final response
     const toolMessages: OllamaChatMessage[] = [...originalRequest.messages];
@@ -254,7 +454,8 @@ export class ChatService {
             content: currentMessage.content || 'Executing additional tools...',
             timestamp: Date.now(),
             toolCalls: currentMessage.tool_calls,
-            reasoning: currentMessage.reasoning
+            reasoning: currentMessage.reasoning,
+            model: this.ollama.getCurrentModel()
           };
           
           this.messages.push(intermediateChatMessage);
@@ -300,7 +501,8 @@ export class ChatService {
         role: 'assistant',
         content: currentMessage.content || 'Process completed',
         timestamp: Date.now(),
-        reasoning: currentMessage.reasoning
+        reasoning: currentMessage.reasoning,
+        model: this.ollama.getCurrentModel()
       };
 
       this.messages.push(finalChatMessage);
@@ -373,6 +575,10 @@ export class ChatService {
 
   getShowThinking(): boolean {
     return this.ollama.getShowThinking();
+  }
+
+  getEnableStreaming(): boolean {
+    return this.ollama.getEnableStreaming();
   }
 
   updateConfiguration(): void {

@@ -142,6 +142,11 @@
           "default": true,
           "description": "Show model reasoning/thinking process"
         },
+        "codingagent.enableStreaming": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable streaming responses from the AI model"
+        },
         "codingagent.modes": {
           "type": "object",
           "default": {

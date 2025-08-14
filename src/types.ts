@@ -68,6 +68,23 @@ export interface OllamaChatResponse {
   };
 }
 
+export interface OllamaStreamChunk {
+  id: string;
+  object: string;
+  created: number;
+  model: string;
+  choices: {
+    index: number;
+    delta: {
+      role?: string;
+      content?: string;
+      tool_calls?: ToolCall[];
+      reasoning?: string;
+    };
+    finish_reason?: string;
+  }[];
+}
+
 export interface AgentMode {
   systemMessage: string;
   allowedTools: string[];
@@ -86,10 +103,23 @@ export interface ChatMessage {
   toolCalls?: ToolCall[];
   reasoning?: string;
   raw?: any;
+  model?: string;
+  isStreaming?: boolean;
 }
 
 export interface ToolResult {
   success: boolean;
   content: string;
   error?: string;
+}
+
+export interface StreamingUpdate {
+  type: 'start' | 'content' | 'thinking' | 'tool_calls' | 'end' | 'error';
+  messageId: string;
+  content?: string;
+  thinking?: string;
+  toolCalls?: ToolCall[];
+  model?: string;
+  error?: string;
+  isComplete?: boolean;
 }

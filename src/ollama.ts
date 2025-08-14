@@ -1,7 +1,7 @@
 // src/ollama.ts
 
 import * as vscode from 'vscode';
-import { OllamaModelList, OllamaChatRequest, OllamaChatResponse, ToolDefinition, AgentModes } from './types';
+import { OllamaModelList, OllamaChatRequest, OllamaChatResponse, OllamaStreamChunk, ToolDefinition, AgentModes } from './types';
 
 export class OllamaService {
   private baseApiUrl: string = 'http://localhost:11434';
@@ -58,6 +58,72 @@ export class OllamaService {
     }
   }
 
+  async *sendChatStream(request: OllamaChatRequest): AsyncGenerator<OllamaStreamChunk, void, unknown> {
+    try {
+      const streamRequest = { ...request, stream: true };
+      
+      const response = await fetch(`${this.baseApiUrl}/v1/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer dummy'
+        },
+        body: JSON.stringify(streamRequest)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${response.statusText}\n${errorText}`);
+      }
+
+      if (!response.body) {
+        throw new Error('No response body for streaming');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          
+          if (done) {
+            break;
+          }
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('data: ')) {
+              const data = trimmed.slice(6);
+              if (data === '[DONE]') {
+                return;
+              }
+              
+              try {
+                const chunk = JSON.parse(data) as OllamaStreamChunk;
+                yield chunk;
+              } catch (e) {
+                console.warn('Failed to parse stream chunk:', data);
+              }
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock();
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error(`Failed to send streaming chat request: ${String(error)}`);
+    }
+  }
+
   getCurrentMode(): string {
     const config = vscode.workspace.getConfiguration('codingagent');
     return config.get<string>('currentMode', 'Coder');
@@ -97,6 +163,11 @@ export class OllamaService {
   getShowThinking(): boolean {
     const config = vscode.workspace.getConfiguration('codingagent');
     return config.get<boolean>('showThinking', true);
+  }
+
+  getEnableStreaming(): boolean {
+    const config = vscode.workspace.getConfiguration('codingagent');
+    return config.get<boolean>('enableStreaming', true);
   }
 
   async setCurrentMode(mode: string): Promise<void> {
