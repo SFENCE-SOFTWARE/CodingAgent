@@ -183,6 +183,117 @@ export class ToolsService {
             additionalProperties: false
           }
         }
+      },
+      create_folder: {
+        type: 'function',
+        function: {
+          name: 'create_folder',
+          description: 'Create a new folder/directory',
+          parameters: {
+            type: 'object',
+            properties: {
+              path: {
+                type: 'string',
+                description: 'Absolute or relative path to the folder to create'
+              },
+              recursive: {
+                type: 'boolean',
+                description: 'Whether to create parent directories if they don\'t exist'
+              }
+            },
+            required: ['path'],
+            additionalProperties: false
+          }
+        }
+      },
+      patch_file: {
+        type: 'function',
+        function: {
+          name: 'patch_file',
+          description: 'Apply a diff patch to a file without fully rewriting it',
+          parameters: {
+            type: 'object',
+            properties: {
+              path: {
+                type: 'string',
+                description: 'Absolute or relative path to the file to patch'
+              },
+              old_text: {
+                type: 'string',
+                description: 'The exact text to find and replace'
+              },
+              new_text: {
+                type: 'string',
+                description: 'The new text to replace the old text with'
+              },
+              line_number: {
+                type: 'integer',
+                description: 'Optional line number hint for where to apply the patch'
+              }
+            },
+            required: ['path', 'old_text', 'new_text'],
+            additionalProperties: false
+          }
+        }
+      },
+      rename_file: {
+        type: 'function',
+        function: {
+          name: 'rename_file',
+          description: 'Rename or move a file or folder',
+          parameters: {
+            type: 'object',
+            properties: {
+              old_path: {
+                type: 'string',
+                description: 'Current absolute or relative path to the file/folder'
+              },
+              new_path: {
+                type: 'string',
+                description: 'New absolute or relative path for the file/folder'
+              }
+            },
+            required: ['old_path', 'new_path'],
+            additionalProperties: false
+          }
+        }
+      },
+      search_pattern: {
+        type: 'function',
+        function: {
+          name: 'search_pattern',
+          description: 'Search for a pattern in all files in the current workspace',
+          parameters: {
+            type: 'object',
+            properties: {
+              pattern: {
+                type: 'string',
+                description: 'Text pattern or regex to search for'
+              },
+              file_extensions: {
+                type: 'array',
+                items: {
+                  type: 'string'
+                },
+                description: 'Optional array of file extensions to limit search (e.g., [".ts", ".js"])'
+              },
+              case_sensitive: {
+                type: 'boolean',
+                description: 'Whether the search should be case sensitive (default: false)'
+              },
+              is_regex: {
+                type: 'boolean',
+                description: 'Whether the pattern is a regular expression (default: false)'
+              },
+              max_results: {
+                type: 'integer',
+                description: 'Maximum number of matches to return (default: 100)'
+              }
+            },
+            required: ['pattern'],
+            additionalProperties: false
+          }
+        }
       }
     };
   }
@@ -204,6 +315,14 @@ export class ToolsService {
           return await this.readWebpage(args.url, args.max_length);
         case 'read_pdf':
           return await this.readPdf(args.path, args.max_pages);
+        case 'create_folder':
+          return await this.createFolder(args.path, args.recursive);
+        case 'patch_file':
+          return await this.patchFile(args.path, args.old_text, args.new_text, args.line_number);
+        case 'rename_file':
+          return await this.renameFile(args.old_path, args.new_path);
+        case 'search_pattern':
+          return await this.searchPattern(args.pattern, args.file_extensions, args.case_sensitive, args.is_regex, args.max_results);
         default:
           return {
             success: false,
@@ -448,5 +567,249 @@ export class ToolsService {
       content: '',
       error: 'PDF reading not implemented yet. Consider using pdf-parse or similar library.'
     };
+  }
+
+  private async createFolder(inputPath: string, recursive?: boolean): Promise<ToolResult> {
+    try {
+      const fullPath = this.resolvePath(inputPath);
+      
+      if (recursive) {
+        await fs.promises.mkdir(fullPath, { recursive: true });
+      } else {
+        await fs.promises.mkdir(fullPath);
+      }
+
+      return {
+        success: true,
+        content: `Folder created: ${fullPath}`
+      };
+    } catch (error) {
+      return {
+        success: false,
+        content: '',
+        error: `Failed to create folder: ${error instanceof Error ? error.message : String(error)}`
+      };
+    }
+  }
+
+  private async patchFile(inputPath: string, oldText: string, newText: string, lineNumber?: number): Promise<ToolResult> {
+    try {
+      const fullPath = this.resolvePath(inputPath);
+      
+      // Check if file exists
+      if (!fs.existsSync(fullPath)) {
+        return {
+          success: false,
+          content: '',
+          error: `File not found: ${fullPath}`
+        };
+      }
+
+      // Read the file
+      const content = await fs.promises.readFile(fullPath, 'utf8');
+      const lines = content.split('\n');
+
+      // Find and replace the text
+      let found = false;
+      let modifiedLines = lines;
+
+      if (lineNumber && lineNumber > 0 && lineNumber <= lines.length) {
+        // If line number is provided, check that line first
+        const targetLine = lines[lineNumber - 1];
+        if (targetLine.includes(oldText)) {
+          modifiedLines[lineNumber - 1] = targetLine.replace(oldText, newText);
+          found = true;
+        }
+      }
+
+      if (!found) {
+        // Search through all lines
+        for (let i = 0; i < lines.length; i++) {
+          if (lines[i].includes(oldText)) {
+            modifiedLines[i] = lines[i].replace(oldText, newText);
+            found = true;
+            break; // Replace only first occurrence
+          }
+        }
+      }
+
+      if (!found) {
+        return {
+          success: false,
+          content: '',
+          error: `Text not found in file: "${oldText}"`
+        };
+      }
+
+      // Write the modified content back
+      const newContent = modifiedLines.join('\n');
+      await fs.promises.writeFile(fullPath, newContent, 'utf8');
+
+      return {
+        success: true,
+        content: `File patched successfully: ${fullPath}`
+      };
+    } catch (error) {
+      return {
+        success: false,
+        content: '',
+        error: `Failed to patch file: ${error instanceof Error ? error.message : String(error)}`
+      };
+    }
+  }
+
+  private async renameFile(oldPath: string, newPath: string): Promise<ToolResult> {
+    try {
+      const oldFullPath = this.resolvePath(oldPath);
+      const newFullPath = this.resolvePath(newPath);
+
+      // Check if source exists
+      if (!fs.existsSync(oldFullPath)) {
+        return {
+          success: false,
+          content: '',
+          error: `Source path not found: ${oldFullPath}`
+        };
+      }
+
+      // Check if target already exists
+      if (fs.existsSync(newFullPath)) {
+        return {
+          success: false,
+          content: '',
+          error: `Target path already exists: ${newFullPath}`
+        };
+      }
+
+      // Create target directory if it doesn't exist
+      const targetDir = path.dirname(newFullPath);
+      if (!fs.existsSync(targetDir)) {
+        await fs.promises.mkdir(targetDir, { recursive: true });
+      }
+
+      // Rename/move the file or folder
+      await fs.promises.rename(oldFullPath, newFullPath);
+
+      return {
+        success: true,
+        content: `Successfully renamed: ${oldFullPath} → ${newFullPath}`
+      };
+    } catch (error) {
+      return {
+        success: false,
+        content: '',
+        error: `Failed to rename: ${error instanceof Error ? error.message : String(error)}`
+      };
+    }
+  }
+
+  private async searchPattern(
+    pattern: string, 
+    fileExtensions?: string[], 
+    caseSensitive?: boolean, 
+    isRegex?: boolean, 
+    maxResults?: number
+  ): Promise<ToolResult> {
+    try {
+      const results: string[] = [];
+      const maxMatches = maxResults || 100;
+      const flags = caseSensitive ? 'g' : 'gi';
+      
+      let searchRegex: RegExp;
+      try {
+        if (isRegex) {
+          searchRegex = new RegExp(pattern, flags);
+        } else {
+          // Escape special regex characters for literal search
+          const escapedPattern = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          searchRegex = new RegExp(escapedPattern, flags);
+        }
+      } catch (error) {
+        return {
+          success: false,
+          content: '',
+          error: `Invalid regex pattern: ${error instanceof Error ? error.message : String(error)}`
+        };
+      }
+
+      const searchInDirectory = async (dirPath: string): Promise<void> => {
+        if (results.length >= maxMatches) return;
+
+        try {
+          const entries = await fs.promises.readdir(dirPath, { withFileTypes: true });
+          
+          for (const entry of entries) {
+            if (results.length >= maxMatches) break;
+
+            const fullPath = path.join(dirPath, entry.name);
+            
+            if (entry.isDirectory()) {
+              // Skip common ignored directories
+              if (!entry.name.startsWith('.') && 
+                  entry.name !== 'node_modules' && 
+                  entry.name !== 'out' && 
+                  entry.name !== 'dist') {
+                await searchInDirectory(fullPath);
+              }
+            } else if (entry.isFile()) {
+              // Check file extension filter
+              if (fileExtensions && fileExtensions.length > 0) {
+                const ext = path.extname(entry.name);
+                if (!fileExtensions.includes(ext)) {
+                  continue;
+                }
+              }
+
+              // Search in file
+              try {
+                const content = await fs.promises.readFile(fullPath, 'utf8');
+                const lines = content.split('\n');
+                
+                for (let i = 0; i < lines.length; i++) {
+                  if (results.length >= maxMatches) break;
+                  
+                  const line = lines[i];
+                  if (searchRegex.test(line)) {
+                    const relativePath = path.relative(this.workspaceRoot, fullPath);
+                    results.push(`${relativePath}:${i + 1}: ${line.trim()}`);
+                  }
+                }
+              } catch (readError) {
+                // Skip files that can't be read (binary files, etc.)
+                continue;
+              }
+            }
+          }
+        } catch (error) {
+          // Skip directories that can't be read
+          return;
+        }
+      };
+
+      await searchInDirectory(this.workspaceRoot);
+
+      if (results.length === 0) {
+        return {
+          success: true,
+          content: `No matches found for pattern: "${pattern}"`
+        };
+      }
+
+      const resultText = results.join('\n');
+      const summary = results.length >= maxMatches ? 
+        `\n\n(Showing first ${maxMatches} results, more may exist)` : 
+        `\n\n(${results.length} total matches)`;
+
+      return {
+        success: true,
+        content: resultText + summary
+      };
+    } catch (error) {
+      return {
+        success: false,
+        content: '',
+        error: `Search failed: ${error instanceof Error ? error.message : String(error)}`
+      };
+    }
   }
 }

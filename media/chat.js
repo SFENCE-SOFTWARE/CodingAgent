@@ -16,6 +16,7 @@
   let currentMode = 'Coder';
   let currentModel = 'llama3:8b';
   let isThinkingExpanded = true;
+  let isToolCallsExpanded = false; // Tool calls collapsed by default
   let enableStreaming = true;
   let streamingMessages = new Map(); // Track streaming messages
   
@@ -161,15 +162,16 @@
     contentDiv.innerHTML = formatMessageContent(message.content);
     
     messageDiv.appendChild(headerDiv);
-    messageDiv.appendChild(contentDiv);
     
-    // Add thinking/reasoning if present
+    // Add thinking/reasoning if present (before content)
     if (message.reasoning) {
       const thinkingDiv = createThinkingElement(message.reasoning);
       messageDiv.appendChild(thinkingDiv);
     }
     
-    // Add tool calls if present
+    messageDiv.appendChild(contentDiv);
+
+    // Add tool calls if present (after content, collapsed by default)
     if (message.toolCalls && message.toolCalls.length > 0) {
       const toolCallsDiv = createToolCallsElement(message.toolCalls);
       messageDiv.appendChild(toolCallsDiv);
@@ -231,6 +233,25 @@
     const container = document.createElement('div');
     container.className = 'tool-calls-container';
     
+    // Create header with toggle functionality
+    const header = document.createElement('div');
+    header.className = 'tool-calls-header';
+    
+    const headerLeft = document.createElement('div');
+    headerLeft.className = 'tool-calls-header-left';
+    headerLeft.innerHTML = `<span class="codicon codicon-tools"></span> Tool Calls (${toolCalls.length})`;
+    
+    const toggle = document.createElement('button');
+    toggle.className = 'tool-calls-toggle';
+    toggle.textContent = '+'; // Collapsed by default
+    
+    header.appendChild(headerLeft);
+    header.appendChild(toggle);
+    
+    // Create content container
+    const content = document.createElement('div');
+    content.className = 'tool-calls-content collapsed'; // Start collapsed
+    
     toolCalls.forEach(toolCall => {
       const toolDiv = document.createElement('div');
       toolDiv.className = 'tool-call';
@@ -245,8 +266,24 @@
       
       toolDiv.appendChild(nameDiv);
       toolDiv.appendChild(argsDiv);
-      container.appendChild(toolDiv);
+      content.appendChild(toolDiv);
     });
+    
+    // Toggle functionality
+    const toggleToolCalls = () => {
+      const isCollapsed = content.classList.contains('collapsed');
+      content.classList.toggle('collapsed');
+      toggle.textContent = isCollapsed ? '−' : '+';
+    };
+    
+    header.addEventListener('click', toggleToolCalls);
+    toggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleToolCalls();
+    });
+    
+    container.appendChild(header);
+    container.appendChild(content);
     
     return container;
   }

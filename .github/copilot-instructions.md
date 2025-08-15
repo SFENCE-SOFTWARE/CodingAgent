@@ -17,11 +17,18 @@ The extension uses a **mode-based architecture** where each mode has specific to
 ```typescript
 // Configuration in package.json defines agent capabilities
 "Coder": {
-  "allowedTools": ["read_file", "write_file", "list_files", "execute_terminal"],
+  "allowedTools": ["read_file", "write_file", "list_files", "execute_terminal", 
+                   "create_folder", "patch_file", "rename_file", "search_pattern"],
   "systemMessage": "You are an expert programming assistant...",
   "temperature": 0.1
 }
 ```
+
+**New Tools Available:**
+- `search_pattern` - Search across workspace files (available in all modes)
+- `create_folder` - Create directories with recursive option (Coder mode)
+- `patch_file` - Apply text diffs without full file rewrites (Coder mode)  
+- `rename_file` - Rename/move files and folders (Coder mode)
 
 ### Streaming Architecture
 **Critical:** The extension implements streaming responses with tool call interleaving:
@@ -96,6 +103,12 @@ File operations are **workspace-relative** with safety checks:
 const fullPath = path.isAbsolute(filePath) ? filePath : path.join(this.workspaceRoot, filePath);
 ```
 
+**New Tool Capabilities:**
+- `search_pattern` - Regex/text search across all workspace files with file extension filtering
+- `patch_file` - Surgical file edits using old_text/new_text replacement (safer than full rewrites)
+- `create_folder` - Directory creation with recursive parent creation option
+- `rename_file` - File/folder renaming and moving operations
+
 ## Extension-Specific Conventions
 
 ### Message Flow Architecture
@@ -104,6 +117,13 @@ const fullPath = path.isAbsolute(filePath) ? filePath : path.join(this.workspace
 3. **ChatService** → orchestrates Ollama + Tools
 4. **Streaming callbacks** → real-time UI updates
 5. **WebView** → DOM updates with message history
+
+**UI Order for Assistant Messages:**
+- Header (avatar, model name, timestamp)
+- Thinking block (if reasoning present, expanded by default)
+- Message content
+- Tool calls (collapsed by default, expandable)
+- Debug info (if available)
 
 ### File Structure Logic
 - `src/` - TypeScript source following VS Code patterns

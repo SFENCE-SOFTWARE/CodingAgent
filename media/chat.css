@@ -268,6 +268,56 @@
   margin: 8px 0;
   border: 1px solid var(--vscode-panel-border);
   border-radius: 4px;
+  background-color: var(--vscode-editor-inactiveSelectionBackground);
+  overflow: hidden;
+}
+
+.tool-calls-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: var(--vscode-sideBar-background);
+  cursor: pointer;
+  user-select: none;
+}
+
+.tool-calls-header:hover {
+  background-color: var(--vscode-list-hoverBackground);
+}
+
+.tool-calls-header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9em;
+  color: var(--vscode-descriptionForeground);
+}
+
+.tool-calls-toggle {
+  background: none;
+  border: none;
+  color: var(--vscode-foreground);
+  cursor: pointer;
+  font-family: monospace;
+  font-size: 14px;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.tool-calls-toggle:hover {
+  background-color: var(--vscode-toolbar-hoverBackground);
+}
+
+.tool-calls-content {
+  max-height: 300px;
+  overflow-y: auto;
+  transition: max-height 0.3s ease, padding 0.3s ease;
+}
+
+.tool-calls-content.collapsed {
+  max-height: 0;
+  overflow: hidden;
 }
 
 .tool-call {
