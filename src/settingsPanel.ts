@@ -3,6 +3,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import { ToolsService } from './tools';
 
 export class SettingsPanel {
   public static currentPanel: SettingsPanel | undefined;
@@ -133,6 +134,10 @@ export class SettingsPanel {
   private _sendConfiguration() {
     const config = vscode.workspace.getConfiguration('codingagent');
     
+    // Get available tools from ToolsService
+    const toolsService = new ToolsService();
+    const availableTools = toolsService.getAllToolsInfo();
+    
     this._panel.webview.postMessage({
       type: 'configurationData',
       config: {
@@ -149,7 +154,8 @@ export class SettingsPanel {
           logMode: config.get('logging.logMode'),
           logModeFilePath: config.get('logging.logModeFilePath')
         }
-      }
+      },
+      availableTools: availableTools
     });
   }
 

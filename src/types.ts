@@ -113,6 +113,19 @@ export interface ToolResult {
   error?: string;
 }
 
+export interface ToolInfo {
+  name: string;
+  displayName: string;
+  description: string;
+  category: 'file' | 'system' | 'web' | 'search' | 'other';
+}
+
+export interface BaseTool {
+  getToolInfo(): ToolInfo;
+  getToolDefinition(): ToolDefinition;
+  execute(args: any, workspaceRoot: string): Promise<ToolResult>;
+}
+
 export interface StreamingUpdate {
   type: 'start' | 'content' | 'thinking' | 'tool_calls' | 'end' | 'error';
   messageId: string;

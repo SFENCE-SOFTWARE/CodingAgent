@@ -45,8 +45,9 @@ export class ChatService {
       const allowedTools: ToolDefinition[] = [];
       
       for (const toolName of modeConfig.allowedTools) {
-        if (allTools[toolName]) {
-          allowedTools.push(allTools[toolName]);
+        const toolDef = allTools[toolName];
+        if (toolDef) {
+          allowedTools.push(toolDef);
         }
       }
 

@@ -6,12 +6,7 @@
   let currentConfig = {};
   let isEditing = false;
   let editingModeName = null;
-
-  // Available tools
-  const availableTools = [
-    'read_file', 'write_file', 'list_files', 'get_file_size', 
-    'execute_terminal', 'read_webpage', 'read_pdf'
-  ];
+  let availableTools = []; // Will be populated from backend
 
   // DOM Elements
   const elements = {
@@ -51,7 +46,6 @@
   // Initialize
   function init() {
     setupEventListeners();
-    setupToolsCheckboxes();
     requestConfiguration();
   }
 
@@ -81,23 +75,37 @@
   }
 
   function setupToolsCheckboxes() {
+    console.log('Setting up tools checkboxes. Available tools:', availableTools);
     elements.modeToolsContainer.innerHTML = '';
     
-    availableTools.forEach(tool => {
+    if (availableTools.length === 0) {
+      console.warn('No available tools found');
+      elements.modeToolsContainer.innerHTML = '<p style="color: #888;">No tools available</p>';
+      return;
+    }
+    
+    availableTools.forEach(toolInfo => {
+      console.log('Creating checkbox for tool:', toolInfo.name);
       const div = document.createElement('div');
       div.className = 'tool-checkbox';
       
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
-      checkbox.id = `tool-${tool}`;
-      checkbox.value = tool;
+      checkbox.id = `tool-${toolInfo.name}`;
+      checkbox.value = toolInfo.name;
       
       const label = document.createElement('label');
-      label.setAttribute('for', `tool-${tool}`);
-      label.textContent = tool.replace(/_/g, ' ');
+      label.setAttribute('for', `tool-${toolInfo.name}`);
+      label.innerHTML = `<strong>${toolInfo.displayName}</strong><br><small>${toolInfo.description}</small>`;
+      
+      // Add category badge
+      const categoryBadge = document.createElement('span');
+      categoryBadge.className = `category-badge category-${toolInfo.category}`;
+      categoryBadge.textContent = toolInfo.category;
       
       div.appendChild(checkbox);
       div.appendChild(label);
+      div.appendChild(categoryBadge);
       elements.modeToolsContainer.appendChild(div);
     });
   }
@@ -222,10 +230,10 @@
       
       // Set tool checkboxes
       const allowedTools = modeConfig.allowedTools || [];
-      availableTools.forEach(tool => {
-        const checkbox = document.getElementById(`tool-${tool}`);
+      availableTools.forEach(toolInfo => {
+        const checkbox = document.getElementById(`tool-${toolInfo.name}`);
         if (checkbox) {
-          checkbox.checked = allowedTools.includes(tool);
+          checkbox.checked = allowedTools.includes(toolInfo.name);
         }
       });
     } else {
@@ -236,8 +244,8 @@
       elements.modeTopP.value = 0.9;
       
       // Uncheck all tools
-      availableTools.forEach(tool => {
-        const checkbox = document.getElementById(`tool-${tool}`);
+      availableTools.forEach(toolInfo => {
+        const checkbox = document.getElementById(`tool-${toolInfo.name}`);
         if (checkbox) {
           checkbox.checked = false;
         }
@@ -276,10 +284,10 @@
       fallbackMessage: elements.modeFallbackMessage.value.trim(),
       temperature: parseFloat(elements.modeTemperature.value) || 0.1,
       topP: parseFloat(elements.modeTopP.value) || 0.9,
-      allowedTools: availableTools.filter(tool => {
-        const checkbox = document.getElementById(`tool-${tool}`);
+      allowedTools: availableTools.filter(toolInfo => {
+        const checkbox = document.getElementById(`tool-${toolInfo.name}`);
         return checkbox && checkbox.checked;
-      })
+      }).map(toolInfo => toolInfo.name)
     };
     
     if (isEditing) {
@@ -364,7 +372,9 @@
     
     switch (message.type) {
       case 'configurationData':
+        availableTools = message.availableTools || [];
         updateUI(message.config);
+        setupToolsCheckboxes(); // Setup tools after loading available tools
         break;
         
       case 'configurationUpdated':
