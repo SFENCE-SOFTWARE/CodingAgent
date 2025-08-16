@@ -272,6 +272,14 @@
   overflow: hidden;
 }
 
+.tool-call-section {
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.tool-call-section:last-child {
+  border-bottom: none;
+}
+
 .tool-calls-header {
   display: flex;
   justify-content: space-between;
@@ -320,27 +328,12 @@
   overflow: hidden;
 }
 
-.tool-call {
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--vscode-panel-border);
-  background-color: var(--vscode-panel-background);
-}
-
-.tool-call:last-child {
-  border-bottom: none;
-}
-
-.tool-call-name {
-  font-weight: 600;
-  color: var(--vscode-terminal-ansiMagenta);
-  font-size: 12px;
-}
-
 .tool-call-args {
+  padding: 8px 12px;
   font-family: var(--vscode-editor-font-family);
   font-size: 11px;
   color: var(--vscode-descriptionForeground);
-  margin-top: 4px;
+  background-color: var(--vscode-panel-background);
 }
 
 /* Raw Request Display */

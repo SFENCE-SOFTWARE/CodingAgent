@@ -233,57 +233,53 @@
     const container = document.createElement('div');
     container.className = 'tool-calls-container';
     
-    // Create header with toggle functionality
-    const header = document.createElement('div');
-    header.className = 'tool-calls-header';
-    
-    const headerLeft = document.createElement('div');
-    headerLeft.className = 'tool-calls-header-left';
-    headerLeft.innerHTML = `<span class="codicon codicon-tools"></span> Tool Calls (${toolCalls.length})`;
-    
-    const toggle = document.createElement('button');
-    toggle.className = 'tool-calls-toggle';
-    toggle.textContent = '+'; // Collapsed by default
-    
-    header.appendChild(headerLeft);
-    header.appendChild(toggle);
-    
-    // Create content container
-    const content = document.createElement('div');
-    content.className = 'tool-calls-content collapsed'; // Start collapsed
-    
-    toolCalls.forEach(toolCall => {
-      const toolDiv = document.createElement('div');
-      toolDiv.className = 'tool-call';
+    // Create a separate collapsible section for each tool call
+    toolCalls.forEach((toolCall, index) => {
+      const toolContainer = document.createElement('div');
+      toolContainer.className = 'tool-call-section';
       
-      const nameDiv = document.createElement('div');
-      nameDiv.className = 'tool-call-name';
-      nameDiv.textContent = `🔧 ${toolCall.function.name}`;
+      // Create header with toggle functionality for this specific tool
+      const header = document.createElement('div');
+      header.className = 'tool-calls-header';
+      
+      const headerLeft = document.createElement('div');
+      headerLeft.className = 'tool-calls-header-left';
+      headerLeft.innerHTML = `<span class="codicon codicon-tools"></span> ${toolCall.function.name}`;
+      
+      const toggle = document.createElement('button');
+      toggle.className = 'tool-calls-toggle';
+      toggle.textContent = '+'; // Collapsed by default
+      
+      header.appendChild(headerLeft);
+      header.appendChild(toggle);
+      
+      // Create content container for this tool
+      const content = document.createElement('div');
+      content.className = 'tool-calls-content collapsed'; // Start collapsed
       
       const argsDiv = document.createElement('div');
       argsDiv.className = 'tool-call-args';
       argsDiv.textContent = toolCall.function.arguments;
       
-      toolDiv.appendChild(nameDiv);
-      toolDiv.appendChild(argsDiv);
-      content.appendChild(toolDiv);
+      content.appendChild(argsDiv);
+      
+      // Toggle functionality for this specific tool
+      const toggleTool = () => {
+        const isCollapsed = content.classList.contains('collapsed');
+        content.classList.toggle('collapsed');
+        toggle.textContent = isCollapsed ? '−' : '+';
+      };
+      
+      header.addEventListener('click', toggleTool);
+      toggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleTool();
+      });
+      
+      toolContainer.appendChild(header);
+      toolContainer.appendChild(content);
+      container.appendChild(toolContainer);
     });
-    
-    // Toggle functionality
-    const toggleToolCalls = () => {
-      const isCollapsed = content.classList.contains('collapsed');
-      content.classList.toggle('collapsed');
-      toggle.textContent = isCollapsed ? '−' : '+';
-    };
-    
-    header.addEventListener('click', toggleToolCalls);
-    toggle.addEventListener('click', (e) => {
-      e.stopPropagation();
-      toggleToolCalls();
-    });
-    
-    container.appendChild(header);
-    container.appendChild(content);
     
     return container;
   }
@@ -619,13 +615,17 @@
       
       // Auto-collapse tool calls after a delay
       setTimeout(() => {
-        const toolCallsContent = finalToolCallsElement.querySelector('.tool-calls-content');
-        const toolCallsToggle = finalToolCallsElement.querySelector('.tool-calls-toggle');
-        
-        if (toolCallsContent && toolCallsToggle) {
-          toolCallsContent.classList.add('collapsed');
-          toolCallsToggle.textContent = '+';
-        }
+        // Auto-collapse all tool call sections
+        const toolCallSections = finalToolCallsElement.querySelectorAll('.tool-call-section');
+        toolCallSections.forEach(section => {
+          const content = section.querySelector('.tool-calls-content');
+          const toggle = section.querySelector('.tool-calls-toggle');
+          
+          if (content && toggle) {
+            content.classList.add('collapsed');
+            toggle.textContent = '+';
+          }
+        });
       }, 1500); // Slightly longer delay than thinking to avoid simultaneous animations
     }
     
