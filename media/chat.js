@@ -473,7 +473,8 @@
       thinkingContent: thinkingContent,
       toolCallsDiv: toolCallsDiv,
       accumulatedContent: '',
-      accumulatedThinking: ''
+      accumulatedThinking: '',
+      accumulatedToolCalls: []
     });
     
     // Remove welcome message if it exists
@@ -516,8 +517,42 @@
     const streamingData = streamingMessages.get(messageId);
     if (!streamingData) return;
     
-    // Add new tool calls to the container
-    toolCalls.forEach(toolCall => {
+    // Initialize accumulated tool calls if not exists
+    if (!streamingData.accumulatedToolCalls) {
+      streamingData.accumulatedToolCalls = [];
+    }
+    
+    // Merge incoming tool calls with accumulated ones
+    toolCalls.forEach(incomingToolCall => {
+      const index = incomingToolCall.index !== undefined ? incomingToolCall.index : 0;
+      const existingIndex = streamingData.accumulatedToolCalls.findIndex(tc => tc.index === index);
+      
+      if (existingIndex !== -1) {
+        // Merge with existing tool call
+        const existing = streamingData.accumulatedToolCalls[existingIndex];
+        if (incomingToolCall.function?.name) {
+          existing.function.name = incomingToolCall.function.name;
+        }
+        if (incomingToolCall.function?.arguments) {
+          existing.function.arguments = (existing.function.arguments || '') + incomingToolCall.function.arguments;
+        }
+      } else {
+        // Add new tool call
+        streamingData.accumulatedToolCalls.push({
+          index: index,
+          id: incomingToolCall.id || `tool_call_${index}`,
+          type: incomingToolCall.type || 'function',
+          function: {
+            name: incomingToolCall.function?.name || '',
+            arguments: incomingToolCall.function?.arguments || ''
+          }
+        });
+      }
+    });
+    
+    // Rebuild tool calls display
+    streamingData.toolCallsDiv.innerHTML = '';
+    streamingData.accumulatedToolCalls.forEach(toolCall => {
       const toolDiv = document.createElement('div');
       toolDiv.className = 'tool-call';
       
