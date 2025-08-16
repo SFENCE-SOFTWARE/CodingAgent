@@ -534,8 +534,160 @@ export class ChatService {
         };
 
         const followUpStartTime = Date.now();
-        const followUpResponse = await this.openai.sendChat(followUpRequest);
-        const followUpEndTime = Date.now();
+        
+        // Use streaming for follow-up responses if streaming is enabled and we're in streaming mode
+        const enableStreaming = this.openai.getEnableStreaming();
+        let followUpResponse: any;
+        let followUpEndTime: number;
+        
+        if (enableStreaming && isStreamingMode) {
+          // Process follow-up response with streaming
+          const followUpMessageId = this.generateId();
+          let accumulatedContent = '';
+          let accumulatedThinking = '';
+          let accumulatedToolCalls: ToolCall[] = [];
+          
+          // Send start event for follow-up streaming
+          if (this.streamingCallback) {
+            this.streamingCallback({
+              type: 'start',
+              messageId: followUpMessageId,
+              model: this.openai.getCurrentModel()
+            });
+          }
+          
+          try {
+            for await (const chunk of this.openai.sendChatStream(followUpRequest)) {
+              const delta = chunk.choices[0]?.delta;
+              
+              if (!delta) continue;
+
+              // Handle content updates
+              if (delta.content) {
+                accumulatedContent += delta.content;
+                
+                if (this.streamingCallback) {
+                  this.streamingCallback({
+                    type: 'content',
+                    messageId: followUpMessageId,
+                    content: delta.content
+                  });
+                }
+              }
+
+              // Handle thinking/reasoning updates
+              if (delta.reasoning) {
+                accumulatedThinking += delta.reasoning;
+                
+                if (this.streamingCallback) {
+                  this.streamingCallback({
+                    type: 'thinking',
+                    messageId: followUpMessageId,
+                    thinking: delta.reasoning
+                  });
+                }
+              }
+
+              // Handle tool calls with proper merging for streaming
+              if (delta.tool_calls) {
+                // Merge incremental tool calls by index
+                for (const deltaToolCall of delta.tool_calls) {
+                  const deltaAny = deltaToolCall as any;
+                  if (deltaAny.index !== undefined) {
+                    const index = deltaAny.index;
+                    const existingIndex = accumulatedToolCalls.findIndex((tc: any) => tc.index === index);
+                    
+                    if (existingIndex >= 0) {
+                      // Merge existing tool call
+                      const existing = accumulatedToolCalls[existingIndex] as any;
+                      
+                      // Merge properties
+                      if (deltaAny.id !== undefined) {
+                        existing.id = deltaAny.id;
+                      }
+                      if (deltaAny.type !== undefined) {
+                        existing.type = deltaAny.type;
+                      }
+                      if (deltaAny.function) {
+                        if (!existing.function) {
+                          existing.function = { name: '', arguments: '' };
+                        }
+                        if (deltaAny.function.name !== undefined) {
+                          existing.function.name = deltaAny.function.name;
+                        }
+                        if (deltaAny.function.arguments !== undefined) {
+                          existing.function.arguments = (existing.function.arguments || '') + deltaAny.function.arguments;
+                        }
+                      }
+                    } else {
+                      // Add new tool call with partial data
+                      const newToolCall: any = {
+                        id: deltaAny.id || '',
+                        type: deltaAny.type || 'function',
+                        function: {
+                          name: deltaAny.function?.name || '',
+                          arguments: deltaAny.function?.arguments || ''
+                        },
+                        index: index
+                      };
+                      accumulatedToolCalls.push(newToolCall);
+                    }
+                  } else {
+                    // Legacy: tool call without index
+                    accumulatedToolCalls.push(deltaToolCall as ToolCall);
+                  }
+                }
+                
+                if (this.streamingCallback) {
+                  this.streamingCallback({
+                    type: 'tool_calls',
+                    messageId: followUpMessageId,
+                    toolCalls: delta.tool_calls as ToolCall[]
+                  });
+                }
+              }
+            }
+            
+            followUpEndTime = Date.now();
+            
+            // Send end event for follow-up streaming
+            if (this.streamingCallback) {
+              this.streamingCallback({
+                type: 'end',
+                messageId: followUpMessageId,
+                isComplete: true
+              });
+            }
+            
+            // Create response object for compatibility
+            followUpResponse = {
+              choices: [{
+                message: {
+                  role: 'assistant',
+                  content: accumulatedContent,
+                  reasoning: accumulatedThinking,
+                  tool_calls: accumulatedToolCalls.length > 0 ? this.normalizeToolCalls(accumulatedToolCalls) : undefined
+                }
+              }]
+            };
+            
+          } catch (streamError) {
+            // Send error event for follow-up streaming
+            if (this.streamingCallback) {
+              this.streamingCallback({
+                type: 'error',
+                messageId: followUpMessageId,
+                error: streamError instanceof Error ? streamError.message : String(streamError)
+              });
+            }
+            throw streamError;
+          }
+          
+        } else {
+          // Non-streaming follow-up response
+          followUpResponse = await this.openai.sendChat(followUpRequest);
+          followUpEndTime = Date.now();
+        }
 
         // Log the follow-up communication (standard logging)
         this.logging.logAiCommunication(followUpRequest, followUpResponse, {
@@ -587,19 +739,21 @@ export class ChatService {
           this.messages.push(intermediateChatMessage);
           results.push(intermediateChatMessage);
           
-          // Send intermediate message immediately to UI via callback
-          if (callback) {
-            callback({
-              type: 'message_ready',
-              message: intermediateChatMessage
-            });
-            // Mark as displayed to prevent duplication in final message loop
+          // In streaming mode, the message was already displayed via streaming callbacks
+          const enableStreaming = this.openai.getEnableStreaming();
+          if (enableStreaming && isStreamingMode) {
+            // Mark as already displayed to prevent duplication
             intermediateChatMessage.isAlreadyDisplayed = true;
-          }
-          
-          // Mark as displayed if this is streaming mode to prevent duplication
-          if (isStreamingMode) {
-            intermediateChatMessage.isAlreadyDisplayed = true;
+          } else {
+            // Send intermediate message immediately to UI via callback (non-streaming mode)
+            if (callback) {
+              callback({
+                type: 'message_ready',
+                message: intermediateChatMessage
+              });
+              // Mark as displayed to prevent duplication in final message loop
+              intermediateChatMessage.isAlreadyDisplayed = true;
+            }
           }
         } else {
           // No more tool calls, exit the loop
@@ -635,18 +789,13 @@ export class ChatService {
         this.messages.push(errorMessage);
         results.push(errorMessage);
         
-        // Send error message immediately to UI via callback
+        // Error messages are not streamed, so always send via callback
         if (callback) {
           callback({
             type: 'message_ready',
             message: errorMessage
           });
           // Mark as displayed to prevent duplication in final message loop
-          errorMessage.isAlreadyDisplayed = true;
-        }
-        
-        // Mark as displayed if this is streaming mode to prevent duplication
-        if (isStreamingMode) {
           errorMessage.isAlreadyDisplayed = true;
         }
         
@@ -668,19 +817,21 @@ export class ChatService {
       this.messages.push(finalChatMessage);
       results.push(finalChatMessage);
       
-      // Send final message immediately to UI via callback
-      if (callback) {
-        callback({
-          type: 'message_ready',
-          message: finalChatMessage
-        });
-        // Mark as displayed to prevent duplication in final message loop
+      // In streaming mode, the message was already displayed via streaming callbacks
+      const enableStreaming = this.openai.getEnableStreaming();
+      if (enableStreaming && isStreamingMode) {
+        // Mark as already displayed to prevent duplication
         finalChatMessage.isAlreadyDisplayed = true;
-      }
-      
-      // Mark as displayed if this is streaming mode to prevent duplication
-      if (isStreamingMode) {
-        finalChatMessage.isAlreadyDisplayed = true;
+      } else {
+        // Send final message immediately to UI via callback (non-streaming mode)
+        if (callback) {
+          callback({
+            type: 'message_ready',
+            message: finalChatMessage
+          });
+          // Mark as displayed to prevent duplication in final message loop
+          finalChatMessage.isAlreadyDisplayed = true;
+        }
       }
     } else if (iterationCount >= maxIterations) {
       // Handle case where we hit the iteration limit
@@ -694,18 +845,13 @@ export class ChatService {
       this.messages.push(timeoutMessage);
       results.push(timeoutMessage);
       
-      // Send timeout message immediately to UI via callback
+      // Timeout messages are not streamed, so always send via callback
       if (callback) {
         callback({
           type: 'message_ready',
           message: timeoutMessage
         });
         // Mark as displayed to prevent duplication in final message loop
-        timeoutMessage.isAlreadyDisplayed = true;
-      }
-      
-      // Mark as displayed if this is streaming mode to prevent duplication
-      if (isStreamingMode) {
         timeoutMessage.isAlreadyDisplayed = true;
       }
     }
