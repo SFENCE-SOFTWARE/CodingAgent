@@ -2,7 +2,7 @@
 
 import * as vscode from 'vscode';
 import { ChatViewProvider } from './chatViewProvider';
-import { OllamaService } from './ollama';
+import { OllamaService } from './openai_html_api';
 import { SettingsPanel } from './settingsPanel';
 
 export function activate(context: vscode.ExtensionContext) {

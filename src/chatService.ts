@@ -1,7 +1,7 @@
 // src/chatService.ts
 
 import * as vscode from 'vscode';
-import { OllamaService } from './ollama';
+import { OllamaService } from './openai_html_api';
 import { ToolsService } from './tools';
 import { LoggingService } from './loggingService';
 import { 
@@ -244,16 +244,64 @@ export class ChatService {
           }
         }
 
-        // Handle tool calls
+        // Handle tool calls with proper merging for streaming
         if (delta.tool_calls) {
-          toolCalls.push(...delta.tool_calls);
+          // Merge incremental tool calls by index
+          for (const deltaToolCall of delta.tool_calls) {
+            const deltaAny = deltaToolCall as any;
+            if (deltaAny.index !== undefined) {
+              const index = deltaAny.index;
+              const existingIndex = toolCalls.findIndex((tc: any) => tc.index === index);
+              
+              if (existingIndex >= 0) {
+                // Merge existing tool call
+                const existing = toolCalls[existingIndex] as any;
+                
+                // Merge properties
+                if (deltaAny.id !== undefined) {
+                  existing.id = deltaAny.id;
+                }
+                if (deltaAny.type !== undefined) {
+                  existing.type = deltaAny.type;
+                }
+                if (deltaAny.function) {
+                  if (!existing.function) {
+                    existing.function = { name: '', arguments: '' };
+                  }
+                  if (deltaAny.function.name !== undefined) {
+                    existing.function.name = deltaAny.function.name;
+                  }
+                  if (deltaAny.function.arguments !== undefined) {
+                    // CONCATENATE arguments instead of overwriting
+                    existing.function.arguments = (existing.function.arguments || '') + deltaAny.function.arguments;
+                  }
+                }
+              } else {
+                // Add new tool call with partial data
+                const newToolCall: any = {
+                  id: deltaAny.id || '',
+                  type: deltaAny.type || 'function',
+                  function: {
+                    name: deltaAny.function?.name || '',
+                    arguments: deltaAny.function?.arguments || ''
+                  },
+                  index: index
+                };
+                toolCalls.push(newToolCall);
+              }
+            } else {
+              // Legacy: tool call without index, cast to ToolCall
+              toolCalls.push(deltaToolCall as ToolCall);
+            }
+          }
+          
           chatMessage.toolCalls = toolCalls;
           
           if (this.streamingCallback) {
             this.streamingCallback({
               type: 'tool_calls',
               messageId,
-              toolCalls: delta.tool_calls
+              toolCalls: delta.tool_calls as ToolCall[]
             });
           }
         }
@@ -355,6 +403,9 @@ export class ChatService {
   ): Promise<ChatMessage[]> {
     const results: ChatMessage[] = [];
 
+    // Normalize tool calls to ensure they are complete and valid
+    let normalizedToolCalls = this.normalizeToolCalls(assistantMessage.tool_calls || []);
+
     // Add assistant message with tool calls (only if not already streaming)
     if (!existingMessageId) {
       const assistantChatMessage: ChatMessage = {
@@ -362,7 +413,7 @@ export class ChatService {
         role: 'assistant',
         content: assistantMessage.content || 'Executing tools...',
         timestamp: Date.now(),
-        toolCalls: assistantMessage.tool_calls,
+        toolCalls: normalizedToolCalls,
         reasoning: assistantMessage.reasoning,
         model: this.ollama.getCurrentModel()
       };
@@ -373,17 +424,23 @@ export class ChatService {
 
     // Execute tools in a loop until we get a final response
     const toolMessages: OllamaChatMessage[] = [...originalRequest.messages];
-    toolMessages.push(assistantMessage);
+    
+    // Create normalized assistant message for tool execution
+    const normalizedAssistantMessage: OllamaChatMessage = {
+      ...assistantMessage,
+      tool_calls: normalizedToolCalls
+    };
+    toolMessages.push(normalizedAssistantMessage);
 
     let currentMessage = assistantMessage;
     let iterationCount = 0;
     const maxIterations = 10; // Prevent infinite loops
 
-    while (currentMessage.tool_calls && currentMessage.tool_calls.length > 0 && iterationCount < maxIterations) {
+    while (normalizedToolCalls.length > 0 && iterationCount < maxIterations) {
       iterationCount++;
 
-      // Execute each tool call in the current message
-      for (const toolCall of currentMessage.tool_calls) {
+      // Execute each tool call in the normalized tool calls
+      for (const toolCall of normalizedToolCalls) {
         try {
           const args = JSON.parse(toolCall.function.arguments);
           const toolResult = await this.tools.executeTool(toolCall.function.name, args);
@@ -446,7 +503,15 @@ export class ChatService {
 
         // If this response has tool calls, add it to the conversation and continue the loop
         if (currentMessage.tool_calls && currentMessage.tool_calls.length > 0) {
-          toolMessages.push(currentMessage);
+          // Update normalized tool calls for next iteration
+          normalizedToolCalls = this.normalizeToolCalls(currentMessage.tool_calls);
+          
+          // Create normalized message for toolMessages
+          const normalizedCurrentMessage: OllamaChatMessage = {
+            ...currentMessage,
+            tool_calls: normalizedToolCalls
+          };
+          toolMessages.push(normalizedCurrentMessage);
           
           // Add intermediate tool call message to results
           const intermediateChatMessage: ChatMessage = {
@@ -454,13 +519,16 @@ export class ChatService {
             role: 'assistant',
             content: currentMessage.content || 'Executing additional tools...',
             timestamp: Date.now(),
-            toolCalls: currentMessage.tool_calls,
+            toolCalls: normalizedToolCalls, // Use normalized tool calls
             reasoning: currentMessage.reasoning,
             model: this.ollama.getCurrentModel()
           };
           
           this.messages.push(intermediateChatMessage);
           results.push(intermediateChatMessage);
+        } else {
+          // No more tool calls, exit the loop
+          normalizedToolCalls = [];
         }
 
       } catch (error) {
@@ -584,5 +652,34 @@ export class ChatService {
 
   updateConfiguration(): void {
     this.ollama.updateConfiguration();
+  }
+
+  /**
+   * Normalize and validate tool calls - remove incomplete tool calls and ensure required fields
+   */
+  private normalizeToolCalls(toolCalls: any[]): ToolCall[] {
+    if (!toolCalls || !Array.isArray(toolCalls)) {
+      return [];
+    }
+    
+    return toolCalls.filter(tc => {
+      // Filter out incomplete tool calls
+      const isComplete = tc.id && tc.type && tc.function && tc.function.name && tc.function.arguments;
+      if (!isComplete) {
+        console.warn('Filtering out incomplete tool call:', tc);
+        return false;
+      }
+      return true;
+    }).map(tc => {
+      // Ensure proper ToolCall structure, removing any extra fields like index
+      return {
+        id: tc.id,
+        type: tc.type,
+        function: {
+          name: tc.function.name,
+          arguments: tc.function.arguments
+        }
+      } as ToolCall;
+    });
   }
 }

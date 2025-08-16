@@ -27,6 +27,18 @@ export interface ToolCall {
     name: string;
     arguments: string;
   };
+  index?: number; // Optional index for streaming support
+}
+
+// Extended tool call for streaming with partial data
+export interface StreamToolCall {
+  index?: number;
+  id?: string;
+  type?: 'function';
+  function?: {
+    name?: string;
+    arguments?: string;
+  };
 }
 
 export interface ToolDefinition {
@@ -78,7 +90,7 @@ export interface OllamaStreamChunk {
     delta: {
       role?: string;
       content?: string;
-      tool_calls?: ToolCall[];
+      tool_calls?: StreamToolCall[];
       reasoning?: string;
     };
     finish_reason?: string;
