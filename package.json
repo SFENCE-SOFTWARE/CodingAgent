@@ -152,7 +152,7 @@
           "default": {
             "Coder": {
               "systemMessage": "You are an expert programming assistant. You can read, write, and execute code. Use the available tools to help with coding tasks.",
-              "allowedTools": ["read_file", "write_file", "list_files", "get_file_size", "execute_terminal", "create_folder", "patch_file", "rename_file", "search_pattern", "search_in_path"],
+              "allowedTools": ["read_file", "write_file", "list_files", "get_file_size", "execute_terminal", "create_folder", "patch_file", "insert_lines", "rename_file", "search_pattern", "search_in_path"],
               "fallbackMessage": "I'm ready to help with your coding tasks. What would you like me to do?",
               "temperature": 0.1,
               "topP": 0.9,

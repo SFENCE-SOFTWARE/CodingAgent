@@ -9,7 +9,7 @@ export class PatchFileTool implements BaseTool {
     return {
       name: 'patch_file',
       displayName: 'Patch File',
-      description: 'Apply a diff patch to a file without fully rewriting it',
+      description: 'Replace existing text in a file - finds and replaces specific text content',
       category: 'file'
     };
   }
@@ -19,7 +19,7 @@ export class PatchFileTool implements BaseTool {
       type: 'function',
       function: {
         name: 'patch_file',
-        description: 'Apply a diff patch to a file without fully rewriting it',
+        description: 'Replace existing text in a file by finding and replacing specific content. Use this to modify existing code/text, not to add new lines.',
         parameters: {
           type: 'object',
           properties: {

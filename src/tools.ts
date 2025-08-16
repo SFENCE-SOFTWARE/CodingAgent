@@ -11,6 +11,7 @@ import { GetFileSizeTool } from './tools/getFileSize';
 import { ExecuteTerminalTool } from './tools/executeTerminal';
 import { CreateFolderTool } from './tools/createFolder';
 import { PatchFileTool } from './tools/patchFile';
+import { InsertLinesTool } from './tools/insertLines';
 import { RenameFileTool } from './tools/renameFile';
 import { SearchPatternTool } from './tools/searchPattern';
 import { SearchInPathTool } from './tools/searchInPath';
@@ -36,6 +37,7 @@ export class ToolsService {
       new ExecuteTerminalTool(),
       new CreateFolderTool(),
       new PatchFileTool(),
+      new InsertLinesTool(),
       new RenameFileTool(),
       new SearchPatternTool(),
       new SearchInPathTool(),

@@ -11,6 +11,7 @@ import { ListFilesTool } from '../tools/listFiles';
 import { CreateFolderTool } from '../tools/createFolder';
 import { RenameFileTool } from '../tools/renameFile';
 import { PatchFileTool } from '../tools/patchFile';
+import { InsertLinesTool } from '../tools/insertLines';
 import { SearchPatternTool } from '../tools/searchPattern';
 import { GetFileSizeTool } from '../tools/getFileSize';
 import { ExecuteTerminalTool } from '../tools/executeTerminal';
@@ -184,6 +185,38 @@ suite('Tools Test Suite', () => {
                 path: 'nonexistent.txt',
                 old_text: 'old',
                 new_text: 'new'
+            }, '/tmp');
+            assert.strictEqual(result.success, false);
+            assert.strictEqual(typeof result.error, 'string');
+        });
+    });
+
+    suite('InsertLinesTool', () => {
+        let tool: InsertLinesTool;
+
+        setup(() => {
+            tool = new InsertLinesTool();
+        });
+
+        test('should provide correct tool info', () => {
+            const info = tool.getToolInfo();
+            assert.strictEqual(info.name, 'insert_lines');
+            assert.strictEqual(info.displayName, 'Insert Lines');
+            assert.strictEqual(info.category, 'file');
+        });
+
+        test('should provide correct tool definition', () => {
+            const definition = tool.getToolDefinition();
+            assert.strictEqual(definition.type, 'function');
+            assert.strictEqual(definition.function.name, 'insert_lines');
+            assert.ok(definition.function.parameters.required.includes('path'));
+            assert.ok(definition.function.parameters.required.includes('content'));
+        });
+
+        test('should handle non-existent file gracefully', async () => {
+            const result = await tool.execute({ 
+                path: 'nonexistent.txt',
+                content: 'new content'
             }, '/tmp');
             assert.strictEqual(result.success, false);
             assert.strictEqual(typeof result.error, 'string');

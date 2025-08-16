@@ -9,6 +9,7 @@ import { WriteFileTool } from '../tools/writeFile';
 import { ListFilesTool } from '../tools/listFiles';
 import { CreateFolderTool } from '../tools/createFolder';
 import { RenameFileTool } from '../tools/renameFile';
+import { InsertLinesTool } from '../tools/insertLines';
 import { PatchFileTool } from '../tools/patchFile';
 import { GetFileSizeTool } from '../tools/getFileSize';
 
