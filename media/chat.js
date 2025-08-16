@@ -516,6 +516,17 @@
       console.log(`[CodingAgent Frontend] Thinking section shown`);
     }
     
+    // Auto-scroll thinking content to the bottom during streaming
+    if (streamingData.thinkingContent && streamingData.thinkingContent.scrollHeight > streamingData.thinkingContent.clientHeight) {
+      streamingData.thinkingContent.scrollTop = streamingData.thinkingContent.scrollHeight;
+      
+      // Alternative smooth scrolling (optional, might be too slow for fast streaming)
+      // streamingData.thinkingContent.scrollTo({
+      //   top: streamingData.thinkingContent.scrollHeight,
+      //   behavior: 'smooth'
+      // });
+    }
+    
     scrollToBottom();
   }
 
