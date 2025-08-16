@@ -148,3 +148,10 @@ export interface StreamingUpdate {
   error?: string;
   isComplete?: boolean;
 }
+
+export interface MessageUpdate {
+  type: 'message_ready';
+  message: ChatMessage;
+}
+
+export type ChatUpdate = StreamingUpdate | MessageUpdate;

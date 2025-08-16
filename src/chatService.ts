@@ -9,6 +9,8 @@ import {
   OllamaChatMessage, 
   OllamaStreamChunk,
   StreamingUpdate,
+  MessageUpdate,
+  ChatUpdate,
   ToolCall, 
   ToolDefinition,
   OllamaChatRequest 
@@ -31,7 +33,7 @@ export class ChatService {
     this.streamingCallback = callback;
   }
 
-  async processMessage(content: string): Promise<ChatMessage[]> {
+  async processMessage(content: string, callback?: (update: ChatUpdate) => void): Promise<ChatMessage[]> {
     // This assumes user message is already added via addUserMessage
     const currentMode = this.openai.getCurrentMode();
     const currentModel = this.openai.getCurrentModel();
@@ -86,9 +88,9 @@ export class ChatService {
       const startTime = Date.now();
 
       if (enableStreaming) {
-        return await this.processStreamingMessage(request, currentModel, currentMode, startTime);
+        return await this.processStreamingMessage(request, currentModel, currentMode, startTime, callback);
       } else {
-        return await this.processNonStreamingMessage(request, currentModel, currentMode, startTime);
+        return await this.processNonStreamingMessage(request, currentModel, currentMode, startTime, callback);
       }
 
     } catch (error) {
@@ -126,27 +128,44 @@ export class ChatService {
     request: OllamaChatRequest,
     currentModel: string,
     currentMode: string,
-    startTime: number
+    startTime: number,
+    callback?: (update: ChatUpdate) => void
   ): Promise<ChatMessage[]> {
+    // Log the outgoing request immediately
+    this.logging.logAiCommunication(request, null, {
+      model: currentModel,
+      mode: currentMode,
+      timestamp: startTime,
+      context: 'request-sent'
+    });
+
+    // Log raw JSON request if log mode is enabled
+    this.logging.logRawJsonCommunication(request, null, {
+      model: currentModel,
+      mode: currentMode,
+      timestamp: startTime,
+      context: 'request-sent'
+    });
+
     const response = await this.openai.sendChat(request);
     const endTime = Date.now();
     
-    // Log the communication (standard logging)
+    // Log the response immediately when received
     this.logging.logAiCommunication(request, response, {
       model: currentModel,
       mode: currentMode,
-      timestamp: startTime,
+      timestamp: endTime,
       duration: endTime - startTime,
-      context: 'initial'
+      context: 'response-received'
     });
 
-    // Log raw JSON if log mode is enabled
+    // Log raw JSON response if log mode is enabled
     this.logging.logRawJsonCommunication(request, response, {
       model: currentModel,
       mode: currentMode,
-      timestamp: startTime,
+      timestamp: endTime,
       duration: endTime - startTime,
-      context: 'initial'
+      context: 'response-received'
     });
 
     const assistantMessage = response.choices[0]?.message;
@@ -157,7 +176,7 @@ export class ChatService {
 
     // Handle tool calls if present
     if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
-      const toolResults = await this.handleToolCalls(assistantMessage, request);
+      const toolResults = await this.handleToolCalls(assistantMessage, request, undefined, callback);
       return toolResults;
     }
 
@@ -172,6 +191,15 @@ export class ChatService {
     };
 
     this.messages.push(chatMessage);
+    
+    // Send message immediately to UI via callback
+    if (callback) {
+      callback({
+        type: 'message_ready',
+        message: chatMessage
+      });
+    }
+    
     return [chatMessage];
   }
 
@@ -179,7 +207,8 @@ export class ChatService {
     request: OllamaChatRequest,
     currentModel: string,
     currentMode: string,
-    startTime: number
+    startTime: number,
+    callback?: (update: ChatUpdate) => void
   ): Promise<ChatMessage[]> {
     const messageId = this.generateId();
     let accumulatedContent = '';
@@ -371,7 +400,7 @@ export class ChatService {
           tool_calls: toolCalls
         };
         
-        const toolResults = await this.handleToolCalls(assistantMessage, request, messageId);
+        const toolResults = await this.handleToolCalls(assistantMessage, request, messageId, callback);
         return toolResults;
       }
 
@@ -399,7 +428,8 @@ export class ChatService {
   private async handleToolCalls(
     assistantMessage: OllamaChatMessage, 
     originalRequest: OllamaChatRequest,
-    existingMessageId?: string
+    existingMessageId?: string,
+    callback?: (update: ChatUpdate) => void
   ): Promise<ChatMessage[]> {
     const results: ChatMessage[] = [];
 
@@ -420,6 +450,14 @@ export class ChatService {
       
       this.messages.push(assistantChatMessage);
       results.push(assistantChatMessage);
+      
+      // Send assistant message immediately to UI via callback
+      if (callback) {
+        callback({
+          type: 'message_ready',
+          message: assistantChatMessage
+        });
+      }
     }
 
     // Execute tools in a loop until we get a final response
@@ -526,6 +564,14 @@ export class ChatService {
           
           this.messages.push(intermediateChatMessage);
           results.push(intermediateChatMessage);
+          
+          // Send intermediate message immediately to UI via callback
+          if (callback) {
+            callback({
+              type: 'message_ready',
+              message: intermediateChatMessage
+            });
+          }
         } else {
           // No more tool calls, exit the loop
           normalizedToolCalls = [];
@@ -559,6 +605,15 @@ export class ChatService {
 
         this.messages.push(errorMessage);
         results.push(errorMessage);
+        
+        // Send error message immediately to UI via callback
+        if (callback) {
+          callback({
+            type: 'message_ready',
+            message: errorMessage
+          });
+        }
+        
         break; // Exit the loop on error
       }
     }
@@ -576,6 +631,14 @@ export class ChatService {
 
       this.messages.push(finalChatMessage);
       results.push(finalChatMessage);
+      
+      // Send final message immediately to UI via callback
+      if (callback) {
+        callback({
+          type: 'message_ready',
+          message: finalChatMessage
+        });
+      }
     } else if (iterationCount >= maxIterations) {
       // Handle case where we hit the iteration limit
       const timeoutMessage: ChatMessage = {
@@ -587,6 +650,14 @@ export class ChatService {
 
       this.messages.push(timeoutMessage);
       results.push(timeoutMessage);
+      
+      // Send timeout message immediately to UI via callback
+      if (callback) {
+        callback({
+          type: 'message_ready',
+          message: timeoutMessage
+        });
+      }
     }
 
     return results;

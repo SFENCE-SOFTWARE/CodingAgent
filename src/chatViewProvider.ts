@@ -3,7 +3,7 @@
 import * as vscode from 'vscode';
 import { ChatService } from './chatService';
 import { getWebviewContent } from './webview';
-import { ChatMessage, StreamingUpdate } from './types';
+import { ChatMessage, StreamingUpdate, ChatUpdate } from './types';
 
 export class ChatViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'codingagent-chat-view';
@@ -183,7 +183,16 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       }
 
       // Send message to chat service (user message already added above)
-      const newMessages = await this.chatService.processMessage(content);
+      const newMessages = await this.chatService.processMessage(content, (update) => {
+        // Handle immediate message updates via callback
+        if (update.type === 'message_ready') {
+          this.sendMessage({
+            type: 'addMessage',
+            message: update.message
+          });
+        }
+        // For streaming updates, they will be handled by existing streaming callback
+      });
 
       // Update thinking with final response or hide it
       if (showThinking) {
