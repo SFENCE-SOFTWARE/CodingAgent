@@ -22,6 +22,7 @@
     logMode: document.getElementById('logMode'),
     logModeFilePath: document.getElementById('logModeFilePath'),
     readFileMaxLines: document.getElementById('readFileMaxLines'),
+    toolsGrid: document.getElementById('tools-grid'),
     modesList: document.getElementById('modesList'),
     resetBtn: document.getElementById('resetBtn'),
     saveBtn: document.getElementById('saveBtn'),
@@ -125,6 +126,55 @@
       div.appendChild(label);
       div.appendChild(categoryBadge);
       elements.modeToolsContainer.appendChild(div);
+    });
+  }
+
+  function setupToolsGrid() {
+    console.log('Setting up tools grid. Available tools:', availableTools);
+    
+    if (!elements.toolsGrid) {
+      console.warn('Tools grid element not found');
+      return;
+    }
+    
+    elements.toolsGrid.innerHTML = '';
+    
+    if (availableTools.length === 0) {
+      console.warn('No available tools found');
+      elements.toolsGrid.innerHTML = '<p style="color: #888; text-align: center;">No tools available</p>';
+      return;
+    }
+    
+    // Category display mapping
+    const categoryMapping = {
+      'file': 'File Operations',
+      'search': 'Search',
+      'system': 'System',
+      'web': 'Web'
+    };
+    
+    // Create tool cards dynamically
+    availableTools.forEach(toolInfo => {
+      console.log('Creating card for tool:', toolInfo.name);
+      
+      const toolCard = document.createElement('div');
+      toolCard.className = 'tool-card';
+      
+      const toolTitle = document.createElement('h4');
+      toolTitle.textContent = toolInfo.displayName || toolInfo.name;
+      
+      const toolDescription = document.createElement('p');
+      toolDescription.textContent = toolInfo.description;
+      
+      const toolCategory = document.createElement('span');
+      toolCategory.className = 'tool-category';
+      toolCategory.textContent = categoryMapping[toolInfo.category] || toolInfo.category;
+      
+      toolCard.appendChild(toolTitle);
+      toolCard.appendChild(toolDescription);
+      toolCard.appendChild(toolCategory);
+      
+      elements.toolsGrid.appendChild(toolCard);
     });
   }
 
@@ -401,6 +451,7 @@
         availableTools = message.availableTools || [];
         updateUI(message.config);
         setupToolsCheckboxes(); // Setup tools after loading available tools
+        setupToolsGrid(); // Setup tools grid after loading available tools
         break;
         
       case 'configurationUpdated':

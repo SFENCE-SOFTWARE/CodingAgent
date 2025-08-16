@@ -148,6 +148,9 @@ export class SettingsPanel {
         showThinking: config.get('showThinking'),
         enableStreaming: config.get('enableStreaming'),
         modes: config.get('modes'),
+        tools: {
+          readFileMaxLines: config.get('tools.readFileMaxLines')
+        },
         logging: {
           enabled: config.get('logging.enabled'),
           filePath: config.get('logging.filePath'),
@@ -525,37 +528,8 @@ export class SettingsPanel {
               
               <div class="tool-info">
                 <h3>Available Tools</h3>
-                <div class="tools-grid">
-                  <div class="tool-card">
-                    <h4>read_file</h4>
-                    <p>Read file content with line limits. Helps with large files and limited context.</p>
-                    <span class="tool-category">File Operations</span>
-                  </div>
-                  <div class="tool-card">
-                    <h4>search_pattern</h4>
-                    <p>Search for patterns across entire workspace.</p>
-                    <span class="tool-category">Search</span>
-                  </div>
-                  <div class="tool-card">
-                    <h4>search_in_path</h4>
-                    <p>Search for patterns in specific files or directories.</p>
-                    <span class="tool-category">Search</span>
-                  </div>
-                  <div class="tool-card">
-                    <h4>write_file</h4>
-                    <p>Create and modify files.</p>
-                    <span class="tool-category">File Operations</span>
-                  </div>
-                  <div class="tool-card">
-                    <h4>execute_terminal</h4>
-                    <p>Run terminal commands and scripts.</p>
-                    <span class="tool-category">System</span>
-                  </div>
-                  <div class="tool-card">
-                    <h4>create_folder</h4>
-                    <p>Create directories and folder structures.</p>
-                    <span class="tool-category">File Operations</span>
-                  </div>
+                <div class="tools-grid" id="tools-grid">
+                  <!-- Tools will be populated dynamically -->
                 </div>
               </div>
             </section>
