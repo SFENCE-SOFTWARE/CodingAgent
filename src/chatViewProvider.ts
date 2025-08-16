@@ -199,8 +199,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         this.sendMessage({ type: 'hideThinking' });
       }
 
-      // Add only the assistant/error messages to webview (user message already added by UI)
+      // Add only the assistant/error messages to webview that haven't been displayed yet
       newMessages.forEach(message => {
+        // Skip messages that were already displayed via streaming callbacks
+        if (message.isAlreadyDisplayed) {
+          return;
+        }
+        
         this.sendMessage({
           type: 'addMessage',
           message: message

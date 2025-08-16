@@ -117,6 +117,7 @@ export interface ChatMessage {
   raw?: any;
   model?: string;
   isStreaming?: boolean;
+  isAlreadyDisplayed?: boolean; // Flag to prevent duplicate display in UI
 }
 
 export interface ToolResult {

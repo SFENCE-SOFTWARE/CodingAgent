@@ -176,7 +176,7 @@ export class ChatService {
 
     // Handle tool calls if present
     if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
-      const toolResults = await this.handleToolCalls(assistantMessage, request, undefined, callback);
+      const toolResults = await this.handleToolCalls(assistantMessage, request, undefined, callback, false);
       return toolResults;
     }
 
@@ -198,6 +198,8 @@ export class ChatService {
         type: 'message_ready',
         message: chatMessage
       });
+      // Mark as displayed to prevent duplication in final message loop
+      chatMessage.isAlreadyDisplayed = true;
     }
     
     return [chatMessage];
@@ -397,6 +399,7 @@ export class ChatService {
 
       // Update final message state
       chatMessage.isStreaming = false;
+      chatMessage.isAlreadyDisplayed = true; // Mark as already displayed via streaming
 
       // Send end event
       if (this.streamingCallback) {
@@ -416,7 +419,7 @@ export class ChatService {
           tool_calls: toolCalls
         };
         
-        const toolResults = await this.handleToolCalls(assistantMessage, request, messageId, callback);
+        const toolResults = await this.handleToolCalls(assistantMessage, request, messageId, callback, true);
         return toolResults;
       }
 
@@ -445,7 +448,8 @@ export class ChatService {
     assistantMessage: OllamaChatMessage, 
     originalRequest: OllamaChatRequest,
     existingMessageId?: string,
-    callback?: (update: ChatUpdate) => void
+    callback?: (update: ChatUpdate) => void,
+    isStreamingMode?: boolean
   ): Promise<ChatMessage[]> {
     const results: ChatMessage[] = [];
 
@@ -467,12 +471,14 @@ export class ChatService {
       this.messages.push(assistantChatMessage);
       results.push(assistantChatMessage);
       
-      // Send assistant message immediately to UI via callback
+      // Send assistant message immediately to UI via callback (only if not already displayed via streaming)
       if (callback) {
         callback({
           type: 'message_ready',
           message: assistantChatMessage
         });
+        // Mark as displayed to prevent duplication in final message loop
+        assistantChatMessage.isAlreadyDisplayed = true;
       }
     }
 
@@ -587,6 +593,13 @@ export class ChatService {
               type: 'message_ready',
               message: intermediateChatMessage
             });
+            // Mark as displayed to prevent duplication in final message loop
+            intermediateChatMessage.isAlreadyDisplayed = true;
+          }
+          
+          // Mark as displayed if this is streaming mode to prevent duplication
+          if (isStreamingMode) {
+            intermediateChatMessage.isAlreadyDisplayed = true;
           }
         } else {
           // No more tool calls, exit the loop
@@ -628,6 +641,13 @@ export class ChatService {
             type: 'message_ready',
             message: errorMessage
           });
+          // Mark as displayed to prevent duplication in final message loop
+          errorMessage.isAlreadyDisplayed = true;
+        }
+        
+        // Mark as displayed if this is streaming mode to prevent duplication
+        if (isStreamingMode) {
+          errorMessage.isAlreadyDisplayed = true;
         }
         
         break; // Exit the loop on error
@@ -654,6 +674,13 @@ export class ChatService {
           type: 'message_ready',
           message: finalChatMessage
         });
+        // Mark as displayed to prevent duplication in final message loop
+        finalChatMessage.isAlreadyDisplayed = true;
+      }
+      
+      // Mark as displayed if this is streaming mode to prevent duplication
+      if (isStreamingMode) {
+        finalChatMessage.isAlreadyDisplayed = true;
       }
     } else if (iterationCount >= maxIterations) {
       // Handle case where we hit the iteration limit
@@ -673,6 +700,13 @@ export class ChatService {
           type: 'message_ready',
           message: timeoutMessage
         });
+        // Mark as displayed to prevent duplication in final message loop
+        timeoutMessage.isAlreadyDisplayed = true;
+      }
+      
+      // Mark as displayed if this is streaming mode to prevent duplication
+      if (isStreamingMode) {
+        timeoutMessage.isAlreadyDisplayed = true;
       }
     }
 
