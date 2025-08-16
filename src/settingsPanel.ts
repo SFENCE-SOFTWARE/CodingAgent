@@ -430,106 +430,205 @@ export class SettingsPanel {
           <button id="resetBtn" class="reset-button">Reset to Defaults</button>
         </header>
 
+        <!-- Tab Navigation -->
+        <nav class="settings-tabs">
+          <button class="tab-button active" data-tab="connection">🔗 Connection</button>
+          <button class="tab-button" data-tab="behavior">⚡ Behavior</button>
+          <button class="tab-button" data-tab="modes">🎯 Modes</button>
+          <button class="tab-button" data-tab="logging">📝 Logging</button>
+          <button class="tab-button" data-tab="advanced">⚙️ Advanced</button>
+        </nav>
+
         <div class="settings-content">
-          <!-- Connection Settings -->
-          <section class="settings-section">
-            <h2>Connection</h2>
-            <div class="form-group">
-              <label for="host">OpenAI API Host:</label>
-              <input type="text" id="host" placeholder="localhost" />
-            </div>
-            <div class="form-group">
-              <label for="port">OpenAI API Port:</label>
-              <input type="number" id="port" placeholder="11434" />
-            </div>
-          </section>
-
-          <!-- Default Settings -->
-          <section class="settings-section">
-            <h2>Defaults</h2>
-            <div class="form-group">
-              <label for="currentMode">Default Mode:</label>
-              <select id="currentMode">
-                <option value="Coder">Coder</option>
-                <option value="Ask">Ask</option>
-                <option value="Architect">Architect</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="currentModel">Default Model:</label>
-              <input type="text" id="currentModel" placeholder="llama3:8b" />
-            </div>
-            <div class="form-group">
-              <label>
-                <input type="checkbox" id="showThinking" />
-                Show model thinking process
-              </label>
-            </div>
-            <div class="form-group">
-              <label>
-                <input type="checkbox" id="enableStreaming" />
-                Enable streaming responses
-              </label>
-            </div>
-          </section>
-
-          <!-- Modes Management -->
-          <section class="settings-section">
-            <h2>Modes Management</h2>
-            <div class="modes-header">
-              <button id="newModeBtn" class="primary-button">+ New Mode</button>
-            </div>
-            <div id="modesList" class="modes-list">
-              <!-- Modes will be populated here -->
-            </div>
-          </section>
-
-          <!-- Logging Settings -->
-          <section class="settings-section">
-            <h2>Logging</h2>
-            <div class="logging-notice">
-              <p><strong>Privacy Notice:</strong> Logs may include prompts and responses. You can disable logging at any time.</p>
-            </div>
-            <div class="form-group">
-              <label>
-                <input type="checkbox" id="loggingEnabled" />
-                Enable AI communication logging
-              </label>
-            </div>
-            <div class="form-group">
-              <label for="logFilePath">Log File Path:</label>
-              <div class="file-input-group">
-                <input type="text" id="logFilePath" placeholder="Leave empty for default location" readonly />
-                <button id="selectLogFileBtn" class="secondary-button">Browse</button>
+          <!-- Connection Tab -->
+          <div id="connection-tab" class="tab-content active">
+            <section class="settings-section">
+              <h2>🔗 OpenAI API Connection</h2>
+              <p class="section-description">Configure connection to your OpenAI-compatible API server</p>
+              
+              <div class="form-group">
+                <label for="host">Host Address:</label>
+                <input type="text" id="host" placeholder="localhost" />
+                <small class="form-hint">IP address or hostname of your API server</small>
               </div>
-            </div>
-            <div class="form-group">
-              <label for="logVerbosity">Verbosity Level:</label>
-              <select id="logVerbosity">
-                <option value="Minimal">Minimal</option>
-                <option value="Standard">Standard</option>
-                <option value="Verbose">Verbose</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>
-                <input type="checkbox" id="logMode" />
-                Enable raw JSON logging mode
-              </label>
-              <small class="form-hint">Logs raw JSON objects sent and received from OpenAI API</small>
-            </div>
-            <div class="form-group">
-              <label for="logModeFilePath">Raw JSON Log File Path:</label>
-              <div class="file-input-group">
-                <input type="text" id="logModeFilePath" placeholder="Leave empty for default location" readonly />
-                <button id="selectLogModeFileBtn" class="secondary-button">Browse</button>
+              
+              <div class="form-group">
+                <label for="port">Port:</label>
+                <input type="number" id="port" placeholder="11434" min="1" max="65535" />
+                <small class="form-hint">Port number for API connection</small>
               </div>
-            </div>
-          </section>
+              
+              <div class="connection-status">
+                <button id="testConnectionBtn" class="secondary-button">Test Connection</button>
+                <span id="connectionStatus" class="status-indicator"></span>
+              </div>
+            </section>
+          </div>
+
+          <!-- Behavior Tab -->
+          <div id="behavior-tab" class="tab-content">
+            <section class="settings-section">
+              <h2>⚡ Response Behavior</h2>
+              <p class="section-description">Control how the AI responds and displays information</p>
+              
+              <div class="form-group">
+                <label>
+                  <input type="checkbox" id="enableStreaming" />
+                  <span class="checkbox-label">Enable Streaming Responses</span>
+                </label>
+                <small class="form-hint">Show text as it's being generated (recommended for better UX)</small>
+              </div>
+              
+              <div class="form-group">
+                <label>
+                  <input type="checkbox" id="showThinking" />
+                  <span class="checkbox-label">Show Model Thinking Process</span>
+                </label>
+                <small class="form-hint">Display the model's reasoning before the final answer</small>
+              </div>
+            </section>
+
+            <section class="settings-section">
+              <h2>🎯 Default Settings</h2>
+              <p class="section-description">Set default mode and model for new conversations</p>
+              
+              <div class="form-group">
+                <label for="currentMode">Default Mode:</label>
+                <select id="currentMode">
+                  <option value="Coder">Coder - Programming assistant</option>
+                  <option value="Ask">Ask - General Q&A</option>
+                  <option value="Architect">Architect - System design</option>
+                </select>
+                <small class="form-hint">The AI mode to use when starting new conversations</small>
+              </div>
+              
+              <div class="form-group">
+                <label for="currentModel">Default Model:</label>
+                <input type="text" id="currentModel" placeholder="llama3:8b" />
+                <small class="form-hint">Model name from your OpenAI-compatible server</small>
+              </div>
+            </section>
+          </div>
+
+          <!-- Modes Tab -->
+          <div id="modes-tab" class="tab-content">
+            <section class="settings-section">
+              <h2>🎯 AI Modes Management</h2>
+              <p class="section-description">Create and configure different AI personalities and capabilities</p>
+              
+              <div class="modes-header">
+                <button id="newModeBtn" class="primary-button">+ Create New Mode</button>
+              </div>
+              
+              <div id="modesList" class="modes-list">
+                <!-- Modes will be populated here -->
+              </div>
+            </section>
+          </div>
+
+          <!-- Logging Tab -->
+          <div id="logging-tab" class="tab-content">
+            <section class="settings-section">
+              <h2>📝 Communication Logging</h2>
+              <p class="section-description">Control how conversations are logged for debugging and analysis</p>
+              
+              <div class="privacy-notice">
+                <div class="notice-icon">⚠️</div>
+                <div class="notice-content">
+                  <strong>Privacy Notice:</strong> Logs contain all prompts and responses. 
+                  Disable logging if handling sensitive information.
+                </div>
+              </div>
+              
+              <div class="form-group">
+                <label>
+                  <input type="checkbox" id="loggingEnabled" />
+                  <span class="checkbox-label">Enable Communication Logging</span>
+                </label>
+                <small class="form-hint">Log AI conversations for debugging and analysis</small>
+              </div>
+              
+              <div class="form-group">
+                <label for="logVerbosity">Logging Detail Level:</label>
+                <select id="logVerbosity">
+                  <option value="Minimal">Minimal - Essential info only</option>
+                  <option value="Standard">Standard - Balanced detail</option>
+                  <option value="Verbose">Verbose - Complete details</option>
+                </select>
+                <small class="form-hint">How much detail to include in logs</small>
+              </div>
+              
+              <div class="form-group">
+                <label for="logFilePath">Standard Log File:</label>
+                <div class="file-input-group">
+                  <input type="text" id="logFilePath" placeholder="Default: .codingagent/logs/ai-communication.log" readonly />
+                  <button id="selectLogFileBtn" class="secondary-button">Browse</button>
+                </div>
+                <small class="form-hint">Location for formatted conversation logs</small>
+              </div>
+            </section>
+
+            <section class="settings-section">
+              <h2>🔧 Developer Logging</h2>
+              <p class="section-description">Raw API communication logs for development and debugging</p>
+              
+              <div class="form-group">
+                <label>
+                  <input type="checkbox" id="logMode" />
+                  <span class="checkbox-label">Enable Raw JSON Logging</span>
+                </label>
+                <small class="form-hint">Log raw API requests and responses in JSON format</small>
+              </div>
+              
+              <div class="form-group">
+                <label for="logModeFilePath">Raw JSON Log File:</label>
+                <div class="file-input-group">
+                  <input type="text" id="logModeFilePath" placeholder="Default: .codingagent/logs/openai-raw-json.log" readonly />
+                  <button id="selectLogModeFileBtn" class="secondary-button">Browse</button>
+                </div>
+                <small class="form-hint">Location for raw API communication logs</small>
+              </div>
+            </section>
+          </div>
+
+          <!-- Advanced Tab -->
+          <div id="advanced-tab" class="tab-content">
+            <section class="settings-section">
+              <h2>⚙️ Advanced Configuration</h2>
+              <p class="section-description">Advanced settings for power users and developers</p>
+              
+              <div class="warning-notice">
+                <div class="notice-icon">⚠️</div>
+                <div class="notice-content">
+                  <strong>Warning:</strong> These settings can affect system performance and behavior. 
+                  Change only if you understand their impact.
+                </div>
+              </div>
+              
+              <div class="form-group">
+                <label for="maxTokens">Maximum Tokens:</label>
+                <input type="number" id="maxTokens" placeholder="4096" min="1" max="32768" />
+                <small class="form-hint">Maximum tokens in model responses (leave empty for model default)</small>
+              </div>
+              
+              <div class="form-group">
+                <label for="temperature">Temperature:</label>
+                <input type="number" id="temperature" placeholder="0.7" min="0" max="2" step="0.1" />
+                <small class="form-hint">Creativity level (0.0 = deterministic, 2.0 = very creative)</small>
+              </div>
+              
+              <div class="form-group">
+                <label for="requestTimeout">Request Timeout (ms):</label>
+                <input type="number" id="requestTimeout" placeholder="30000" min="1000" max="300000" />
+                <small class="form-hint">How long to wait for API responses before timing out</small>
+              </div>
+            </section>
+          </div>
         </div>
 
         <footer class="settings-footer">
-          <button id="saveBtn" class="primary-button">Save Settings</button>
+          <button id="saveBtn" class="primary-button">💾 Save All Settings</button>
+          <span id="saveStatus" class="save-status"></span>
         </footer>
       </div>
 

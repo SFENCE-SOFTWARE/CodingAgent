@@ -27,6 +27,13 @@
     newModeBtn: document.getElementById('newModeBtn'),
     selectLogFileBtn: document.getElementById('selectLogFileBtn'),
     selectLogModeFileBtn: document.getElementById('selectLogModeFileBtn'),
+    testConnectionBtn: document.getElementById('testConnectionBtn'),
+    connectionStatus: document.getElementById('connectionStatus'),
+    saveStatus: document.getElementById('saveStatus'),
+    
+    // Tab elements
+    tabButtons: document.querySelectorAll('.tab-button'),
+    tabContents: document.querySelectorAll('.tab-content'),
     
     // Modal elements
     modeEditorModal: document.getElementById('modeEditorModal'),
@@ -51,12 +58,21 @@
   }
 
   function setupEventListeners() {
+    // Tab switching
+    elements.tabButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        const tabName = button.dataset.tab;
+        switchTab(tabName);
+      });
+    });
+    
     // Main buttons
     elements.resetBtn.addEventListener('click', resetToDefaults);
     elements.saveBtn.addEventListener('click', saveConfiguration);
     elements.newModeBtn.addEventListener('click', () => openModeEditor());
     elements.selectLogFileBtn.addEventListener('click', selectLogFile);
     elements.selectLogModeFileBtn.addEventListener('click', selectLogModeFile);
+    elements.testConnectionBtn?.addEventListener('click', testConnection);
     
     // Modal controls
     elements.closeModeEditor.addEventListener('click', closeModeEditor);
@@ -339,6 +355,8 @@
       'logging.logModeFilePath': elements.logModeFilePath.value
     };
     
+    showSaveStatus('Saving...', 'pending');
+    
     vscode.postMessage({
       type: 'updateConfiguration',
       config: config
@@ -382,9 +400,9 @@
         
       case 'configurationUpdated':
         if (message.success) {
-          showMessage('Configuration updated successfully');
+          showSaveStatus('✅ Settings saved successfully!');
         } else {
-          showMessage(`Failed to update configuration: ${message.error}`, 'error');
+          showSaveStatus(`❌ Failed to save: ${message.error}`, 'error');
         }
         break;
         
@@ -444,6 +462,50 @@
         break;
     }
   });
+
+  // Tab Management
+  function switchTab(tabName) {
+    // Update tab buttons
+    elements.tabButtons.forEach(button => {
+      button.classList.toggle('active', button.dataset.tab === tabName);
+    });
+    
+    // Update tab content
+    elements.tabContents.forEach(content => {
+      content.classList.toggle('active', content.id === `${tabName}-tab`);
+    });
+  }
+
+  // Connection Testing
+  function testConnection() {
+    const status = elements.connectionStatus;
+    if (!status) return;
+    
+    status.textContent = 'Testing...';
+    status.className = 'status-indicator pending';
+    
+    // Send test request to backend
+    vscode.postMessage({
+      type: 'testConnection',
+      host: elements.host.value || 'localhost',
+      port: parseInt(elements.port.value) || 11434
+    });
+  }
+
+  // Save Status Display
+  function showSaveStatus(message, type = 'success') {
+    const status = elements.saveStatus;
+    if (!status) return;
+    
+    status.textContent = message;
+    status.className = `save-status ${type}`;
+    
+    // Clear after 3 seconds
+    setTimeout(() => {
+      status.textContent = '';
+      status.className = 'save-status';
+    }, 3000);
+  }
 
   // Initialize when DOM is ready
   if (document.readyState === 'loading') {
