@@ -5,8 +5,8 @@ This is a VS Code extension that provides GitHub Copilot Chat-like functionality
 
 **Core Services:**
 - `ChatService` - Main orchestrator for AI conversations and tool execution loops
-- `OllamaService` - HTTP client for Ollama API with streaming support
-- `ToolsService` - File system and terminal operations for AI agents
+- `OpenAIService` - HTTP client for Ollama API using OpenAI-compatible endpoints with streaming support
+- `ToolsService` - File system and terminal operations registry for AI agents
 - `ChatViewProvider` - WebView container following VS Code's patterns
 - `LoggingService` - Singleton with raw JSON communication logging
 
@@ -17,18 +17,25 @@ The extension uses a **mode-based architecture** where each mode has specific to
 ```typescript
 // Configuration in package.json defines agent capabilities
 "Coder": {
-  "allowedTools": ["read_file", "write_file", "list_files", "execute_terminal", 
+  "allowedTools": ["read_file", "write_file", "list_files", "get_file_size", "execute_terminal", 
                    "create_folder", "patch_file", "rename_file", "search_pattern"],
   "systemMessage": "You are an expert programming assistant...",
   "temperature": 0.1
 }
 ```
 
-**New Tools Available:**
+**Available Tools:**
+- `read_file` - Read file content with line range support
+- `write_file` - Write or append to files
+- `list_files` - Directory listing with recursive option  
+- `get_file_size` - Get file size in lines and bytes
+- `execute_terminal` - Run terminal commands with timeout
 - `search_pattern` - Search across workspace files (available in all modes)
 - `create_folder` - Create directories with recursive option (Coder mode)
 - `patch_file` - Apply text diffs without full file rewrites (Coder mode)  
 - `rename_file` - Rename/move files and folders (Coder mode)
+- `read_webpage` - Fetch and read webpage content (Ask/Architect modes)
+- `read_pdf` - Extract text from PDF files (Ask/Architect modes)
 
 ### Streaming Architecture
 **Critical:** The extension implements streaming responses with tool call interleaving:
@@ -41,14 +48,11 @@ The extension uses a **mode-based architecture** where each mode has specific to
 **Important:** Tool calls are handled recursively - AI can make multiple tool calls in sequence:
 ```typescript
 // In chatService.ts - this pattern is essential for multi-step operations
-do {
-  const response = await ollama.chat(request);
-  if (response.message.tool_calls) {
-    // Execute tools and continue conversation
-    toolResults = await executeTools(response.message.tool_calls);
-    // Add tool results to conversation and continue
-  }
-} while (hasToolCalls && !maxIterationsReached);
+while (normalizedToolCalls.length > 0 && iterationCount < maxIterations) {
+  // Execute tools and get results
+  const followUpResponse = await this.openai.sendChat(followUpRequest);
+  // Check if more tool calls are needed and continue loop
+}
 ```
 
 ## Development Workflows
@@ -69,7 +73,7 @@ npm run watch      # Watch mode for development (use task: "npm: 0")
 ```json
 "codingagent.logging.logMode": true
 ```
-Files written to `.codingagent/logs/ollama-raw-json.log` with full request/response cycles.
+Files written to `.codingagent/logs/openai-raw-json.log` with full request/response cycles.
 
 **WebView Communication:** Debug frontend-backend communication via:
 ```javascript
@@ -103,18 +107,23 @@ File operations are **workspace-relative** with safety checks:
 const fullPath = path.isAbsolute(filePath) ? filePath : path.join(this.workspaceRoot, filePath);
 ```
 
-**New Tool Capabilities:**
-- `search_pattern` - Regex/text search across all workspace files with file extension filtering
-- `patch_file` - Surgical file edits using old_text/new_text replacement (safer than full rewrites)
-- `create_folder` - Directory creation with recursive parent creation option
-- `rename_file` - File/folder renaming and moving operations
+### Tool Implementation Pattern
+All tools follow a consistent interface pattern from `BaseTool`:
+```typescript
+// Each tool in src/tools/ implements this pattern
+export class ReadFileTool implements BaseTool {
+  getToolInfo(): ToolInfo { /* metadata */ }
+  getToolDefinition(): ToolDefinition { /* OpenAI function schema */ }
+  async execute(args: any, workspaceRoot: string): Promise<ToolResult> { /* implementation */ }
+}
+```
 
 ## Extension-Specific Conventions
 
 ### Message Flow Architecture
 1. **Frontend** (`media/chat.js`) → `vscode.postMessage()`
 2. **ChatViewProvider** → message routing to `ChatService`
-3. **ChatService** → orchestrates Ollama + Tools
+3. **ChatService** → orchestrates OpenAI API + Tools
 4. **Streaming callbacks** → real-time UI updates
 5. **WebView** → DOM updates with message history
 
@@ -127,6 +136,7 @@ const fullPath = path.isAbsolute(filePath) ? filePath : path.join(this.workspace
 
 ### File Structure Logic
 - `src/` - TypeScript source following VS Code patterns
+- `src/tools/` - Individual tool implementations following BaseTool interface
 - `media/` - WebView assets (HTML/CSS/JS, not bundled)
 - `out/` - Compiled JavaScript (gitignored)
 - Configuration in `package.json` contributes section defines UI elements
