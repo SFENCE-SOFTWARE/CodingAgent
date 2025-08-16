@@ -238,6 +238,22 @@ export class ChatService {
       });
     }
 
+    // Log the outgoing request immediately (before streaming starts)
+    this.logging.logAiCommunication(request, null, {
+      model: currentModel,
+      mode: currentMode,
+      timestamp: startTime,
+      context: 'streaming-request-sent'
+    });
+
+    // Log raw JSON request if log mode is enabled
+    this.logging.logRawJsonCommunication(request, null, {
+      model: currentModel,
+      mode: currentMode,
+      timestamp: startTime,
+      context: 'streaming-request-sent'
+    });
+
     try {
       for await (const chunk of this.openai.sendChatStream(request)) {
         streamedChunks.push(chunk);
@@ -254,7 +270,7 @@ export class ChatService {
             this.streamingCallback({
               type: 'content',
               messageId,
-              content: accumulatedContent
+              content: delta.content // Send just the delta, not accumulated
             });
           }
         }
@@ -268,7 +284,7 @@ export class ChatService {
             this.streamingCallback({
               type: 'thinking',
               messageId,
-              thinking: accumulatedThinking
+              thinking: delta.reasoning // Send just the delta, not accumulated
             });
           }
         }
@@ -367,7 +383,7 @@ export class ChatService {
         mode: currentMode,
         timestamp: startTime,
         duration: endTime - startTime,
-        context: 'initial'
+        context: 'streaming-response-completed'
       });
 
       // Log raw JSON if log mode is enabled - log the complete response, not individual chunks
@@ -376,7 +392,7 @@ export class ChatService {
         mode: currentMode,
         timestamp: startTime,
         duration: endTime - startTime,
-        context: 'initial'
+        context: 'streaming-response-completed'
       });
 
       // Update final message state

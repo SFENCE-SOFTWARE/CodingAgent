@@ -489,24 +489,26 @@
     return messageDiv;
   }
 
-  function updateStreamingContent(messageId, content) {
+  function updateStreamingContent(messageId, deltaContent) {
     const streamingData = streamingMessages.get(messageId);
     if (!streamingData) return;
     
-    streamingData.accumulatedContent = content;
-    streamingData.contentDiv.innerHTML = formatMessageContent(content) + '<div class="streaming-cursor">▊</div>';
+    // Append delta to accumulated content
+    streamingData.accumulatedContent += deltaContent;
+    streamingData.contentDiv.innerHTML = formatMessageContent(streamingData.accumulatedContent) + '<div class="streaming-cursor">▊</div>';
     scrollToBottom();
   }
 
-  function updateStreamingThinking(messageId, thinking) {
+  function updateStreamingThinking(messageId, deltaThinking) {
     const streamingData = streamingMessages.get(messageId);
     if (!streamingData) return;
     
-    streamingData.accumulatedThinking = thinking;
-    streamingData.thinkingContent.textContent = thinking;
+    // Append delta to accumulated thinking
+    streamingData.accumulatedThinking += deltaThinking;
+    streamingData.thinkingContent.textContent = streamingData.accumulatedThinking;
     
     // Show thinking section if we have content
-    if (thinking && thinking.trim()) {
+    if (streamingData.accumulatedThinking && streamingData.accumulatedThinking.trim()) {
       streamingData.thinkingDiv.style.display = 'block';
     }
     
@@ -558,11 +560,18 @@
       
       const nameDiv = document.createElement('div');
       nameDiv.className = 'tool-call-name';
-      nameDiv.textContent = `🔧 ${toolCall.function.name}`;
+      nameDiv.textContent = `🔧 ${toolCall.function.name || 'Loading...'}`;
       
       const argsDiv = document.createElement('div');
       argsDiv.className = 'tool-call-args';
-      argsDiv.textContent = toolCall.function.arguments;
+      // Show loading indicator if we have name but incomplete arguments
+      if (toolCall.function.name && !toolCall.function.arguments) {
+        argsDiv.innerHTML = '<span style="opacity: 0.6;">Loading arguments...</span>';
+      } else if (toolCall.function.arguments) {
+        argsDiv.textContent = toolCall.function.arguments;
+      } else {
+        argsDiv.innerHTML = '<span style="opacity: 0.6;">...</span>';
+      }
       
       toolDiv.appendChild(nameDiv);
       toolDiv.appendChild(argsDiv);
