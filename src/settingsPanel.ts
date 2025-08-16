@@ -434,6 +434,7 @@ export class SettingsPanel {
         <nav class="settings-tabs">
           <button class="tab-button active" data-tab="connection">🔗 Connection</button>
           <button class="tab-button" data-tab="behavior">⚡ Behavior</button>
+          <button class="tab-button" data-tab="tools">🔧 Tools</button>
           <button class="tab-button" data-tab="modes">🎯 Modes</button>
           <button class="tab-button" data-tab="logging">📝 Logging</button>
           <button class="tab-button" data-tab="advanced">⚙️ Advanced</button>
@@ -506,6 +507,56 @@ export class SettingsPanel {
                 <label for="currentModel">Default Model:</label>
                 <input type="text" id="currentModel" placeholder="llama3:8b" />
                 <small class="form-hint">Model name from your OpenAI-compatible server</small>
+              </div>
+            </section>
+          </div>
+
+          <!-- Tools Tab -->
+          <div id="tools-tab" class="tab-content">
+            <section class="settings-section">
+              <h2>🔧 Tools Configuration</h2>
+              <p class="section-description">Configure behavior and limits for AI tools</p>
+              
+              <div class="form-group">
+                <label for="readFileMaxLines">Read File Max Lines:</label>
+                <input type="number" id="readFileMaxLines" min="10" max="10000" step="10" />
+                <small class="form-hint">Maximum number of lines read_file tool can read in one operation (10-10000)</small>
+              </div>
+              
+              <div class="tool-info">
+                <h3>Available Tools</h3>
+                <div class="tools-grid">
+                  <div class="tool-card">
+                    <h4>read_file</h4>
+                    <p>Read file content with line limits. Helps with large files and limited context.</p>
+                    <span class="tool-category">File Operations</span>
+                  </div>
+                  <div class="tool-card">
+                    <h4>search_pattern</h4>
+                    <p>Search for patterns across entire workspace.</p>
+                    <span class="tool-category">Search</span>
+                  </div>
+                  <div class="tool-card">
+                    <h4>search_in_path</h4>
+                    <p>Search for patterns in specific files or directories.</p>
+                    <span class="tool-category">Search</span>
+                  </div>
+                  <div class="tool-card">
+                    <h4>write_file</h4>
+                    <p>Create and modify files.</p>
+                    <span class="tool-category">File Operations</span>
+                  </div>
+                  <div class="tool-card">
+                    <h4>execute_terminal</h4>
+                    <p>Run terminal commands and scripts.</p>
+                    <span class="tool-category">System</span>
+                  </div>
+                  <div class="tool-card">
+                    <h4>create_folder</h4>
+                    <p>Create directories and folder structures.</p>
+                    <span class="tool-category">File Operations</span>
+                  </div>
+                </div>
               </div>
             </section>
           </div>

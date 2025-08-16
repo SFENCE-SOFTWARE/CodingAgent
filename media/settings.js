@@ -21,6 +21,7 @@
     logVerbosity: document.getElementById('logVerbosity'),
     logMode: document.getElementById('logMode'),
     logModeFilePath: document.getElementById('logModeFilePath'),
+    readFileMaxLines: document.getElementById('readFileMaxLines'),
     modesList: document.getElementById('modesList'),
     resetBtn: document.getElementById('resetBtn'),
     saveBtn: document.getElementById('saveBtn'),
@@ -148,6 +149,9 @@
     elements.logVerbosity.value = config.logging?.verbosity || 'Standard';
     elements.logMode.checked = config.logging?.logMode || false;
     elements.logModeFilePath.value = config.logging?.logModeFilePath || '';
+    
+    // Tools settings
+    elements.readFileMaxLines.value = config.tools?.readFileMaxLines || 1000;
     
     // Update modes dropdown
     updateModeDropdown(config.modes || {});
@@ -352,7 +356,8 @@
       'logging.filePath': elements.logFilePath.value,
       'logging.verbosity': elements.logVerbosity.value,
       'logging.logMode': elements.logMode.checked,
-      'logging.logModeFilePath': elements.logModeFilePath.value
+      'logging.logModeFilePath': elements.logModeFilePath.value,
+      'tools.readFileMaxLines': parseInt(elements.readFileMaxLines.value) || 1000
     };
     
     showSaveStatus('Saving...', 'pending');

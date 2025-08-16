@@ -13,6 +13,7 @@ import { CreateFolderTool } from './tools/createFolder';
 import { PatchFileTool } from './tools/patchFile';
 import { RenameFileTool } from './tools/renameFile';
 import { SearchPatternTool } from './tools/searchPattern';
+import { SearchInPathTool } from './tools/searchInPath';
 import { ReadWebpageTool } from './tools/readWebpage';
 import { ReadPdfTool } from './tools/readPdf';
 
@@ -37,6 +38,7 @@ export class ToolsService {
       new PatchFileTool(),
       new RenameFileTool(),
       new SearchPatternTool(),
+      new SearchInPathTool(),
       new ReadWebpageTool(),
       new ReadPdfTool()
     ];

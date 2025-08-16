@@ -152,7 +152,7 @@
           "default": {
             "Coder": {
               "systemMessage": "You are an expert programming assistant. You can read, write, and execute code. Use the available tools to help with coding tasks.",
-              "allowedTools": ["read_file", "write_file", "list_files", "get_file_size", "execute_terminal", "create_folder", "patch_file", "rename_file", "search_pattern"],
+              "allowedTools": ["read_file", "write_file", "list_files", "get_file_size", "execute_terminal", "create_folder", "patch_file", "rename_file", "search_pattern", "search_in_path"],
               "fallbackMessage": "I'm ready to help with your coding tasks. What would you like me to do?",
               "temperature": 0.1,
               "topP": 0.9,
@@ -160,7 +160,7 @@
             },
             "Ask": {
               "systemMessage": "You are a helpful AI assistant. Answer questions clearly and concisely.",
-              "allowedTools": ["read_file", "list_files", "get_file_size", "read_webpage", "read_pdf", "search_pattern"],
+              "allowedTools": ["read_file", "list_files", "get_file_size", "read_webpage", "read_pdf", "search_pattern", "search_in_path"],
               "fallbackMessage": "I'm here to answer your questions. What would you like to know?",
               "temperature": 0.3,
               "topP": 0.9,
@@ -168,7 +168,7 @@
             },
             "Architect": {
               "systemMessage": "You are a software architect assistant. Help design systems, review architecture, and provide technical guidance.",
-              "allowedTools": ["read_file", "list_files", "get_file_size", "read_webpage", "read_pdf", "search_pattern"],
+              "allowedTools": ["read_file", "list_files", "get_file_size", "read_webpage", "read_pdf", "search_pattern", "search_in_path"],
               "fallbackMessage": "I'm ready to help with architecture and design decisions. What system are you working on?",
               "temperature": 0.2,
               "topP": 0.85,
@@ -202,6 +202,13 @@
           "type": "string",
           "default": "",
           "description": "Path to raw JSON log file (empty = workspace/.codingagent/logs/openai-raw-json.log)"
+        },
+        "codingagent.tools.readFileMaxLines": {
+          "type": "number",
+          "default": 1000,
+          "minimum": 10,
+          "maximum": 10000,
+          "description": "Maximum number of lines that read_file tool can read in one operation"
         }
       }
     }

@@ -73,7 +73,7 @@ suite('File Tools Integration Tests', () => {
             
             const result = await tool.execute({ path: 'testFile.txt' }, workspaceRoot);
             assert.strictEqual(result.success, true);
-            assert.strictEqual(result.content, 'Line 1\nLine 2\nLine 3\nLine 4\nLine 5');
+            assert.strictEqual(result.content, 'Line 1\nLine 2\nLine 3\nLine 4\nLine 5\n\n[Note: Reached end of file. Total lines: 5]');
         });
 
         test('should read file with line range when temp dir available', async () => {
@@ -114,7 +114,7 @@ suite('File Tools Integration Tests', () => {
             const absolutePath = path.join(workspaceRoot, 'testFile.txt');
             const result = await tool.execute({ path: absolutePath }, workspaceRoot);
             assert.strictEqual(result.success, true);
-            assert.strictEqual(result.content, 'Line 1\nLine 2\nLine 3\nLine 4\nLine 5');
+            assert.strictEqual(result.content, 'Line 1\nLine 2\nLine 3\nLine 4\nLine 5\n\n[Note: Reached end of file. Total lines: 5]');
         });
     });
 
