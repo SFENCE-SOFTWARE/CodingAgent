@@ -299,7 +299,8 @@
   align-items: center;
   gap: 6px;
   font-size: 0.9em;
-  color: var(--vscode-descriptionForeground);
+  color: var(--vscode-terminal-ansiMagenta);
+  font-weight: 500;
 }
 
 .tool-calls-toggle {
@@ -329,11 +330,38 @@
 }
 
 .tool-call-args {
-  padding: 8px 12px;
   font-family: var(--vscode-editor-font-family);
   font-size: 11px;
   color: var(--vscode-descriptionForeground);
   background-color: var(--vscode-panel-background);
+}
+
+/* Tool call args in streaming mode */
+.tool-call .tool-call-args {
+  padding: 4px 8px;
+  margin-top: 2px;
+}
+
+/* Tool call args in collapsed structure */
+.tool-call-section .tool-call-args {
+  padding: 8px 12px;
+}
+
+.tool-call-name {
+  font-weight: 500;
+  color: var(--vscode-terminal-ansiMagenta);
+  font-size: 12px;
+  padding: 4px 8px;
+}
+
+.tool-call {
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  background-color: var(--vscode-panel-background);
+}
+
+.tool-call:last-child {
+  border-bottom: none;
 }
 
 /* Raw Request Display */
