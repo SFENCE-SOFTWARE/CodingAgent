@@ -73,7 +73,7 @@ export class LoggingService {
     if (workspaceFolder) {
       const logsDir = path.join(workspaceFolder.uri.fsPath, '.codingagent', 'logs');
       this.ensureDirectoryExists(logsDir);
-      return path.join(logsDir, 'ollama-raw-json.log');
+      return path.join(logsDir, 'openai-raw-json.log');
     }
     
     // Fallback to extension's global storage
@@ -81,7 +81,7 @@ export class LoggingService {
     if (globalStoragePath) {
       const logsDir = path.join(globalStoragePath, 'logs');
       this.ensureDirectoryExists(logsDir);
-      return path.join(logsDir, 'ollama-raw-json.log');
+      return path.join(logsDir, 'openai-raw-json.log');
     }
     
     return '';

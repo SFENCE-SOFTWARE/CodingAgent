@@ -141,11 +141,12 @@ export class SettingsPanel {
     this._panel.webview.postMessage({
       type: 'configurationData',
       config: {
-        host: config.get('ollama.host'),
-        port: config.get('ollama.port'),
+        host: config.get('openai.host'),
+        port: config.get('openai.port'),
         currentMode: config.get('currentMode'),
         currentModel: config.get('currentModel'),
         showThinking: config.get('showThinking'),
+        enableStreaming: config.get('enableStreaming'),
         modes: config.get('modes'),
         logging: {
           enabled: config.get('logging.enabled'),
@@ -195,11 +196,12 @@ export class SettingsPanel {
         const config = vscode.workspace.getConfiguration('codingagent');
         
         // Reset all settings to their defaults
-        await config.update('ollama.host', undefined, vscode.ConfigurationTarget.Global);
-        await config.update('ollama.port', undefined, vscode.ConfigurationTarget.Global);
+        await config.update('openai.host', undefined, vscode.ConfigurationTarget.Global);
+        await config.update('openai.port', undefined, vscode.ConfigurationTarget.Global);
         await config.update('currentMode', undefined, vscode.ConfigurationTarget.Global);
         await config.update('currentModel', undefined, vscode.ConfigurationTarget.Global);
         await config.update('showThinking', undefined, vscode.ConfigurationTarget.Global);
+        await config.update('enableStreaming', undefined, vscode.ConfigurationTarget.Global);
         await config.update('modes', undefined, vscode.ConfigurationTarget.Global);
         await config.update('logging.enabled', undefined, vscode.ConfigurationTarget.Global);
         await config.update('logging.filePath', undefined, vscode.ConfigurationTarget.Global);
@@ -433,11 +435,11 @@ export class SettingsPanel {
           <section class="settings-section">
             <h2>Connection</h2>
             <div class="form-group">
-              <label for="host">Ollama Host:</label>
+              <label for="host">OpenAI API Host:</label>
               <input type="text" id="host" placeholder="localhost" />
             </div>
             <div class="form-group">
-              <label for="port">Ollama Port:</label>
+              <label for="port">OpenAI API Port:</label>
               <input type="number" id="port" placeholder="11434" />
             </div>
           </section>
@@ -461,6 +463,12 @@ export class SettingsPanel {
               <label>
                 <input type="checkbox" id="showThinking" />
                 Show model thinking process
+              </label>
+            </div>
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="enableStreaming" />
+                Enable streaming responses
               </label>
             </div>
           </section>
@@ -508,7 +516,7 @@ export class SettingsPanel {
                 <input type="checkbox" id="logMode" />
                 Enable raw JSON logging mode
               </label>
-              <small class="form-hint">Logs raw JSON objects sent and received from Ollama</small>
+              <small class="form-hint">Logs raw JSON objects sent and received from OpenAI API</small>
             </div>
             <div class="form-group">
               <label for="logModeFilePath">Raw JSON Log File Path:</label>

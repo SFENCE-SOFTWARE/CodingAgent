@@ -1,9 +1,9 @@
-// src/ollama.ts
+// src/openai_html_api.ts
 
 import * as vscode from 'vscode';
 import { OllamaModelList, OllamaChatRequest, OllamaChatResponse, OllamaStreamChunk, ToolDefinition, AgentModes } from './types';
 
-export class OllamaService {
+export class OpenAIService {
   private baseApiUrl: string = 'http://localhost:11434';
 
   constructor() {
@@ -12,8 +12,8 @@ export class OllamaService {
 
   updateConfiguration() {
     const config = vscode.workspace.getConfiguration('codingagent');
-    const host = config.get<string>('ollama.host', 'localhost');
-    const port = config.get<number>('ollama.port', 11434);
+    const host = config.get<string>('openai.host', 'localhost');
+    const port = config.get<number>('openai.port', 11434);
     this.baseApiUrl = `http://${host}:${port}`;
   }
 
@@ -39,7 +39,7 @@ export class OllamaService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer dummy' // Ollama doesn't require auth but expects header
+          'Authorization': 'Bearer dummy' // OpenAI API compatible - auth not required for local models
         },
         body: JSON.stringify(request)
       });

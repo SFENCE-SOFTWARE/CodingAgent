@@ -1,7 +1,7 @@
 // src/chatService.ts
 
 import * as vscode from 'vscode';
-import { OllamaService } from './openai_html_api';
+import { OpenAIService } from './openai_html_api';
 import { ToolsService } from './tools';
 import { LoggingService } from './loggingService';
 import { 
@@ -16,13 +16,13 @@ import {
 
 export class ChatService {
   private messages: ChatMessage[] = [];
-  private ollama: OllamaService;
+  private openai: OpenAIService;
   private tools: ToolsService;
   private logging: LoggingService;
   private streamingCallback?: (update: StreamingUpdate) => void;
 
   constructor() {
-    this.ollama = new OllamaService();
+    this.openai = new OpenAIService();
     this.tools = new ToolsService();
     this.logging = LoggingService.getInstance();
   }
@@ -33,12 +33,12 @@ export class ChatService {
 
   async processMessage(content: string): Promise<ChatMessage[]> {
     // This assumes user message is already added via addUserMessage
-    const currentMode = this.ollama.getCurrentMode();
-    const currentModel = this.ollama.getCurrentModel();
-    const enableStreaming = this.ollama.getEnableStreaming();
+    const currentMode = this.openai.getCurrentMode();
+    const currentModel = this.openai.getCurrentModel();
+    const enableStreaming = this.openai.getEnableStreaming();
     
     try {
-      const modeConfig = this.ollama.getModeConfiguration(currentMode);
+      const modeConfig = this.openai.getModeConfiguration(currentMode);
       
       // Get available tools for current mode
       const allTools = this.tools.getToolDefinitions();
@@ -128,7 +128,7 @@ export class ChatService {
     currentMode: string,
     startTime: number
   ): Promise<ChatMessage[]> {
-    const response = await this.ollama.sendChat(request);
+    const response = await this.openai.sendChat(request);
     const endTime = Date.now();
     
     // Log the communication (standard logging)
@@ -210,7 +210,7 @@ export class ChatService {
     }
 
     try {
-      for await (const chunk of this.ollama.sendChatStream(request)) {
+      for await (const chunk of this.openai.sendChatStream(request)) {
         streamedChunks.push(chunk);
         const delta = chunk.choices[0]?.delta;
         
@@ -415,7 +415,7 @@ export class ChatService {
         timestamp: Date.now(),
         toolCalls: normalizedToolCalls,
         reasoning: assistantMessage.reasoning,
-        model: this.ollama.getCurrentModel()
+        model: this.openai.getCurrentModel()
       };
       
       this.messages.push(assistantChatMessage);
@@ -474,13 +474,13 @@ export class ChatService {
         };
 
         const followUpStartTime = Date.now();
-        const followUpResponse = await this.ollama.sendChat(followUpRequest);
+        const followUpResponse = await this.openai.sendChat(followUpRequest);
         const followUpEndTime = Date.now();
 
         // Log the follow-up communication (standard logging)
         this.logging.logAiCommunication(followUpRequest, followUpResponse, {
-          model: this.ollama.getCurrentModel(),
-          mode: this.ollama.getCurrentMode(),
+          model: this.openai.getCurrentModel(),
+          mode: this.openai.getCurrentMode(),
           timestamp: followUpStartTime,
           duration: followUpEndTime - followUpStartTime,
           context: `tool-follow-up-${iterationCount}`
@@ -488,8 +488,8 @@ export class ChatService {
 
         // Log raw JSON for follow-up if log mode is enabled
         this.logging.logRawJsonCommunication(followUpRequest, followUpResponse, {
-          model: this.ollama.getCurrentModel(),
-          mode: this.ollama.getCurrentMode(),
+          model: this.openai.getCurrentModel(),
+          mode: this.openai.getCurrentMode(),
           timestamp: followUpStartTime,
           duration: followUpEndTime - followUpStartTime,
           context: `tool-follow-up-${iterationCount}`
@@ -521,7 +521,7 @@ export class ChatService {
             timestamp: Date.now(),
             toolCalls: normalizedToolCalls, // Use normalized tool calls
             reasoning: currentMessage.reasoning,
-            model: this.ollama.getCurrentModel()
+            model: this.openai.getCurrentModel()
           };
           
           this.messages.push(intermediateChatMessage);
@@ -534,8 +534,8 @@ export class ChatService {
       } catch (error) {
         // Log the follow-up error (standard logging)
         this.logging.logAiCommunication({}, null, {
-          model: this.ollama.getCurrentModel(),
-          mode: this.ollama.getCurrentMode(),
+          model: this.openai.getCurrentModel(),
+          mode: this.openai.getCurrentMode(),
           timestamp: Date.now(),
           error: error instanceof Error ? error.message : String(error),
           context: `tool-follow-up-${iterationCount}`
@@ -543,8 +543,8 @@ export class ChatService {
 
         // Log raw JSON error for follow-up if log mode is enabled
         this.logging.logRawJsonCommunication({}, null, {
-          model: this.ollama.getCurrentModel(),
-          mode: this.ollama.getCurrentMode(),
+          model: this.openai.getCurrentModel(),
+          mode: this.openai.getCurrentMode(),
           timestamp: Date.now(),
           error: error instanceof Error ? error.message : String(error),
           context: `tool-follow-up-${iterationCount}`
@@ -571,7 +571,7 @@ export class ChatService {
         content: currentMessage.content || 'Process completed',
         timestamp: Date.now(),
         reasoning: currentMessage.reasoning,
-        model: this.ollama.getCurrentModel()
+        model: this.openai.getCurrentModel()
       };
 
       this.messages.push(finalChatMessage);
@@ -618,7 +618,7 @@ export class ChatService {
 
   async getAvailableModels(): Promise<string[]> {
     try {
-      const modelList = await this.ollama.getModels();
+      const modelList = await this.openai.getModels();
       return modelList.models.map(model => model.name);
     } catch (error) {
       console.error('Failed to fetch models:', error);
@@ -627,31 +627,31 @@ export class ChatService {
   }
 
   getCurrentMode(): string {
-    return this.ollama.getCurrentMode();
+    return this.openai.getCurrentMode();
   }
 
   getCurrentModel(): string {
-    return this.ollama.getCurrentModel();
+    return this.openai.getCurrentModel();
   }
 
   async setMode(mode: string): Promise<void> {
-    await this.ollama.setCurrentMode(mode);
+    await this.openai.setCurrentMode(mode);
   }
 
   async setModel(model: string): Promise<void> {
-    await this.ollama.setCurrentModel(model);
+    await this.openai.setCurrentModel(model);
   }
 
   getShowThinking(): boolean {
-    return this.ollama.getShowThinking();
+    return this.openai.getShowThinking();
   }
 
   getEnableStreaming(): boolean {
-    return this.ollama.getEnableStreaming();
+    return this.openai.getEnableStreaming();
   }
 
   updateConfiguration(): void {
-    this.ollama.updateConfiguration();
+    this.openai.updateConfiguration();
   }
 
   /**

@@ -2,14 +2,14 @@
 
 import * as vscode from 'vscode';
 import { ChatViewProvider } from './chatViewProvider';
-import { OllamaService } from './openai_html_api';
+import { OpenAIService } from './openai_html_api';
 import { SettingsPanel } from './settingsPanel';
 
 export function activate(context: vscode.ExtensionContext) {
   console.log('CodingAgent extension is now active!');
 
   // Create services
-  const ollamaService = new OllamaService();
+  const openaiService = new OpenAIService();
   
   // Create and register the chat view provider
   const chatViewProvider = new ChatViewProvider(context);
@@ -35,7 +35,7 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand('codingagent.refreshModels', async () => {
       try {
-        const models = await ollamaService.getModels();
+        const models = await openaiService.getModels();
         const modelNames = models.models.map(m => m.name);
         vscode.window.showInformationMessage(
           `Available models: ${modelNames.join(', ')}`
@@ -74,11 +74,11 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand('codingagent.setModel', async () => {
       try {
-        const models = await ollamaService.getModels();
+        const models = await openaiService.getModels();
         const modelNames = models.models.map(m => m.name);
         
         if (modelNames.length === 0) {
-          vscode.window.showWarningMessage('No models available. Check your Ollama connection.');
+          vscode.window.showWarningMessage('No models available. Check your OpenAI API connection.');
           return;
         }
 

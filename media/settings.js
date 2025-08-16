@@ -15,6 +15,7 @@
     currentMode: document.getElementById('currentMode'),
     currentModel: document.getElementById('currentModel'),
     showThinking: document.getElementById('showThinking'),
+    enableStreaming: document.getElementById('enableStreaming'),
     loggingEnabled: document.getElementById('loggingEnabled'),
     logFilePath: document.getElementById('logFilePath'),
     logVerbosity: document.getElementById('logVerbosity'),
@@ -123,6 +124,7 @@
     elements.currentMode.value = config.currentMode || '';
     elements.currentModel.value = config.currentModel || '';
     elements.showThinking.checked = config.showThinking || false;
+    elements.enableStreaming.checked = config.enableStreaming !== false; // Default to true
     
     // Logging settings
     elements.loggingEnabled.checked = config.logging?.enabled || false;
@@ -324,11 +326,12 @@
 
   function saveConfiguration() {
     const config = {
-      'ollama.host': elements.host.value,
-      'ollama.port': parseInt(elements.port.value) || 11434,
+      'openai.host': elements.host.value,
+      'openai.port': parseInt(elements.port.value) || 11434,
       'currentMode': elements.currentMode.value,
       'currentModel': elements.currentModel.value,
       'showThinking': elements.showThinking.checked,
+      'enableStreaming': elements.enableStreaming.checked,
       'logging.enabled': elements.loggingEnabled.checked,
       'logging.filePath': elements.logFilePath.value,
       'logging.verbosity': elements.logVerbosity.value,

@@ -1,7 +1,7 @@
 {
   "name": "codding-agent",
   "displayName": "CodingAgent",
-  "description": "AI coding assistant using Ollama backend with GitHub Copilot Chat-like interface",
+  "description": "AI coding assistant using OpenAI API backend",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.103.0"
@@ -116,15 +116,15 @@
     "configuration": {
       "title": "CodingAgent",
       "properties": {
-        "codingagent.ollama.host": {
+        "codingagent.openai.host": {
           "type": "string",
           "default": "localhost",
-          "description": "Ollama server host/IP address"
+          "description": "OpenAI API server host/IP address"
         },
-        "codingagent.ollama.port": {
+        "codingagent.openai.port": {
           "type": "number",
           "default": 11434,
-          "description": "Ollama server port"
+          "description": "OpenAI API server port"
         },
         "codingagent.currentMode": {
           "type": "string",
@@ -135,7 +135,7 @@
         "codingagent.currentModel": {
           "type": "string",
           "default": "llama3:8b",
-          "description": "Current Ollama model to use"
+          "description": "Current OpenAI API model to use"
         },
         "codingagent.showThinking": {
           "type": "boolean",
@@ -196,12 +196,12 @@
         "codingagent.logging.logMode": {
           "type": "boolean",
           "default": false,
-          "description": "Enable raw JSON logging mode for Ollama communication"
+          "description": "Enable raw JSON logging mode for OpenAI API communication"
         },
         "codingagent.logging.logModeFilePath": {
           "type": "string",
           "default": "",
-          "description": "Path to raw JSON log file (empty = workspace/.codingagent/logs/ollama-raw-json.log)"
+          "description": "Path to raw JSON log file (empty = workspace/.codingagent/logs/openai-raw-json.log)"
         }
       }
     }
