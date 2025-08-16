@@ -500,16 +500,24 @@
   }
 
   function updateStreamingThinking(messageId, deltaThinking) {
+    console.log(`[CodingAgent Frontend] updateStreamingThinking called:`, messageId, deltaThinking);
+    
     const streamingData = streamingMessages.get(messageId);
-    if (!streamingData) return;
+    if (!streamingData) {
+      console.log(`[CodingAgent Frontend] No streaming data found for messageId:`, messageId);
+      return;
+    }
     
     // Append delta to accumulated thinking
     streamingData.accumulatedThinking += deltaThinking;
     streamingData.thinkingContent.textContent = streamingData.accumulatedThinking;
     
+    console.log(`[CodingAgent Frontend] Updated thinking content:`, streamingData.accumulatedThinking);
+    
     // Show thinking section if we have content
     if (streamingData.accumulatedThinking && streamingData.accumulatedThinking.trim()) {
       streamingData.thinkingDiv.style.display = 'block';
+      console.log(`[CodingAgent Frontend] Thinking section shown`);
     }
     
     scrollToBottom();
@@ -802,6 +810,7 @@
         break;
 
       case 'streamingThinking':
+        console.log(`[CodingAgent Frontend] Received streamingThinking message:`, message);
         updateStreamingThinking(message.messageId, message.thinking);
         break;
 

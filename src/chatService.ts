@@ -36,9 +36,26 @@ export class ChatService {
   private extractReasoning(obj: any): string | undefined {
     const reasoning = obj.reasoning || obj.reasoning_content;
     
-    // Debug logging to see which field is being used
-    if (reasoning && process.env.NODE_ENV === 'development') {
+    // Debug logging to see which field is being used and what content we have
+    console.log(`[CodingAgent] Debug - obj.reasoning:`, obj.reasoning);
+    console.log(`[CodingAgent] Debug - obj.reasoning_content:`, obj.reasoning_content);
+    console.log(`[CodingAgent] Debug - extracted reasoning:`, reasoning);
+    
+    // Log to file as well
+    this.logging.logDebug('extractReasoning called', {
+      hasReasoning: !!obj.reasoning,
+      hasReasoningContent: !!obj.reasoning_content,
+      reasoningValue: obj.reasoning,
+      reasoningContentValue: obj.reasoning_content,
+      extractedValue: reasoning
+    });
+    
+    if (reasoning) {
       console.log(`[CodingAgent] Reasoning extracted from field: ${obj.reasoning ? 'reasoning' : 'reasoning_content'}`);
+      this.logging.logDebug('Reasoning extracted successfully', {
+        fromField: obj.reasoning ? 'reasoning' : 'reasoning_content',
+        value: reasoning
+      });
     }
     
     return reasoning;
@@ -46,6 +63,10 @@ export class ChatService {
 
   setStreamingCallback(callback: (update: StreamingUpdate) => void): void {
     this.streamingCallback = callback;
+  }
+
+  getLoggingService(): LoggingService {
+    return this.logging;
   }
 
   async processMessage(content: string, callback?: (update: ChatUpdate) => void): Promise<ChatMessage[]> {
@@ -278,6 +299,9 @@ export class ChatService {
         
         if (!delta) continue;
 
+        // Debug: Log incoming delta
+        console.log(`[CodingAgent] Streaming delta received:`, delta);
+
         // Handle content updates
         if (delta.content) {
           accumulatedContent += delta.content;
@@ -295,10 +319,15 @@ export class ChatService {
         // Handle thinking/reasoning updates
         const deltaReasoning = this.extractReasoning(delta);
         if (deltaReasoning) {
+          console.log(`[CodingAgent] Processing thinking delta:`, deltaReasoning);
+          this.logging.logDebug('Thinking delta received', { deltaReasoning, messageId });
+          
           accumulatedThinking += deltaReasoning;
           chatMessage.reasoning = accumulatedThinking;
           
           if (this.streamingCallback) {
+            console.log(`[CodingAgent] Sending thinking callback:`, deltaReasoning);
+            this.logging.logDebug('Sending thinking callback', { deltaReasoning, messageId, accumulatedThinking });
             this.streamingCallback({
               type: 'thinking',
               messageId,

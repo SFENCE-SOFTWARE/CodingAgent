@@ -54,6 +54,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         break;
 
       case 'thinking':
+        console.log(`[CodingAgent ChatViewProvider] Sending thinking to frontend:`, update.thinking);
+        this.chatService.getLoggingService().logDebug('ChatViewProvider sending thinking to frontend', {
+          messageId: update.messageId,
+          thinking: update.thinking
+        });
         this.sendMessage({
           type: 'streamingThinking',
           messageId: update.messageId,
@@ -283,8 +288,15 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   private sendMessage(message: any) {
+    if (message.type === 'streamingThinking') {
+      console.log(`[CodingAgent ChatViewProvider] sendMessage streamingThinking:`, message);
+      this.chatService.getLoggingService().logDebug('ChatViewProvider sendMessage streamingThinking', message);
+    }
     if (this._view) {
       this._view.webview.postMessage(message);
+      if (message.type === 'streamingThinking') {
+        this.chatService.getLoggingService().logDebug('ChatViewProvider postMessage to webview completed for streamingThinking');
+      }
     }
   }
 

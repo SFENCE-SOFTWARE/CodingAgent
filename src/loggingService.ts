@@ -422,4 +422,30 @@ export class LoggingService {
   public getVerbosity(): string {
     return this.verbosity;
   }
+
+  // Debug logging method for thinking/streaming debug info
+  public async logDebug(message: string, data?: any): Promise<void> {
+    if (!this.isEnabled || !this.logFilePath) {
+      return;
+    }
+
+    try {
+      const timestamp = new Date().toISOString();
+      let entry = `[DEBUG ${timestamp}] ${message}`;
+      
+      if (data !== undefined) {
+        try {
+          entry += ` | Data: ${JSON.stringify(data, null, 2)}`;
+        } catch (error) {
+          entry += ` | Data: [Error serializing: ${error}]`;
+        }
+      }
+      
+      entry += '\n';
+      
+      await this.appendToLog(entry);
+    } catch (error) {
+      console.error('Failed to write debug log:', error);
+    }
+  }
 }
