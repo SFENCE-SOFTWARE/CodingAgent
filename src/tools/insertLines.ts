@@ -9,7 +9,7 @@ export class InsertLinesTool implements BaseTool {
     return {
       name: 'insert_lines',
       displayName: 'Insert Lines',
-      description: 'Insert new lines into a file at a specific position',
+      description: 'Insert new lines into a file at a specific position. Content is treated as lines separated by \\n.',
       category: 'file'
     };
   }
@@ -19,7 +19,7 @@ export class InsertLinesTool implements BaseTool {
       type: 'function',
       function: {
         name: 'insert_lines',
-        description: 'Insert new lines into a file at a specific position. Use this to add new content to existing files.',
+        description: 'Insert new lines into a file at a specific position. Each inserted line becomes a separate line in the file. If content contains \\n characters, it will be split into multiple lines. Examples: "console.log();" inserts 1 line, "line1\\nline2" inserts 2 lines. Use this to add new content to existing files.',
         parameters: {
           type: 'object',
           properties: {
@@ -33,7 +33,7 @@ export class InsertLinesTool implements BaseTool {
             },
             content: {
               type: 'string',
-              description: 'The content to insert. Can be single line or multi-line text'
+              description: 'The content to insert. Use \\n to separate multiple lines. Examples: "console.log();" = 1 line, "import x;\\nexport y;" = 2 lines. Each part becomes a separate line in the file.'
             },
             after_text: {
               type: 'string',
