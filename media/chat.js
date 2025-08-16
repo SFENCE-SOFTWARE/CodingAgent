@@ -611,6 +611,24 @@
       }, 1000);
     }
     
+    // Convert streaming tool calls to final structure with collapsible header and auto-collapse
+    if (streamingData.accumulatedToolCalls && streamingData.accumulatedToolCalls.length > 0 && streamingData.toolCallsDiv.style.display !== 'none') {
+      // Replace the simple streaming tool calls with the structured version
+      const finalToolCallsElement = createToolCallsElement(streamingData.accumulatedToolCalls);
+      streamingData.toolCallsDiv.parentNode.replaceChild(finalToolCallsElement, streamingData.toolCallsDiv);
+      
+      // Auto-collapse tool calls after a delay
+      setTimeout(() => {
+        const toolCallsContent = finalToolCallsElement.querySelector('.tool-calls-content');
+        const toolCallsToggle = finalToolCallsElement.querySelector('.tool-calls-toggle');
+        
+        if (toolCallsContent && toolCallsToggle) {
+          toolCallsContent.classList.add('collapsed');
+          toolCallsToggle.textContent = '+';
+        }
+      }, 1500); // Slightly longer delay than thinking to avoid simultaneous animations
+    }
+    
     // Clean up
     streamingMessages.delete(messageId);
     scrollToBottom();
