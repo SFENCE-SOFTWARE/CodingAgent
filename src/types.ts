@@ -18,6 +18,7 @@ export interface OllamaChatMessage {
   tool_call_id?: string;
   name?: string;
   reasoning?: string;
+  reasoning_content?: string; // Alternative field name for thinking/reasoning
 }
 
 export interface ToolCall {
@@ -92,6 +93,7 @@ export interface OllamaStreamChunk {
       content?: string;
       tool_calls?: StreamToolCall[];
       reasoning?: string;
+      reasoning_content?: string; // Alternative field name for thinking/reasoning
     };
     finish_reason?: string;
   }[];

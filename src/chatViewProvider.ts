@@ -171,11 +171,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       // Set loading state
       this.sendMessage({ type: 'setLoading', loading: true });
 
-      // Show thinking if enabled
+      // Show thinking if enabled (only in non-streaming mode)
       const config = vscode.workspace.getConfiguration('codingagent');
       const showThinking = config.get('showThinking', true);
+      const enableStreaming = config.get('enableStreaming', true);
       
-      if (showThinking) {
+      if (showThinking && !enableStreaming) {
         this.sendMessage({ 
           type: 'showThinking', 
           thinking: 'Processing your request...' 
@@ -194,8 +195,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         // For streaming updates, they will be handled by existing streaming callback
       });
 
-      // Update thinking with final response or hide it
-      if (showThinking) {
+      // Update thinking with final response or hide it (only in non-streaming mode)
+      if (showThinking && !enableStreaming) {
         this.sendMessage({ type: 'hideThinking' });
       }
 

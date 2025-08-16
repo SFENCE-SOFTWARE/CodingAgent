@@ -29,6 +29,21 @@ export class ChatService {
     this.logging = LoggingService.getInstance();
   }
 
+  /**
+   * Helper function to extract reasoning/thinking from delta or message object
+   * Supports both 'reasoning' and 'reasoning_content' field names
+   */
+  private extractReasoning(obj: any): string | undefined {
+    const reasoning = obj.reasoning || obj.reasoning_content;
+    
+    // Debug logging to see which field is being used
+    if (reasoning && process.env.NODE_ENV === 'development') {
+      console.log(`[CodingAgent] Reasoning extracted from field: ${obj.reasoning ? 'reasoning' : 'reasoning_content'}`);
+    }
+    
+    return reasoning;
+  }
+
   setStreamingCallback(callback: (update: StreamingUpdate) => void): void {
     this.streamingCallback = callback;
   }
@@ -186,7 +201,7 @@ export class ChatService {
       role: 'assistant',
       content: assistantMessage.content || 'No content in response',
       timestamp: Date.now(),
-      reasoning: assistantMessage.reasoning,
+      reasoning: this.extractReasoning(assistantMessage),
       model: currentModel
     };
 
@@ -278,15 +293,16 @@ export class ChatService {
         }
 
         // Handle thinking/reasoning updates
-        if (delta.reasoning) {
-          accumulatedThinking += delta.reasoning;
+        const deltaReasoning = this.extractReasoning(delta);
+        if (deltaReasoning) {
+          accumulatedThinking += deltaReasoning;
           chatMessage.reasoning = accumulatedThinking;
           
           if (this.streamingCallback) {
             this.streamingCallback({
               type: 'thinking',
               messageId,
-              thinking: delta.reasoning // Send just the delta, not accumulated
+              thinking: deltaReasoning // Send just the delta, not accumulated
             });
           }
         }
@@ -464,7 +480,7 @@ export class ChatService {
         content: assistantMessage.content || 'Executing tools...',
         timestamp: Date.now(),
         toolCalls: normalizedToolCalls,
-        reasoning: assistantMessage.reasoning,
+        reasoning: this.extractReasoning(assistantMessage),
         model: this.openai.getCurrentModel()
       };
       
@@ -576,14 +592,15 @@ export class ChatService {
               }
 
               // Handle thinking/reasoning updates
-              if (delta.reasoning) {
-                accumulatedThinking += delta.reasoning;
+              const deltaReasoning = this.extractReasoning(delta);
+              if (deltaReasoning) {
+                accumulatedThinking += deltaReasoning;
                 
                 if (this.streamingCallback) {
                   this.streamingCallback({
                     type: 'thinking',
                     messageId: followUpMessageId,
-                    thinking: delta.reasoning
+                    thinking: deltaReasoning
                   });
                 }
               }
@@ -732,7 +749,7 @@ export class ChatService {
             content: currentMessage.content || 'Executing additional tools...',
             timestamp: Date.now(),
             toolCalls: normalizedToolCalls, // Use normalized tool calls
-            reasoning: currentMessage.reasoning,
+            reasoning: this.extractReasoning(currentMessage),
             model: this.openai.getCurrentModel()
           };
           
@@ -810,7 +827,7 @@ export class ChatService {
         role: 'assistant',
         content: currentMessage.content || 'Process completed',
         timestamp: Date.now(),
-        reasoning: currentMessage.reasoning,
+        reasoning: this.extractReasoning(currentMessage),
         model: this.openai.getCurrentModel()
       };
 
