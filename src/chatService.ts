@@ -6,14 +6,14 @@ import { ToolsService } from './tools';
 import { LoggingService } from './loggingService';
 import { 
   ChatMessage, 
-  OllamaChatMessage, 
-  OllamaStreamChunk,
+  OpenAIChatMessage, 
+  OpenAIStreamChunk,
   StreamingUpdate,
   MessageUpdate,
   ChatUpdate,
   ToolCall, 
   ToolDefinition,
-  OllamaChatRequest 
+  OpenAIChatRequest 
 } from './types';
 
 export class ChatService {
@@ -89,8 +89,8 @@ export class ChatService {
         }
       }
 
-      // Prepare messages for Ollama
-      const ollamaMessages: OllamaChatMessage[] = [
+      // Prepare messages for OpenAI API
+      const openaiMessages: OpenAIChatMessage[] = [
         {
           role: 'system',
           content: modeConfig.systemMessage
@@ -100,23 +100,27 @@ export class ChatService {
       // Add recent conversation history (last 10 messages to keep context manageable)
       const recentMessages = this.messages.slice(-10);
       for (const msg of recentMessages) {
-        if (msg.role === 'user' || msg.role === 'assistant') {
-          const ollamaMsg: OllamaChatMessage = {
-            role: msg.role,
+        if (msg.role === 'user' || msg.role === 'assistant' || msg.role === 'error') {
+          // Map 'error' role to 'assistant' since OpenAI API doesn't have 'error' role
+          const mappedRole: 'user' | 'assistant' | 'system' | 'tool' = 
+            msg.role === 'error' ? 'assistant' : (msg.role as 'user' | 'assistant');
+          
+          const openaiMsg: OpenAIChatMessage = {
+            role: mappedRole,
             content: msg.content
           };
           
-          if (msg.toolCalls) {
-            ollamaMsg.tool_calls = msg.toolCalls;
+          if (msg.toolCalls && msg.toolCalls.length > 0) {
+            openaiMsg.tool_calls = msg.toolCalls;
           }
           
-          ollamaMessages.push(ollamaMsg);
+          openaiMessages.push(openaiMsg);
         }
       }
 
-      const request: OllamaChatRequest = {
+      const request: OpenAIChatRequest = {
         model: currentModel,
-        messages: ollamaMessages,
+        messages: openaiMessages,
         temperature: 0.0,
         tools: allowedTools.length > 0 ? allowedTools : undefined
       };
@@ -161,7 +165,7 @@ export class ChatService {
   }
 
   private async processNonStreamingMessage(
-    request: OllamaChatRequest,
+    request: OpenAIChatRequest,
     currentModel: string,
     currentMode: string,
     startTime: number,
@@ -242,7 +246,7 @@ export class ChatService {
   }
 
   private async processStreamingMessage(
-    request: OllamaChatRequest,
+    request: OpenAIChatRequest,
     currentModel: string,
     currentMode: string,
     startTime: number,
@@ -253,7 +257,7 @@ export class ChatService {
     let accumulatedThinking = '';
     let toolCalls: ToolCall[] = [];
     let finishReason = '';
-    let streamedChunks: OllamaStreamChunk[] = [];
+    let streamedChunks: OpenAIStreamChunk[] = [];
 
     // Create initial message
     const chatMessage: ChatMessage = {
@@ -457,7 +461,7 @@ export class ChatService {
 
       // Handle tool calls if present
       if (toolCalls.length > 0) {
-        const assistantMessage: OllamaChatMessage = {
+        const assistantMessage: OpenAIChatMessage = {
           role: 'assistant',
           content: accumulatedContent,
           reasoning: accumulatedThinking,
@@ -490,8 +494,8 @@ export class ChatService {
   }
 
   private async handleToolCalls(
-    assistantMessage: OllamaChatMessage, 
-    originalRequest: OllamaChatRequest,
+    assistantMessage: OpenAIChatMessage, 
+    originalRequest: OpenAIChatRequest,
     existingMessageId?: string,
     callback?: (update: ChatUpdate) => void,
     isStreamingMode?: boolean
@@ -528,10 +532,10 @@ export class ChatService {
     }
 
     // Execute tools in a loop until we get a final response
-    const toolMessages: OllamaChatMessage[] = [...originalRequest.messages];
+    const toolMessages: OpenAIChatMessage[] = [...originalRequest.messages];
     
     // Create normalized assistant message for tool execution
-    const normalizedAssistantMessage: OllamaChatMessage = {
+    const normalizedAssistantMessage: OpenAIChatMessage = {
       ...assistantMessage,
       tool_calls: normalizedToolCalls
     };
@@ -550,7 +554,7 @@ export class ChatService {
           const args = JSON.parse(toolCall.function.arguments);
           const toolResult = await this.tools.executeTool(toolCall.function.name, args);
           
-          const toolResultMessage: OllamaChatMessage = {
+          const toolResultMessage: OpenAIChatMessage = {
             role: 'tool',
             tool_call_id: toolCall.id,
             name: toolCall.function.name,
@@ -560,7 +564,7 @@ export class ChatService {
           toolMessages.push(toolResultMessage);
 
         } catch (error) {
-          const toolResultMessage: OllamaChatMessage = {
+          const toolResultMessage: OpenAIChatMessage = {
             role: 'tool',
             tool_call_id: toolCall.id,
             name: toolCall.function.name,
@@ -573,7 +577,7 @@ export class ChatService {
 
       // Send updated conversation back to model for next response
       try {
-        const followUpRequest: OllamaChatRequest = {
+        const followUpRequest: OpenAIChatRequest = {
           ...originalRequest,
           messages: toolMessages
         };
@@ -765,7 +769,7 @@ export class ChatService {
           normalizedToolCalls = this.normalizeToolCalls(currentMessage.tool_calls);
           
           // Create normalized message for toolMessages
-          const normalizedCurrentMessage: OllamaChatMessage = {
+          const normalizedCurrentMessage: OpenAIChatMessage = {
             ...currentMessage,
             tool_calls: normalizedToolCalls
           };
@@ -932,7 +936,7 @@ export class ChatService {
   async getAvailableModels(): Promise<string[]> {
     try {
       const modelList = await this.openai.getModels();
-      return modelList.models.map(model => model.name);
+      return modelList.models.map((model: any) => model.name);
     } catch (error) {
       console.error('Failed to fetch models:', error);
       return ['llama3:8b']; // fallback

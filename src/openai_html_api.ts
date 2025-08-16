@@ -1,7 +1,7 @@
 // src/openai_html_api.ts
 
 import * as vscode from 'vscode';
-import { OllamaModelList, OllamaChatRequest, OllamaChatResponse, OllamaStreamChunk, ToolDefinition, AgentModes } from './types';
+import { ModelList, OpenAIChatRequest, OpenAIChatResponse, OpenAIStreamChunk, ToolDefinition, AgentModes } from './types';
 
 export class OpenAIService {
   private baseApiUrl: string = 'http://localhost:11434';
@@ -21,19 +21,19 @@ export class OpenAIService {
     return this.baseApiUrl;
   }
 
-  async getModels(): Promise<OllamaModelList> {
+  async getModels(): Promise<ModelList> {
     try {
       const response = await fetch(`${this.baseApiUrl}/api/tags`);
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      return await response.json() as OllamaModelList;
+      return await response.json() as ModelList;
     } catch (error) {
       throw new Error(`Failed to fetch models: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  async sendChat(request: OllamaChatRequest): Promise<OllamaChatResponse> {
+  async sendChat(request: OpenAIChatRequest): Promise<OpenAIChatResponse> {
     try {
       const response = await fetch(`${this.baseApiUrl}/v1/chat/completions`, {
         method: 'POST',
@@ -49,7 +49,7 @@ export class OpenAIService {
         throw new Error(`HTTP ${response.status}: ${response.statusText}\n${errorText}`);
       }
 
-      return await response.json() as OllamaChatResponse;
+      return await response.json() as OpenAIChatResponse;
     } catch (error) {
       if (error instanceof Error) {
         throw error;
@@ -58,7 +58,7 @@ export class OpenAIService {
     }
   }
 
-  async *sendChatStream(request: OllamaChatRequest): AsyncGenerator<OllamaStreamChunk, void, unknown> {
+  async *sendChatStream(request: OpenAIChatRequest): AsyncGenerator<OpenAIStreamChunk, void, unknown> {
     try {
       const streamRequest = { ...request, stream: true };
       
@@ -105,7 +105,7 @@ export class OpenAIService {
               }
               
               try {
-                const chunk = JSON.parse(data) as OllamaStreamChunk;
+                const chunk = JSON.parse(data) as OpenAIStreamChunk;
                 yield chunk;
               } catch (e) {
                 console.warn('Failed to parse stream chunk:', data);

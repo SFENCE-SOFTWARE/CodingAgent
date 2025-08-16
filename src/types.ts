@@ -1,17 +1,17 @@
 // src/types.ts
 
-export interface OllamaModel {
+export interface ModelInfo {
   name: string;
   modified_at: string;
   size: number;
   digest: string;
 }
 
-export interface OllamaModelList {
-  models: OllamaModel[];
+export interface ModelList {
+  models: ModelInfo[];
 }
 
-export interface OllamaChatMessage {
+export interface OpenAIChatMessage {
   role: 'system' | 'user' | 'assistant' | 'tool';
   content: string;
   tool_calls?: ToolCall[];
@@ -56,22 +56,22 @@ export interface ToolDefinition {
   };
 }
 
-export interface OllamaChatRequest {
+export interface OpenAIChatRequest {
   model: string;
-  messages: OllamaChatMessage[];
+  messages: OpenAIChatMessage[];
   temperature?: number;
   tools?: ToolDefinition[];
   stream?: boolean;
 }
 
-export interface OllamaChatResponse {
+export interface OpenAIChatResponse {
   id: string;
   object: string;
   created: number;
   model: string;
   choices: {
     index: number;
-    message: OllamaChatMessage;
+    message: OpenAIChatMessage;
     finish_reason: string;
   }[];
   usage?: {
@@ -81,7 +81,7 @@ export interface OllamaChatResponse {
   };
 }
 
-export interface OllamaStreamChunk {
+export interface OpenAIStreamChunk {
   id: string;
   object: string;
   created: number;

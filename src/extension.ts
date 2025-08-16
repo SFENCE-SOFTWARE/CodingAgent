@@ -36,7 +36,7 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('codingagent.refreshModels', async () => {
       try {
         const models = await openaiService.getModels();
-        const modelNames = models.models.map(m => m.name);
+        const modelNames = models.models.map((m: any) => m.name);
         vscode.window.showInformationMessage(
           `Available models: ${modelNames.join(', ')}`
         );
@@ -75,7 +75,7 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('codingagent.setModel', async () => {
       try {
         const models = await openaiService.getModels();
-        const modelNames = models.models.map(m => m.name);
+        const modelNames = models.models.map((m: any) => m.name);
         
         if (modelNames.length === 0) {
           vscode.window.showWarningMessage('No models available. Check your OpenAI API connection.');
