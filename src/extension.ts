@@ -240,6 +240,27 @@ export function activate(context: vscode.ExtensionContext) {
       })
     );
 
+    // Add simpler commands for entire changes (without line numbers)
+    context.subscriptions.push(
+      vscode.commands.registerCommand('codingagent.acceptChange', async (changeId: string) => {
+        const changeTracker = toolsService.getChangeTrackingService();
+        if (changeTracker) {
+          await changeTracker.acceptChange(changeId);
+          vscode.window.showInformationMessage(`Change accepted`);
+        }
+      })
+    );
+
+    context.subscriptions.push(
+      vscode.commands.registerCommand('codingagent.rejectChange', async (changeId: string) => {
+        const changeTracker = toolsService.getChangeTrackingService();
+        if (changeTracker) {
+          await changeTracker.rejectChange(changeId);
+          vscode.window.showInformationMessage(`Change rejected and reverted`);
+        }
+      })
+    );
+
     context.subscriptions.push(
       vscode.commands.registerCommand('codingagent.showChangeDiff', async (changeId: string) => {
         const changeTracker = toolsService.getChangeTrackingService();
