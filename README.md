@@ -90,7 +90,7 @@ A powerful AI coding assistant extension for Visual Studio Code that integrates 
 ### Agent Modes
 
 **🛠️ Coder Mode**: Best for programming tasks
-- Available tools: read_file, write_file, insert_lines, delete_lines, replace_lines, patch_file, list_files, get_file_size, execute_terminal, create_folder, rename_file
+- Available tools: read_file, write_file, modify_lines, patch_file, list_files, get_file_size, execute_terminal, create_folder, rename_file
 - Use for: Code generation, debugging, file manipulation, project exploration, refactoring
 
 **❓ Ask Mode**: Best for questions and research
@@ -163,8 +163,7 @@ Custom modes can be added via the `codingagent.modes` setting:
 | `read_file` | Read file content with line ranges | `path`, `start_line`, `end_line`, `max_bytes` |
 | `write_file` | Write or append to files | `path`, `content`, `append` |
 | `insert_lines` | Insert new lines at specific positions | `path`, `line_number`, `content`, `after_text`, `before_text` |
-| `delete_lines` | Delete lines by number, range, or content | `path`, `line_numbers`, `start_line`, `end_line`, `containing_text` |
-| `replace_lines` | Replace lines by number, range, or content | `path`, `line_number`, `new_content`, `line_numbers`, `start_line`, `end_line` |
+| `modify_lines` | Universal line modification: insert, delete, or replace lines | `path`, `operation`, `content`, `line_number`, `line_numbers`, `start_line`, `end_line`, `containing_text`, `exact_text`, `after_text`, `before_text` |
 | `patch_file` | Apply text patches to files | `path`, `old_text`, `new_text` |
 | `get_file_size` | Get file size in lines and bytes | `path` |
 | `create_folder` | Create directories recursively | `path` |

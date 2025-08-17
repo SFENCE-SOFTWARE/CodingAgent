@@ -9,7 +9,7 @@
 - **User benefit**: Accept/reject changes independently based on their location and impact
 
 ### 🔧 **Enhanced File Tools**
-- **New tools added**: `insert_lines`, `delete_lines`, `replace_lines`
+- **New tools added**: `modify_lines` (universal line modification tool)
 - **Change tracking integration**: All file modification tools now track changes automatically
 - **Comprehensive testing**: 124+ tests covering all scenarios including change merging
 - **Robust validation**: Edge cases for file operations thoroughly tested

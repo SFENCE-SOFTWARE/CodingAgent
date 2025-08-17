@@ -12,9 +12,7 @@ import { GetFileSizeTool } from './tools/getFileSize';
 import { ExecuteTerminalTool } from './tools/executeTerminal';
 import { CreateFolderTool } from './tools/createFolder';
 import { PatchFileTool } from './tools/patchFile';
-import { InsertLinesTool } from './tools/insertLines';
-import { DeleteLinesTool } from './tools/deleteLines';
-import { ReplaceLinesTool } from './tools/replaceLines';
+import { ModifyLinesTool } from './tools/modifyLines';
 import { RenameFileTool } from './tools/renameFile';
 import { SearchPatternTool } from './tools/searchPattern';
 import { SearchInPathTool } from './tools/searchInPath';
@@ -55,9 +53,7 @@ export class ToolsService {
       new ExecuteTerminalTool(),
       new CreateFolderTool(),
       new PatchFileTool(this.changeTrackingService),
-      new InsertLinesTool(this.changeTrackingService),
-      new DeleteLinesTool(this.changeTrackingService),
-      new ReplaceLinesTool(this.changeTrackingService),
+      new ModifyLinesTool(this.changeTrackingService),
       new RenameFileTool(),
       new SearchPatternTool(),
       new SearchInPathTool(),

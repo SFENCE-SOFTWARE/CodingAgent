@@ -2,6 +2,15 @@
 
 All notable changes to the "CodingAgent" extension will be documented in this file.
 
+## [0.0.3] - 2025-08-17
+
+### Changed
+- **Tool Consolidation**: Merged `insert_lines`, `delete_lines`, and `replace_lines` into unified `modify_lines` tool
+  - Single tool with `operation` parameter: "insert", "delete", or "replace"
+  - Simplified API with all line modification capabilities
+  - Reduced tool count and improved consistency
+  - Comprehensive test coverage for all operations
+
 ## [0.0.2] - 2025-08-17
 
 ### Added
@@ -13,9 +22,7 @@ All notable changes to the "CodingAgent" extension will be documented in this fi
   - Backup system with automatic restoration on rejection
   - Persistence across VS Code sessions
 - **New File Manipulation Tools**:
-  - `insert_lines`: Insert new lines at specific positions in files
-  - `delete_lines`: Delete lines by number, range, or content matching
-  - `replace_lines`: Replace lines by number, range, or content matching
+  - `modify_lines`: Universal line modification tool (insert/delete/replace operations)
   - `patch_file`: Apply text patches to files
 - **Enhanced Tool System**:
   - All file modification tools now integrate with change tracking

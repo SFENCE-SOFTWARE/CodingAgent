@@ -27,9 +27,7 @@ The extension uses a **mode-based architecture** where each mode has specific to
 **Available Tools:**
 - `read_file` - Read file content with line range support
 - `write_file` - Write or append to files
-- `insert_lines` - Insert new lines at specific positions in files
-- `delete_lines` - Delete lines by number, range, or content matching
-- `replace_lines` - Replace lines by number, range, or content matching
+- `modify_lines` - Universal line modification: insert, delete, or replace lines with operation parameter
 - `patch_file` - Apply text diffs without full file rewrites
 - `list_files` - Directory listing with recursive option  
 - `get_file_size` - Get file size in lines and bytes
