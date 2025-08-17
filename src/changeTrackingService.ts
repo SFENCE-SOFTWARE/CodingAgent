@@ -183,9 +183,31 @@ export class ChangeTrackingService {
       change.beforeContent = existingChange.beforeContent;
       change.backupId = existingChange.backupId; // Keep original backup
       
-      // Replace the existing change
-      existingChanges[existingPendingIndex] = change;
+      // Check if the new afterContent is the same as the original beforeContent
+      if (change.afterContent === change.beforeContent) {
+        // Content is back to original - remove the change entirely
+        console.log(`ChangeTrackingService: Content reverted to original for ${absolutePath}, removing change`);
+        existingChanges.splice(existingPendingIndex, 1);
+        
+        // Clean up backup if it exists
+        if (change.backupId) {
+          try {
+            await this.backupManager.cleanupOldBackups(0); // Remove this backup
+          } catch (error) {
+            console.warn('Failed to cleanup backup after reverting change:', error);
+          }
+        }
+      } else {
+        // Replace the existing change
+        existingChanges[existingPendingIndex] = change;
+      }
     } else {
+      // Check if this is a no-op change (content unchanged)
+      if (change.afterContent === change.beforeContent) {
+        console.log(`ChangeTrackingService: No-op change detected for ${absolutePath}, skipping`);
+        return changeId; // Return ID but don't track the change
+      }
+      
       // Add new change
       existingChanges.push(change);
     }

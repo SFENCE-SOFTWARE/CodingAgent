@@ -235,4 +235,137 @@ suite('Change Merging Integration Tests', () => {
         const currentContent = await fs.promises.readFile(path.join(workspaceRoot, 'testFile.txt'), 'utf8');
         assert.strictEqual(currentContent, originalContent, 'File should be reverted to original content after reject');
     });
+
+    test('specific scenarios: replace merging and back-replacement canceling changes', async () => {
+        if (!tempDir) {
+            console.log('Skipping test - no temp directory available');
+            return;
+        }
+
+        const replaceTool = new ReplaceLinesTool(changeTracker);
+
+        // Create test file with specific content
+        const testFilePath = path.join(tempDir, 'scenarioTest.txt');
+        const originalContent = 'l1\nl2\nl3\nl4\nl5\nl6\nl7\nl8\nl9';
+        await fs.promises.writeFile(testFilePath, originalContent);
+
+        console.log('=== Scenario 1: Replace l2 -> REPLACE_L2, should see one change ===');
+        
+        // Replace l2 -> REPLACE_L2
+        const result1 = await replaceTool.execute({
+            path: 'scenarioTest.txt',
+            line_number: 2,
+            new_content: 'REPLACE_L2'
+        }, workspaceRoot);
+        assert.strictEqual(result1.success, true);
+
+        // Check: should have 1 pending change
+        let pendingChanges = await changeTracker.getAllPendingChanges();
+        assert.strictEqual(pendingChanges.length, 1, 'Should have 1 pending change after replacing l2');
+        console.log('✓ After replacing l2: 1 change as expected');
+
+        console.log('=== Scenario 2: Replace l3 -> REPLACE_L3, changes should merge ===');
+        
+        // Replace l3 -> REPLACE_L3 (should merge with previous change)
+        const result2 = await replaceTool.execute({
+            path: 'scenarioTest.txt',
+            line_number: 3,
+            new_content: 'REPLACE_L3'
+        }, workspaceRoot);
+        assert.strictEqual(result2.success, true);
+
+        // Check: should still have 1 pending change (merged)
+        pendingChanges = await changeTracker.getAllPendingChanges();
+        assert.strictEqual(pendingChanges.length, 1, 'Should still have 1 pending change after merging l3 replacement');
+        console.log('✓ After replacing l3: still 1 change (merged) as expected');
+
+        console.log('=== Scenario 3: Replace REPLACE_L2 back to l2 and REPLACE_L3 back to l3 ===');
+        
+        // Replace REPLACE_L2 back to l2
+        const result3 = await replaceTool.execute({
+            path: 'scenarioTest.txt',
+            line_number: 2,
+            new_content: 'l2'
+        }, workspaceRoot);
+        assert.strictEqual(result3.success, true);
+
+        // Replace REPLACE_L3 back to l3
+        const result4 = await replaceTool.execute({
+            path: 'scenarioTest.txt',
+            line_number: 3,
+            new_content: 'l3'
+        }, workspaceRoot);
+        assert.strictEqual(result4.success, true);
+
+        // Check: should have 0 pending changes (changes canceled out)
+        pendingChanges = await changeTracker.getAllPendingChanges();
+        assert.strictEqual(pendingChanges.length, 0, 'Should have 0 pending changes after reverting to original content');
+        console.log('✓ After reverting both lines: 0 changes as expected (changes canceled out)');
+
+        // Verify file content is back to original
+        const currentContent = await fs.promises.readFile(testFilePath, 'utf8');
+        assert.strictEqual(currentContent, originalContent, 'File content should be back to original');
+    });
+
+    test('specific scenarios: insert operations creating separate changes', async () => {
+        if (!tempDir) {
+            console.log('Skipping test - no temp directory available');
+            return;
+        }
+
+        const insertTool = new InsertLinesTool(changeTracker);
+
+        // Create two separate test files for different insert operations
+        const testFile1Path = path.join(tempDir, 'insertTest1.txt');
+        const testFile2Path = path.join(tempDir, 'insertTest2.txt');
+        const originalContent = 'l1\nl2\nl3\nl4\nl5\nl6\nl7\nl8\nl9';
+        await fs.promises.writeFile(testFile1Path, originalContent);
+        await fs.promises.writeFile(testFile2Path, originalContent);
+
+        console.log('=== Scenario 4: Insert TEST_INSERT_3 at line 3 in first file ===');
+        
+        // Insert at line 3 in first file
+        const result1 = await insertTool.execute({
+            path: 'insertTest1.txt',
+            line_number: 3,
+            content: 'TEST_INSERT_3'
+        }, workspaceRoot);
+        assert.strictEqual(result1.success, true);
+
+        // Check: should have 1 pending change
+        let pendingChanges = await changeTracker.getAllPendingChanges();
+        assert.strictEqual(pendingChanges.length, 1, 'Should have 1 pending change after inserting at line 3');
+        console.log('✓ After inserting at line 3 in first file: 1 change as expected');
+
+        console.log('=== Scenario 5: Insert TEST_INSERT_6 at line 6 in second file ===');
+        
+        // Insert at line 6 in second file (different file = separate change)
+        const result2 = await insertTool.execute({
+            path: 'insertTest2.txt',
+            line_number: 6,
+            content: 'TEST_INSERT_6'
+        }, workspaceRoot);
+        assert.strictEqual(result2.success, true);
+
+        // Check: should have 2 separate pending changes (different files)
+        pendingChanges = await changeTracker.getAllPendingChanges();
+        assert.strictEqual(pendingChanges.length, 2, 'Should have 2 separate pending changes for different files');
+        console.log('✓ After inserting at line 6 in second file: 2 separate changes as expected');
+
+        // Verify that the changes are for different files
+        const filePaths = pendingChanges.map(c => path.basename(c.filePath)).sort();
+        assert.deepStrictEqual(filePaths, ['insertTest1.txt', 'insertTest2.txt'], 'Changes should be for different files');
+        
+        // Read current content to verify both insertions happened
+        const currentContent1 = await fs.promises.readFile(testFile1Path, 'utf8');
+        const currentContent2 = await fs.promises.readFile(testFile2Path, 'utf8');
+        assert.strictEqual(currentContent1.includes('TEST_INSERT_3'), true, 'First file should contain TEST_INSERT_3');
+        assert.strictEqual(currentContent2.includes('TEST_INSERT_6'), true, 'Second file should contain TEST_INSERT_6');
+        
+        console.log('Current content of first file:');
+        console.log(currentContent1);
+        console.log('Current content of second file:');
+        console.log(currentContent2);
+        console.log('✓ Both insertions are present in their respective files');
+    });
 });
