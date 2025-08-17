@@ -368,4 +368,101 @@ suite('Change Merging Integration Tests', () => {
         console.log(currentContent2);
         console.log('✓ Both insertions are present in their respective files');
     });
+
+    test('specific scenarios: non-adjacent changes in same file should be recognized as separate changes', async () => {
+        if (!tempDir) {
+            console.log('Skipping test - no temp directory available');
+            return;
+        }
+
+        const replaceTool = new ReplaceLinesTool(changeTracker);
+
+        // Create test file with specific content - 9 lines with enough spacing
+        const testFilePath = path.join(tempDir, 'separateChangesTest.txt');
+        const originalContent = 'line1\nline2\nline3\nline4\nline5\nline6\nline7\nline8\nline9';
+        await fs.promises.writeFile(testFilePath, originalContent);
+
+        console.log('=== Scenario 6: Replace line 2 (first change) ===');
+        
+        // Replace line 2
+        const result1 = await replaceTool.execute({
+            path: 'separateChangesTest.txt',
+            line_number: 2,
+            new_content: 'CHANGED_LINE2'
+        }, workspaceRoot);
+        assert.strictEqual(result1.success, true);
+
+        // Check: should have 1 pending change
+        let pendingChanges = await changeTracker.getAllPendingChanges();
+        assert.strictEqual(pendingChanges.length, 1, 'Should have 1 pending change after replacing line 2');
+        console.log('✓ After replacing line 2: 1 change as expected');
+
+        console.log('=== Scenario 7: Replace line 8 (non-adjacent to line 2) ===');
+        
+        // Replace line 8 - non-adjacent to line 2 (lines 3,4,5,6,7 are unchanged)
+        const result2 = await replaceTool.execute({
+            path: 'separateChangesTest.txt',
+            line_number: 8,
+            new_content: 'CHANGED_LINE8'
+        }, workspaceRoot);
+        assert.strictEqual(result2.success, true);
+
+        // Check: should now have 2 separate pending changes (non-overlapping)
+        pendingChanges = await changeTracker.getAllPendingChanges();
+        assert.strictEqual(pendingChanges.length, 2, 'Should have 2 separate pending changes for non-adjacent modifications');
+        console.log('✓ After replacing line 8: 2 separate changes as expected (non-adjacent)');
+
+        // Verify that both changes are for the same file
+        assert.strictEqual(pendingChanges[0].filePath, pendingChanges[1].filePath, 'Both changes should be for the same file');
+
+        // Verify that both changes are present in the file
+        const currentContent = await fs.promises.readFile(testFilePath, 'utf8');
+        assert.strictEqual(currentContent.includes('CHANGED_LINE2'), true, 'File should contain CHANGED_LINE2');
+        assert.strictEqual(currentContent.includes('CHANGED_LINE8'), true, 'File should contain CHANGED_LINE8');
+        
+        // Verify the content has both changes and unchanged lines between them
+        const lines = currentContent.split('\n');
+        assert.strictEqual(lines[1], 'CHANGED_LINE2', 'Line 2 should be changed');
+        assert.strictEqual(lines[2], 'line3', 'Line 3 should be unchanged');
+        assert.strictEqual(lines[3], 'line4', 'Line 4 should be unchanged');
+        assert.strictEqual(lines[4], 'line5', 'Line 5 should be unchanged');
+        assert.strictEqual(lines[5], 'line6', 'Line 6 should be unchanged');
+        assert.strictEqual(lines[6], 'line7', 'Line 7 should be unchanged');
+        assert.strictEqual(lines[7], 'CHANGED_LINE8', 'Line 8 should be changed');
+
+        console.log('Current file content with non-adjacent changes:');
+        console.log(currentContent);
+        console.log('✓ Both non-adjacent changes are present with unchanged lines between them');
+
+        // Test that we can accept one change independently of the other
+        console.log('=== Testing independent accept/reject of non-adjacent changes ===');
+        
+        // Sort changes by timestamp to get them in order
+        const sortedChanges = pendingChanges.sort((a, b) => a.timestamp - b.timestamp);
+        const firstChangeId = sortedChanges[0].id;
+        const secondChangeId = sortedChanges[1].id;
+        
+        console.log(`First change ID: ${firstChangeId}`);
+        console.log(`Second change ID: ${secondChangeId}`);
+        
+        // Accept the first change
+        await changeTracker.acceptChange(firstChangeId);
+        
+        // Should now have only 1 pending change
+        pendingChanges = await changeTracker.getAllPendingChanges();
+        assert.strictEqual(pendingChanges.length, 1, 'Should have 1 pending change after accepting first change');
+        assert.strictEqual(pendingChanges[0].id, secondChangeId, 'Remaining change should be the second one');
+        
+        console.log('✓ Successfully accepted first change independently');
+        
+        // Reject the second change
+        await changeTracker.rejectChange(secondChangeId);
+        
+        // Should now have 0 pending changes
+        pendingChanges = await changeTracker.getAllPendingChanges();
+        assert.strictEqual(pendingChanges.length, 0, 'Should have 0 pending changes after rejecting second change');
+        
+        console.log('✓ Successfully rejected second change independently');
+        console.log('✓ Non-adjacent changes can be managed independently');
+    });
 });

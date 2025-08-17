@@ -172,12 +172,22 @@ export class ChangeTrackingService {
     }
     
     const existingChanges = this.changes.get(absolutePath)!;
-    const existingPendingIndex = existingChanges.findIndex(c => c.status === 'pending');
+    const existingPendingChanges = existingChanges.filter(c => c.status === 'pending');
     
-    if (existingPendingIndex !== -1) {
-      // Replace existing pending change with new one, but keep the original beforeContent
-      const existingChange = existingChanges[existingPendingIndex];
-      console.log(`ChangeTrackingService: Replacing existing pending change for ${absolutePath}`);
+    // Check if this change overlaps or is adjacent to any existing pending change
+    let mergeTargetIndex = -1;
+    for (let i = 0; i < existingChanges.length; i++) {
+      if (existingChanges[i].status === 'pending' && 
+          this.changesOverlapOrAdjacent(change, existingChanges[i])) {
+        mergeTargetIndex = i;
+        break;
+      }
+    }
+    
+    if (mergeTargetIndex !== -1) {
+      // Merge with existing overlapping/adjacent change
+      const existingChange = existingChanges[mergeTargetIndex];
+      console.log(`ChangeTrackingService: Merging overlapping/adjacent change for ${absolutePath}`);
       
       // Use the original beforeContent from the first change, but new afterContent
       change.beforeContent = existingChange.beforeContent;
@@ -187,7 +197,7 @@ export class ChangeTrackingService {
       if (change.afterContent === change.beforeContent) {
         // Content is back to original - remove the change entirely
         console.log(`ChangeTrackingService: Content reverted to original for ${absolutePath}, removing change`);
-        existingChanges.splice(existingPendingIndex, 1);
+        existingChanges.splice(mergeTargetIndex, 1);
         
         // Clean up backup if it exists
         if (change.backupId) {
@@ -198,8 +208,8 @@ export class ChangeTrackingService {
           }
         }
       } else {
-        // Replace the existing change
-        existingChanges[existingPendingIndex] = change;
+        // Replace the existing change with merged change
+        existingChanges[mergeTargetIndex] = change;
       }
     } else {
       // Check if this is a no-op change (content unchanged)
@@ -208,7 +218,8 @@ export class ChangeTrackingService {
         return changeId; // Return ID but don't track the change
       }
       
-      // Add new change
+      // Add as new independent change (non-overlapping)
+      console.log(`ChangeTrackingService: Adding independent change for ${absolutePath}`);
       existingChanges.push(change);
     }
 
@@ -349,6 +360,45 @@ export class ChangeTrackingService {
       }
     }
     await this.persistChanges();
+  }
+
+  // Utility methods for change analysis
+  private changesOverlapOrAdjacent(change1: FileChange, change2: FileChange): boolean {
+    // If either change doesn't have line changes, consider them overlapping (safe merge)
+    if (!change1.lineChanges || !change2.lineChanges || 
+        change1.lineChanges.length === 0 || change2.lineChanges.length === 0) {
+      return true;
+    }
+
+    // Get affected line ranges for both changes
+    const range1 = this.getAffectedLineRange(change1.lineChanges);
+    const range2 = this.getAffectedLineRange(change2.lineChanges);
+
+    if (!range1 || !range2) {
+      return true; // Safe merge if we can't determine ranges
+    }
+
+    // Check if ranges overlap or are adjacent (within 2 lines of each other)
+    const gap = Math.min(Math.abs(range1.end - range2.start), Math.abs(range2.end - range1.start));
+    return gap <= 2 || 
+           (range1.start <= range2.end && range2.start <= range1.end); // Overlapping
+  }
+
+  private getAffectedLineRange(lineChanges: LineChange[]): { start: number, end: number } | null {
+    if (!lineChanges || lineChanges.length === 0) {
+      return null;
+    }
+
+    let minLine = Infinity;
+    let maxLine = -Infinity;
+
+    for (const change of lineChanges) {
+      const lineNum = change.lineNumber;
+      minLine = Math.min(minLine, lineNum);
+      maxLine = Math.max(maxLine, lineNum);
+    }
+
+    return minLine === Infinity ? null : { start: minLine, end: maxLine };
   }
 
   // Diff and analysis
