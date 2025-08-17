@@ -6,25 +6,25 @@ import * as fs from 'fs';
 import * as os from 'os';
 import { ChangeTrackingService, BackupManager, FileChange } from '../changeTrackingService';
 
-describe('ChangeTrackingService', () => {
+suite('ChangeTrackingService', () => {
   let tempDir: string;
   let changeTracker: ChangeTrackingService;
 
-  beforeEach(async () => {
+  setup(async () => {
     // Create temporary directory for testing
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'change-tracking-test-'));
     changeTracker = new ChangeTrackingService(tempDir);
   });
 
-  afterEach(async () => {
+  teardown(async () => {
     // Clean up temporary directory
     if (fs.existsSync(tempDir)) {
       await fs.promises.rm(tempDir, { recursive: true, force: true });
     }
   });
 
-  describe('trackFileOperation', () => {
-    it('should track file creation correctly', async () => {
+  suite('trackFileOperation', () => {
+    test('should track file creation correctly', async () => {
       const filePath = path.join(tempDir, 'test.txt');
       const content = 'Hello, World!';
 
@@ -47,7 +47,7 @@ describe('ChangeTrackingService', () => {
       assert.strictEqual(changes[0].toolName, 'write_file');
     });
 
-    it('should track file modification correctly', async () => {
+    test('should track file modification correctly', async () => {
       const filePath = path.join(tempDir, 'test.txt');
       const beforeContent = 'Hello, World!';
       const afterContent = 'Hello, Universe!';
@@ -69,7 +69,7 @@ describe('ChangeTrackingService', () => {
       assert.strictEqual(changes[0].status, 'pending');
     });
 
-    it('should track file deletion correctly', async () => {
+    test('should track file deletion correctly', async () => {
       const filePath = path.join(tempDir, 'test.txt');
       const beforeContent = 'Hello, World!';
 
@@ -90,8 +90,8 @@ describe('ChangeTrackingService', () => {
     });
   });
 
-  describe('calculateLineDiff', () => {
-    it('should generate accurate line diffs for additions', async () => {
+  suite('calculateLineDiff', () => {
+    test('should generate accurate line diffs for additions', async () => {
       const before = 'line1\nline2';
       const after = 'line1\nline2\nline3';
 
@@ -103,7 +103,7 @@ describe('ChangeTrackingService', () => {
       assert.strictEqual(lineChanges[0].newContent, 'line3');
     });
 
-    it('should generate accurate line diffs for deletions', async () => {
+    test('should generate accurate line diffs for deletions', async () => {
       const before = 'line1\nline2\nline3';
       const after = 'line1\nline3';
 
@@ -115,7 +115,7 @@ describe('ChangeTrackingService', () => {
       assert.strictEqual(lineChanges[0].oldContent, 'line2');
     });
 
-    it('should generate accurate line diffs for modifications', async () => {
+    test('should generate accurate line diffs for modifications', async () => {
       const before = 'line1\nline2\nline3';
       const after = 'line1\nmodified line2\nline3';
 
@@ -128,7 +128,7 @@ describe('ChangeTrackingService', () => {
       assert.strictEqual(lineChanges[0].newContent, 'modified line2');
     });
 
-    it('should handle complex multi-line changes', async () => {
+    test('should handle complex multi-line changes', async () => {
       const before = 'line1\nline2\nline3\nline4';
       const after = 'line1\nmodified line2\nline3\nnew line\nline4';
 
@@ -142,11 +142,11 @@ describe('ChangeTrackingService', () => {
     });
   });
 
-  describe('change management', () => {
+  suite('change management', () => {
     let changeId: string;
     const filePath = path.join(tempDir, 'test.txt');
 
-    beforeEach(async () => {
+    setup(async () => {
       changeId = await changeTracker.trackFileOperation(filePath, {
         type: 'create',
         beforeContent: null,
@@ -155,21 +155,21 @@ describe('ChangeTrackingService', () => {
       });
     });
 
-    it('should accept change correctly', async () => {
+    test('should accept change correctly', async () => {
       await changeTracker.acceptChange(changeId);
 
       const changes = await changeTracker.getChangesForFile(filePath);
       assert.strictEqual(changes[0].status, 'accepted');
     });
 
-    it('should reject change correctly', async () => {
+    test('should reject change correctly', async () => {
       await changeTracker.rejectChange(changeId);
 
       const changes = await changeTracker.getChangesForFile(filePath);
       assert.strictEqual(changes[0].status, 'rejected');
     });
 
-    it('should accept all changes correctly', async () => {
+    test('should accept all changes correctly', async () => {
       // Add another change
       const changeId2 = await changeTracker.trackFileOperation(path.join(tempDir, 'test2.txt'), {
         type: 'create',
@@ -184,7 +184,7 @@ describe('ChangeTrackingService', () => {
       assert.ok(allChanges.every(change => change.status === 'accepted'));
     });
 
-    it('should reject all changes correctly', async () => {
+    test('should reject all changes correctly', async () => {
       // Add another change
       const changeId2 = await changeTracker.trackFileOperation(path.join(tempDir, 'test2.txt'), {
         type: 'create',
@@ -200,8 +200,8 @@ describe('ChangeTrackingService', () => {
     });
   });
 
-  describe('persistence', () => {
-    it('should persist and restore changes across sessions', async () => {
+  suite('persistence', () => {
+    test('should persist and restore changes across sessions', async () => {
       const filePath = path.join(tempDir, 'test.txt');
       
       // Track a change
@@ -223,8 +223,8 @@ describe('ChangeTrackingService', () => {
     });
   });
 
-  describe('getPendingChanges', () => {
-    it('should return only pending changes', async () => {
+  suite('getPendingChanges', () => {
+    test('should return only pending changes', async () => {
       const filePath1 = path.join(tempDir, 'test1.txt');
       const filePath2 = path.join(tempDir, 'test2.txt');
       const filePath3 = path.join(tempDir, 'test3.txt');
@@ -263,23 +263,23 @@ describe('ChangeTrackingService', () => {
   });
 });
 
-describe('BackupManager', () => {
+suite('BackupManager', () => {
   let tempDir: string;
   let backupManager: BackupManager;
 
-  beforeEach(async () => {
+  setup(async () => {
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'backup-test-'));
     backupManager = new BackupManager(tempDir);
   });
 
-  afterEach(async () => {
+  teardown(async () => {
     if (fs.existsSync(tempDir)) {
       await fs.promises.rm(tempDir, { recursive: true, force: true });
     }
   });
 
-  describe('createBackup', () => {
-    it('should create backup correctly', async () => {
+  suite('createBackup', () => {
+    test('should create backup correctly', async () => {
       const filePath = path.join(tempDir, 'original.txt');
       const content = 'backup content';
 
@@ -302,8 +302,8 @@ describe('BackupManager', () => {
     });
   });
 
-  describe('restoreFromBackup', () => {
-    it('should restore from backup correctly', async () => {
+  suite('restoreFromBackup', () => {
+    test('should restore from backup correctly', async () => {
       const originalPath = path.join(tempDir, 'original.txt');
       const targetPath = path.join(tempDir, 'restored.txt');
       const content = 'backup content';
@@ -319,7 +319,7 @@ describe('BackupManager', () => {
       assert.strictEqual(restoredContent, content);
     });
 
-    it('should handle non-existent backup gracefully', async () => {
+    test('should handle non-existent backup gracefully', async () => {
       const targetPath = path.join(tempDir, 'restored.txt');
       
       try {
@@ -332,8 +332,8 @@ describe('BackupManager', () => {
     });
   });
 
-  describe('cleanupOldBackups', () => {
-    it('should cleanup old backups correctly', async () => {
+  suite('cleanupOldBackups', () => {
+    test('should cleanup old backups correctly', async () => {
       const filePath = path.join(tempDir, 'test.txt');
       const content = 'test content';
 

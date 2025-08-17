@@ -10,6 +10,8 @@ import { ListFilesTool } from '../tools/listFiles';
 import { CreateFolderTool } from '../tools/createFolder';
 import { RenameFileTool } from '../tools/renameFile';
 import { InsertLinesTool } from '../tools/insertLines';
+import { DeleteLinesTool } from '../tools/deleteLines';
+import { ReplaceLinesTool } from '../tools/replaceLines';
 import { PatchFileTool } from '../tools/patchFile';
 import { GetFileSizeTool } from '../tools/getFileSize';
 import { ChangeTrackingService } from '../changeTrackingService';
@@ -446,6 +448,242 @@ suite('File Tools Integration Tests', () => {
             const result = await tool.execute({ path: 'testDir' }, workspaceRoot);
             assert.strictEqual(result.success, false);
             assert.ok(result.error?.includes('Path is not a file'));
+        });
+    });
+
+    suite('DeleteLinesTool Integration', () => {
+        let tool: DeleteLinesTool;
+        let mockChangeTracker: MockChangeTrackingService;
+
+        setup(() => {
+            mockChangeTracker = new MockChangeTrackingService();
+            tool = new DeleteLinesTool(mockChangeTracker);
+        });
+
+        test('should delete lines by line numbers when temp dir available', async () => {
+            if (!tempDir) {
+                console.log('Skipping test - no temp directory available');
+                return;
+            }
+            
+            // Setup test file with known content
+            const testContent = 'Line 1\nLine 2\nLine 3\nLine 4\nLine 5';
+            await fs.promises.writeFile(path.join(workspaceRoot, 'deleteTest.txt'), testContent);
+            
+            const result = await tool.execute({ 
+                path: 'deleteTest.txt',
+                line_numbers: [2, 4] // Delete lines 2 and 4
+            }, workspaceRoot);
+            
+            assert.strictEqual(result.success, true);
+            
+            const updatedContent = await fs.promises.readFile(
+                path.join(workspaceRoot, 'deleteTest.txt'), 'utf8'
+            );
+            const lines = updatedContent.split('\n');
+            assert.strictEqual(lines.length, 3); // Should have 3 lines left
+            assert.strictEqual(lines[0], 'Line 1');
+            assert.strictEqual(lines[1], 'Line 3');
+            assert.strictEqual(lines[2], 'Line 5');
+        });
+
+        test('should delete lines by range when temp dir available', async () => {
+            if (!tempDir) {
+                console.log('Skipping test - no temp directory available');
+                return;
+            }
+            
+            const testContent = 'Line 1\nLine 2\nLine 3\nLine 4\nLine 5';
+            await fs.promises.writeFile(path.join(workspaceRoot, 'deleteRangeTest.txt'), testContent);
+            
+            const result = await tool.execute({ 
+                path: 'deleteRangeTest.txt',
+                start_line: 2,
+                end_line: 4
+            }, workspaceRoot);
+            
+            assert.strictEqual(result.success, true);
+            
+            const updatedContent = await fs.promises.readFile(
+                path.join(workspaceRoot, 'deleteRangeTest.txt'), 'utf8'
+            );
+            const lines = updatedContent.split('\n');
+            assert.strictEqual(lines.length, 2);
+            assert.strictEqual(lines[0], 'Line 1');
+            assert.strictEqual(lines[1], 'Line 5');
+        });
+
+        test('should delete lines containing text when temp dir available', async () => {
+            if (!tempDir) {
+                console.log('Skipping test - no temp directory available');
+                return;
+            }
+            
+            const testContent = 'Normal line\nTODO: fix this\nAnother line\nTODO: add feature\nFinal line';
+            await fs.promises.writeFile(path.join(workspaceRoot, 'deleteTextTest.txt'), testContent);
+            
+            const result = await tool.execute({ 
+                path: 'deleteTextTest.txt',
+                containing_text: 'TODO'
+            }, workspaceRoot);
+            
+            assert.strictEqual(result.success, true);
+            
+            const updatedContent = await fs.promises.readFile(
+                path.join(workspaceRoot, 'deleteTextTest.txt'), 'utf8'
+            );
+            const lines = updatedContent.split('\n');
+            assert.strictEqual(lines.length, 3);
+            assert.ok(!updatedContent.includes('TODO'));
+        });
+
+        test('should handle no matching lines when temp dir available', async () => {
+            if (!tempDir) {
+                console.log('Skipping test - no temp directory available');
+                return;
+            }
+            
+            const result = await tool.execute({ 
+                path: 'testFile.txt',
+                containing_text: 'NonExistentText'
+            }, workspaceRoot);
+            
+            assert.strictEqual(result.success, false);
+            assert.ok(result.error?.includes('No lines found matching'));
+        });
+    });
+
+    suite('ReplaceLinesTool Integration', () => {
+        let tool: ReplaceLinesTool;
+        let mockChangeTracker: MockChangeTrackingService;
+
+        setup(() => {
+            mockChangeTracker = new MockChangeTrackingService();
+            tool = new ReplaceLinesTool(mockChangeTracker);
+        });
+
+        test('should replace single line by number when temp dir available', async () => {
+            if (!tempDir) {
+                console.log('Skipping test - no temp directory available');
+                return;
+            }
+            
+            const testContent = 'Line 1\nLine 2\nLine 3\nLine 4\nLine 5';
+            await fs.promises.writeFile(path.join(workspaceRoot, 'replaceTest.txt'), testContent);
+            
+            const result = await tool.execute({ 
+                path: 'replaceTest.txt',
+                line_number: 3,
+                new_content: 'Replaced Line 3'
+            }, workspaceRoot);
+            
+            assert.strictEqual(result.success, true);
+            
+            const updatedContent = await fs.promises.readFile(
+                path.join(workspaceRoot, 'replaceTest.txt'), 'utf8'
+            );
+            const lines = updatedContent.split('\n');
+            assert.strictEqual(lines[0], 'Line 1');
+            assert.strictEqual(lines[1], 'Line 2');
+            assert.strictEqual(lines[2], 'Replaced Line 3');
+            assert.strictEqual(lines[3], 'Line 4');
+            assert.strictEqual(lines[4], 'Line 5');
+        });
+
+        test('should replace multiple lines when temp dir available', async () => {
+            if (!tempDir) {
+                console.log('Skipping test - no temp directory available');
+                return;
+            }
+            
+            const testContent = 'Line 1\nLine 2\nLine 3\nLine 4\nLine 5';
+            await fs.promises.writeFile(path.join(workspaceRoot, 'replaceMultiTest.txt'), testContent);
+            
+            const result = await tool.execute({ 
+                path: 'replaceMultiTest.txt',
+                line_numbers: [2, 4],
+                new_content: 'New Content\nSecond Line'
+            }, workspaceRoot);
+            
+            assert.strictEqual(result.success, true);
+            
+            const updatedContent = await fs.promises.readFile(
+                path.join(workspaceRoot, 'replaceMultiTest.txt'), 'utf8'
+            );
+            const lines = updatedContent.split('\n');
+            assert.strictEqual(lines[0], 'Line 1');
+            assert.strictEqual(lines[1], 'New Content');
+            assert.strictEqual(lines[2], 'Second Line');
+            assert.strictEqual(lines[3], 'Line 3');
+            assert.strictEqual(lines[4], 'Line 5');
+        });
+
+        test('should replace lines by content when temp dir available', async () => {
+            if (!tempDir) {
+                console.log('Skipping test - no temp directory available');
+                return;
+            }
+            
+            const testContent = 'First line\nOld content\nThird line\nOld content\nFifth line';
+            await fs.promises.writeFile(path.join(workspaceRoot, 'replaceContentTest.txt'), testContent);
+            
+            const result = await tool.execute({ 
+                path: 'replaceContentTest.txt',
+                old_content: 'Old content',
+                new_content: 'New content'
+            }, workspaceRoot);
+            
+            assert.strictEqual(result.success, true);
+            
+            const updatedContent = await fs.promises.readFile(
+                path.join(workspaceRoot, 'replaceContentTest.txt'), 'utf8'
+            );
+            assert.ok(updatedContent.includes('New content'));
+            assert.ok(!updatedContent.includes('Old content'));
+        });
+
+        test('should replace lines by range when temp dir available', async () => {
+            if (!tempDir) {
+                console.log('Skipping test - no temp directory available');
+                return;
+            }
+            
+            const testContent = 'Line 1\nLine 2\nLine 3\nLine 4\nLine 5';
+            await fs.promises.writeFile(path.join(workspaceRoot, 'replaceRangeTest.txt'), testContent);
+            
+            const result = await tool.execute({ 
+                path: 'replaceRangeTest.txt',
+                start_line: 2,
+                end_line: 4,
+                new_content: 'Replacement Block'
+            }, workspaceRoot);
+            
+            assert.strictEqual(result.success, true);
+            
+            const updatedContent = await fs.promises.readFile(
+                path.join(workspaceRoot, 'replaceRangeTest.txt'), 'utf8'
+            );
+            const lines = updatedContent.split('\n');
+            assert.strictEqual(lines.length, 3);
+            assert.strictEqual(lines[0], 'Line 1');
+            assert.strictEqual(lines[1], 'Replacement Block');
+            assert.strictEqual(lines[2], 'Line 5');
+        });
+
+        test('should handle invalid line number when temp dir available', async () => {
+            if (!tempDir) {
+                console.log('Skipping test - no temp directory available');
+                return;
+            }
+            
+            const result = await tool.execute({ 
+                path: 'testFile.txt',
+                line_number: 999,
+                new_content: 'New content'
+            }, workspaceRoot);
+            
+            assert.strictEqual(result.success, false);
+            assert.ok(result.error?.includes('out of range'));
         });
     });
 });

@@ -166,11 +166,29 @@ export class ChangeTrackingService {
       backupId
     };
 
-    // Store change
+    // Check if there's already a pending change for this file
     if (!this.changes.has(absolutePath)) {
       this.changes.set(absolutePath, []);
     }
-    this.changes.get(absolutePath)!.push(change);
+    
+    const existingChanges = this.changes.get(absolutePath)!;
+    const existingPendingIndex = existingChanges.findIndex(c => c.status === 'pending');
+    
+    if (existingPendingIndex !== -1) {
+      // Replace existing pending change with new one, but keep the original beforeContent
+      const existingChange = existingChanges[existingPendingIndex];
+      console.log(`ChangeTrackingService: Replacing existing pending change for ${absolutePath}`);
+      
+      // Use the original beforeContent from the first change, but new afterContent
+      change.beforeContent = existingChange.beforeContent;
+      change.backupId = existingChange.backupId; // Keep original backup
+      
+      // Replace the existing change
+      existingChanges[existingPendingIndex] = change;
+    } else {
+      // Add new change
+      existingChanges.push(change);
+    }
 
     // Persist changes
     await this.persistChanges();
