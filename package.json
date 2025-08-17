@@ -6,11 +6,18 @@
   "engines": {
     "vscode": "^1.103.0"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SFENCE-SOFTWARE/VSCode/CodingAgent.git"
+  },
   "categories": [
     "AI",
     "Other"
   ],
   "main": "./out/extension.js",
+  "activationEvents": [
+    "*"
+  ],
   "contributes": {
     "commands": [
       {
@@ -54,6 +61,30 @@
         "title": "Open Settings Panel",
         "category": "CodingAgent",
         "icon": "$(gear)"
+      },
+      {
+        "command": "codingagent.testInlineTracking",
+        "title": "Test Inline Change Tracking",
+        "category": "CodingAgent",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "codingagent.showChanges",
+        "title": "Show File Changes",
+        "category": "CodingAgent",
+        "icon": "$(diff)"
+      },
+      {
+        "command": "codingagent.acceptAllChanges",
+        "title": "Accept All Changes",
+        "category": "CodingAgent",
+        "icon": "$(check-all)"
+      },
+      {
+        "command": "codingagent.rejectAllChanges",
+        "title": "Reject All Changes",
+        "category": "CodingAgent",
+        "icon": "$(close-all)"
       }
     ],
     "viewsContainers": {

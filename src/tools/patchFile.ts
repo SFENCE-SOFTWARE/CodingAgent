@@ -48,76 +48,83 @@ export class PatchFileTool extends ChangeAwareBaseTool {
     };
   }
 
-  async execute(args: any, workspaceRoot: string): Promise<ToolResult> {
-    return this.captureFileChange(args.path, async () => {
-      try {
-        const inputPath = args.path;
-        const oldText = args.old_text;
-        const newText = args.new_text;
-        const lineNumber = args.line_number;
+  protected async executeOperation(args: any, workspaceRoot: string): Promise<ToolResult> {
+    try {
+      const inputPath = args.path;
+      const oldText = args.old_text;
+      const newText = args.new_text;
+      const lineNumber = args.line_number;
 
-        const fullPath = this.resolvePath(inputPath, workspaceRoot);
-        
-        // Check if file exists
-        if (!fs.existsSync(fullPath)) {
-          return {
-            success: false,
-            content: '',
-            error: `File not found: ${fullPath}`
-          };
-        }
-
-        // Read the file
-        const content = await fs.promises.readFile(fullPath, 'utf8');
-        const lines = content.split('\n');
-
-        // Find and replace the text
-        let found = false;
-        let modifiedLines = lines;
-
-        if (lineNumber && lineNumber > 0 && lineNumber <= lines.length) {
-          // If line number is provided, check that line first
-          const targetLine = lines[lineNumber - 1];
-          if (targetLine.includes(oldText)) {
-            modifiedLines[lineNumber - 1] = targetLine.replace(oldText, newText);
-            found = true;
-          }
-        }
-
-        if (!found) {
-          // Search through all lines
-          for (let i = 0; i < lines.length; i++) {
-            if (lines[i].includes(oldText)) {
-              modifiedLines[i] = lines[i].replace(oldText, newText);
-              found = true;
-              break; // Replace only first occurrence
-            }
-          }
-        }
-
-        if (!found) {
-          return {
-            success: false,
-            content: '',
-            error: `Text not found in file: "${oldText}"`
-          };
-        }
-
-        // Write the modified content back
-        const newContent = modifiedLines.join('\n');
-        await fs.promises.writeFile(fullPath, newContent, 'utf8');
-
-        return {
-          success: true,
-          content: `File patched successfully: ${fullPath}`
-        };
-      } catch (error) {
+      const fullPath = this.getFilePath(args, workspaceRoot);
+      
+      // Check if file exists
+      if (!fs.existsSync(fullPath)) {
         return {
           success: false,
           content: '',
-          error: `Failed to patch file: ${error instanceof Error ? error.message : String(error)}`
+          error: `File not found: ${fullPath}`
         };
       }
-    }, workspaceRoot);
+
+      // Read the file
+      const content = await fs.promises.readFile(fullPath, 'utf8');
+      const lines = content.split('\n');
+
+      // Find and replace the text
+      let found = false;
+      let modifiedLines = lines;
+
+      if (lineNumber && lineNumber > 0 && lineNumber <= lines.length) {
+        // If line number is provided, check that line first
+        const targetLine = lines[lineNumber - 1];
+        if (targetLine.includes(oldText)) {
+          modifiedLines[lineNumber - 1] = targetLine.replace(oldText, newText);
+          found = true;
+        }
+      }
+
+      if (!found) {
+        // Search through all lines
+        for (let i = 0; i < lines.length; i++) {
+          if (lines[i].includes(oldText)) {
+            modifiedLines[i] = lines[i].replace(oldText, newText);
+            found = true;
+            break; // Replace only first occurrence
+          }
+        }
+      }
+
+      if (!found) {
+        return {
+          success: false,
+          content: '',
+          error: `Text not found in file: "${oldText}"`
+        };
+      }
+
+      // Write the modified content back
+      const newContent = modifiedLines.join('\n');
+      await fs.promises.writeFile(fullPath, newContent, 'utf8');
+
+      return {
+        success: true,
+        content: `File patched successfully: ${fullPath}`
+      };
+    } catch (error) {
+      return {
+        success: false,
+        content: '',
+        error: `Failed to patch file: ${error instanceof Error ? error.message : String(error)}`
+      };
+    }
+  }
+
+  protected getFilePath(args: any, workspaceRoot: string): string {
+    const inputPath = args.path;
+    return path.isAbsolute(inputPath) ? inputPath : path.join(workspaceRoot, inputPath);
+  }
+
+  protected getOperationType(args: any): 'create' | 'modify' | 'delete' | 'rename' {
+    return 'modify';
   }
 }

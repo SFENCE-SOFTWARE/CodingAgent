@@ -114,12 +114,19 @@ export class ChangeTrackingService {
   private backupManager: BackupManager;
   private workspaceRoot: string;
   private persistenceFile: string;
+  private changeUpdateCallback?: (filePath: string, changeType: 'created' | 'accepted' | 'rejected') => Promise<void>;
 
   constructor(workspaceRoot: string) {
     this.workspaceRoot = workspaceRoot;
     this.backupManager = new BackupManager(workspaceRoot);
     this.persistenceFile = path.join(workspaceRoot, '.codingagent', 'changes.json');
     this.loadPersistedChanges();
+  }
+
+  // Set callback for real-time updates
+  setChangeUpdateCallback(callback: (filePath: string, changeType: 'created' | 'accepted' | 'rejected') => Promise<void>): void {
+    console.log('ChangeTrackingService: Setting change update callback');
+    this.changeUpdateCallback = callback;
   }
 
   // Core tracking methods
@@ -168,17 +175,33 @@ export class ChangeTrackingService {
     // Persist changes
     await this.persistChanges();
 
+    // Notify about new change (async)
+    console.log(`ChangeTrackingService: About to call callback for ${absolutePath}, has callback: ${!!this.changeUpdateCallback}`);
+    if (this.changeUpdateCallback) {
+      try {
+        console.log(`ChangeTrackingService: Calling callback for change created: ${absolutePath}`);
+        await this.changeUpdateCallback(absolutePath, 'created');
+        console.log(`ChangeTrackingService: Callback completed successfully for ${absolutePath}`);
+      } catch (error) {
+        console.warn('Change callback failed:', error);
+      }
+    } else {
+      console.warn('ChangeTrackingService: No callback set!');
+    }
+
     return changeId;
   }
 
   async getChangesForFile(filePath: string): Promise<FileChange[]> {
     const absolutePath = path.resolve(filePath);
-    return this.changes.get(absolutePath) || [];
+    const allChanges = this.changes.get(absolutePath) || [];
+    // Return only pending changes - accepted/rejected are removed completely
+    return allChanges.filter(change => change.status === 'pending');
   }
 
   async getAllPendingChanges(): Promise<FileChange[]> {
     const allChanges: FileChange[] = [];
-    for (const changes of this.changes.values()) {
+    for (const changes of Array.from(this.changes.values())) {
       allChanges.push(...changes.filter(change => change.status === 'pending'));
     }
     return allChanges.sort((a, b) => b.timestamp - a.timestamp);
@@ -186,7 +209,7 @@ export class ChangeTrackingService {
 
   async getAllChanges(): Promise<FileChange[]> {
     const allChanges: FileChange[] = [];
-    for (const changes of this.changes.values()) {
+    for (const changes of Array.from(this.changes.values())) {
       allChanges.push(...changes);
     }
     return allChanges.sort((a, b) => b.timestamp - a.timestamp);
@@ -199,8 +222,20 @@ export class ChangeTrackingService {
       throw new Error(`Change with ID ${changeId} not found`);
     }
 
-    change.status = 'accepted';
+    const filePath = change.filePath;
+
+    // Remove the change completely (don't keep accepted changes)
+    this.removeChangeById(changeId);
     await this.persistChanges();
+
+    // Notify about acceptance
+    if (this.changeUpdateCallback) {
+      try {
+        await this.changeUpdateCallback(filePath, 'accepted');
+      } catch (error) {
+        console.warn('Accept callback failed:', error);
+      }
+    }
   }
 
   async rejectChange(changeId: string): Promise<void> {
@@ -209,20 +244,40 @@ export class ChangeTrackingService {
       throw new Error(`Change with ID ${changeId} not found`);
     }
 
-    change.status = 'rejected';
+    const filePath = change.filePath;
 
-    // Restore from backup if available
-    if (change.backupId && change.beforeContent) {
+    // Revert the file to original content
+    if (change.beforeContent !== null) {
       try {
-        await this.backupManager.restoreFromBackup(change.backupId, change.filePath);
+        if (change.backupId) {
+          await this.backupManager.restoreFromBackup(change.backupId, change.filePath);
+        } else {
+          // Fallback: write the before content directly
+          await fs.promises.writeFile(change.filePath, change.beforeContent, 'utf8');
+        }
       } catch (error) {
-        console.warn('Failed to restore from backup:', error);
-        // Fallback: write the before content directly
-        await fs.promises.writeFile(change.filePath, change.beforeContent, 'utf8');
+        console.warn('Failed to restore file content:', error);
+        // Still try to write before content
+        try {
+          await fs.promises.writeFile(change.filePath, change.beforeContent, 'utf8');
+        } catch (writeError) {
+          console.error('Failed to restore file content:', writeError);
+        }
       }
     }
 
+    // Remove the change completely
+    this.removeChangeById(changeId);
     await this.persistChanges();
+
+    // Notify about rejection
+    if (this.changeUpdateCallback) {
+      try {
+        await this.changeUpdateCallback(filePath, 'rejected');
+      } catch (error) {
+        console.warn('Reject callback failed:', error);
+      }
+    }
   }
 
   async acceptAllChanges(): Promise<void> {
@@ -354,7 +409,7 @@ export class ChangeTrackingService {
       await fs.promises.mkdir(persistenceDir, { recursive: true });
       
       const changesObject: Record<string, FileChange[]> = {};
-      for (const [filePath, changes] of this.changes.entries()) {
+      for (const [filePath, changes] of Array.from(this.changes.entries())) {
         changesObject[filePath] = changes;
       }
       
@@ -383,7 +438,7 @@ export class ChangeTrackingService {
   async clearOldChanges(maxAge: number): Promise<void> {
     const cutoffTime = Date.now() - maxAge;
     
-    for (const [filePath, changes] of this.changes.entries()) {
+    for (const [filePath, changes] of Array.from(this.changes.entries())) {
       const filteredChanges = changes.filter(change => 
         change.status === 'pending' || change.timestamp > cutoffTime
       );
@@ -406,13 +461,27 @@ export class ChangeTrackingService {
 
   // Helper methods
   private findChangeById(changeId: string): FileChange | null {
-    for (const changes of this.changes.values()) {
+    for (const changes of Array.from(this.changes.values())) {
       const change = changes.find(c => c.id === changeId);
       if (change) {
         return change;
       }
     }
     return null;
+  }
+
+  private removeChangeById(changeId: string): boolean {
+    for (const [filePath, changes] of Array.from(this.changes.entries())) {
+      const index = changes.findIndex(c => c.id === changeId);
+      if (index !== -1) {
+        changes.splice(index, 1);
+        if (changes.length === 0) {
+          this.changes.delete(filePath);
+        }
+        return true;
+      }
+    }
+    return false;
   }
 
   private generateChangeId(): string {

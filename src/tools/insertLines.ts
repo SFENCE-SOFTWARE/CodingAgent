@@ -52,108 +52,115 @@ export class InsertLinesTool extends ChangeAwareBaseTool {
     };
   }
 
-  async execute(args: any, workspaceRoot: string): Promise<ToolResult> {
-    return this.captureFileChange(args.path, async () => {
-      try {
-        const inputPath = args.path;
-        const lineNumber = args.line_number;
-        const content = args.content;
-        const afterText = args.after_text;
-        const beforeText = args.before_text;
+  protected async executeOperation(args: any, workspaceRoot: string): Promise<ToolResult> {
+    try {
+      const inputPath = args.path;
+      const lineNumber = args.line_number;
+      const content = args.content;
+      const afterText = args.after_text;
+      const beforeText = args.before_text;
 
-        const fullPath = this.resolvePath(inputPath, workspaceRoot);
-        
-        // Check if file exists
-        if (!fs.existsSync(fullPath)) {
-          return {
-            success: false,
-            content: '',
-            error: `File not found: ${fullPath}`
-          };
-        }
-
-        // Read the file
-        const fileContent = await fs.promises.readFile(fullPath, 'utf8');
-        const lines = fileContent.split('\n');
-        
-        // Determine insertion position
-        let insertPosition = 0;
-        
-        if (afterText) {
-          // Find line containing afterText and insert after it
-          const afterLineIndex = lines.findIndex(line => line.includes(afterText));
-          if (afterLineIndex === -1) {
-            return {
-              success: false,
-              content: '',
-              error: `Text not found for insertion: "${afterText}"`
-            };
-          }
-          insertPosition = afterLineIndex + 1;
-        } else if (beforeText) {
-          // Find line containing beforeText and insert before it
-          const beforeLineIndex = lines.findIndex(line => line.includes(beforeText));
-          if (beforeLineIndex === -1) {
-            return {
-              success: false,
-              content: '',
-              error: `Text not found for insertion: "${beforeText}"`
-            };
-          }
-          insertPosition = beforeLineIndex;
-        } else if (lineNumber !== undefined) {
-          // Use line number
-          if (lineNumber === -1) {
-            // Append at end
-            insertPosition = lines.length;
-          } else if (lineNumber === 0) {
-            // Insert at beginning
-            insertPosition = 0;
-          } else {
-            // Insert at specific line (1-based)
-            insertPosition = Math.max(0, Math.min(lineNumber - 1, lines.length));
-          }
-        } else {
-          // Default: append at end
-          insertPosition = lines.length;
-        }
-
-        // Split content into lines if it's multi-line
-        const contentLines = content.split('\n');
-        
-        // Insert the new lines
-        const newLines = [
-          ...lines.slice(0, insertPosition),
-          ...contentLines,
-          ...lines.slice(insertPosition)
-        ];
-        
-        // Write back to file
-        const newContent = newLines.join('\n');
-        await fs.promises.writeFile(fullPath, newContent, 'utf8');
-
-        const insertedLinesCount = contentLines.length;
-        const positionDescription = afterText 
-          ? `after line containing "${afterText}"`
-          : beforeText 
-          ? `before line containing "${beforeText}"`
-          : lineNumber === -1 
-          ? 'at end of file'
-          : lineNumber === 0
-          ? 'at beginning of file'
-          : `at line ${insertPosition + 1}`;
-
-        return {
-          success: true,
-          content: `Successfully inserted ${insertedLinesCount} line(s) ${positionDescription} in ${fullPath}`
-        };
-      } catch (error) {
+      const fullPath = this.getFilePath(args, workspaceRoot);
+      
+      // Check if file exists
+      if (!fs.existsSync(fullPath)) {
         return {
           success: false,
           content: '',
-          error: `Failed to insert lines: ${error instanceof Error ? error.message : String(error)}`
+          error: `File not found: ${fullPath}`
         };
       }
-    }, workspaceRoot);
+
+      // Read the file
+      const fileContent = await fs.promises.readFile(fullPath, 'utf8');
+      const lines = fileContent.split('\n');
+      
+      // Determine insertion position
+      let insertPosition = 0;
+      
+      if (afterText) {
+        // Find line containing afterText and insert after it
+        const afterLineIndex = lines.findIndex(line => line.includes(afterText));
+        if (afterLineIndex === -1) {
+          return {
+            success: false,
+            content: '',
+            error: `Text not found for insertion: "${afterText}"`
+          };
+        }
+        insertPosition = afterLineIndex + 1;
+      } else if (beforeText) {
+        // Find line containing beforeText and insert before it
+        const beforeLineIndex = lines.findIndex(line => line.includes(beforeText));
+        if (beforeLineIndex === -1) {
+          return {
+            success: false,
+            content: '',
+            error: `Text not found for insertion: "${beforeText}"`
+          };
+        }
+        insertPosition = beforeLineIndex;
+      } else if (lineNumber !== undefined) {
+        // Use line number
+        if (lineNumber === -1) {
+          // Append at end
+          insertPosition = lines.length;
+        } else if (lineNumber === 0) {
+          // Insert at beginning
+          insertPosition = 0;
+        } else {
+          // Insert at specific line (1-based)
+          insertPosition = Math.max(0, Math.min(lineNumber - 1, lines.length));
+        }
+      } else {
+        // Default: append at end
+        insertPosition = lines.length;
+      }
+
+      // Split content into lines if it's multi-line
+      const contentLines = content.split('\n');
+      
+      // Insert the new lines
+      const newLines = [
+        ...lines.slice(0, insertPosition),
+        ...contentLines,
+        ...lines.slice(insertPosition)
+      ];
+      
+      // Write back to file
+      const newContent = newLines.join('\n');
+      await fs.promises.writeFile(fullPath, newContent, 'utf8');
+
+      const insertedLinesCount = contentLines.length;
+      const positionDescription = afterText 
+        ? `after line containing "${afterText}"`
+        : beforeText 
+        ? `before line containing "${beforeText}"`
+        : lineNumber === -1 
+        ? 'at end of file'
+        : lineNumber === 0
+        ? 'at beginning of file'
+        : `at line ${insertPosition + 1}`;
+
+      return {
+        success: true,
+        content: `Successfully inserted ${insertedLinesCount} line(s) ${positionDescription} in ${fullPath}`
+      };
+    } catch (error) {
+      return {
+        success: false,
+        content: '',
+        error: `Failed to insert lines: ${error instanceof Error ? error.message : String(error)}`
+      };
+    }
+  }
+
+  protected getFilePath(args: any, workspaceRoot: string): string {
+    const inputPath = args.path;
+    return path.isAbsolute(inputPath) ? inputPath : path.join(workspaceRoot, inputPath);
+  }
+
+  protected getOperationType(args: any): 'create' | 'modify' | 'delete' | 'rename' {
+    return 'modify';
   }
 }

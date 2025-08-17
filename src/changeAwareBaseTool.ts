@@ -2,95 +2,90 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { BaseTool, ToolInfo, ToolDefinition, ToolResult } from './types';
+import { BaseTool, ToolResult } from './types';
 import { ChangeTrackingService, FileOperation } from './changeTrackingService';
 
 export abstract class ChangeAwareBaseTool implements BaseTool {
-  constructor(protected changeTracker: ChangeTrackingService) {}
+  protected changeTracker: ChangeTrackingService;
+  protected changeNotificationCallback?: (changeId: string) => void;
 
-  // Abstract methods that must be implemented by subclasses
-  abstract getToolInfo(): ToolInfo;
-  abstract getToolDefinition(): ToolDefinition;
-
-  // Protected method for capturing file changes
-  protected async captureFileChange(
-    filePath: string,
-    operation: () => Promise<ToolResult>,
-    workspaceRoot: string
-  ): Promise<ToolResult & { changeId?: string }> {
-    const absolutePath = this.resolvePath(filePath, workspaceRoot);
-    
-    // Capture before state
-    const beforeContent = await this.readFileIfExists(absolutePath);
-    
-    // Execute the operation
-    const result = await operation();
-    
-    // If operation was successful, track the change
-    if (result.success) {
-      const afterContent = await this.readFileIfExists(absolutePath);
-      
-      // Only track if there was actually a change
-      if (beforeContent !== afterContent) {
-        try {
-          const changeId = await this.changeTracker.trackFileOperation(absolutePath, {
-            type: this.determineChangeType(beforeContent, afterContent),
-            beforeContent,
-            afterContent,
-            toolName: this.getToolInfo().name
-          });
-          
-          return {
-            ...result,
-            changeId,
-            content: result.content + ` [Change ID: ${changeId}]`
-          };
-        } catch (error) {
-          console.warn('Failed to track change:', error);
-        }
-      }
-    }
-    
-    return result;
+  constructor(changeTracker: ChangeTrackingService) {
+    this.changeTracker = changeTracker;
   }
 
-  // Helper method to read file content if it exists
-  protected async readFileIfExists(filePath: string): Promise<string | null> {
+  // Set callback for UI notifications
+  public setChangeNotificationCallback(callback: (changeId: string) => void): void {
+    this.changeNotificationCallback = callback;
+  }
+
+  abstract getToolInfo(): any;
+  abstract getToolDefinition(): any;
+
+  async execute(args: any, workspaceRoot: string): Promise<ToolResult> {
     try {
-      if (fs.existsSync(filePath)) {
-        return await fs.promises.readFile(filePath, 'utf8');
+      // Get before content if file exists
+      const beforeContent = await this.getBeforeContent(args, workspaceRoot);
+      
+      // Execute the tool operation
+      const result = await this.executeOperation(args, workspaceRoot);
+      
+      if (result.success) {
+        // Get after content
+        const afterContent = await this.getAfterContent(args, workspaceRoot);
+        
+        // Track the change
+        const operation: FileOperation = {
+          type: beforeContent === null ? 'create' : this.getOperationType(args),
+          beforeContent,
+          afterContent,
+          toolName: this.getToolInfo().name
+        };
+        
+        const changeId = await this.changeTracker.trackFileOperation(
+          this.getFilePath(args, workspaceRoot), 
+          operation
+        );
+        
+        // Notify UI about the change
+        if (this.changeNotificationCallback) {
+          this.changeNotificationCallback(changeId);
+        }
+        
+        // Update result to include change ID
+        result.content += ` [Change ID: ${changeId}]`;
       }
-      return null;
+      
+      return result;
     } catch (error) {
-      return null;
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+        content: ''
+      };
     }
   }
 
-  // Determine the type of change based on before/after content
-  protected determineChangeType(
-    beforeContent: string | null, 
-    afterContent: string | null
-  ): 'create' | 'modify' | 'delete' {
-    if (beforeContent === null && afterContent !== null) {
-      return 'create';
-    } else if (beforeContent !== null && afterContent === null) {
-      return 'delete';
-    } else {
-      return 'modify';
+  protected abstract executeOperation(args: any, workspaceRoot: string): Promise<ToolResult>;
+  protected abstract getFilePath(args: any, workspaceRoot: string): string;
+  protected abstract getOperationType(args: any): 'create' | 'modify' | 'delete' | 'rename';
+  
+  protected async getBeforeContent(args: any, workspaceRoot: string): Promise<string | null> {
+    try {
+      const filePath = this.getFilePath(args, workspaceRoot);
+      const fs = require('fs').promises;
+      return await fs.readFile(filePath, 'utf8');
+    } catch {
+      return null; // File doesn't exist
     }
   }
-
-  // Resolve relative paths to absolute paths
-  protected resolvePath(inputPath: string, workspaceRoot: string): string {
-    if (path.isAbsolute(inputPath)) {
-      return inputPath;
+  
+  protected async getAfterContent(args: any, workspaceRoot: string): Promise<string | null> {
+    try {
+      const filePath = this.getFilePath(args, workspaceRoot);
+      const fs = require('fs').promises;
+      return await fs.readFile(filePath, 'utf8');
+    } catch {
+      return null; // File doesn't exist or couldn't be read
     }
-    if (inputPath === '.') {
-      return workspaceRoot;
-    }
-    return path.join(workspaceRoot, inputPath);
   }
-
-  // Abstract execute method - subclasses should implement this
-  abstract execute(args: any, workspaceRoot: string): Promise<ToolResult>;
 }

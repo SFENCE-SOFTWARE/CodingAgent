@@ -12,6 +12,13 @@
   const settingsBtn = document.getElementById('settingsBtn');
   const clearBtn = document.getElementById('clearBtn');
   
+  // Change tracking elements
+  const changeTrackingPanel = document.getElementById('changeTrackingPanel');
+  const changePanelContent = document.getElementById('changePanelContent');
+  const showChangesBtn = document.getElementById('showChangesBtn');
+  const hideChangesBtn = document.getElementById('hideChangesBtn');
+  const changeCount = document.getElementById('changeCount');
+  
   let isLoading = false;
   let currentMode = 'Coder';
   let currentModel = 'llama3:8b';
@@ -19,6 +26,8 @@
   let isToolCallsExpanded = false; // Tool calls collapsed by default
   let enableStreaming = true;
   let streamingMessages = new Map(); // Track streaming messages
+  let pendingChanges = []; // Track pending file changes
+  let isChangesPanelVisible = false;
   
   // Initialize
   function init() {
@@ -69,6 +78,18 @@
         clearMessages();
       }
     });
+    
+    // Change tracking events
+    showChangesBtn.addEventListener('click', () => {
+      showChangesPanel();
+    });
+    
+    hideChangesBtn.addEventListener('click', () => {
+      hideChangesPanel();
+    });
+    
+    // Request pending changes on load
+    requestPendingChanges();
   }
   
   function autoResizeTextarea() {
@@ -829,6 +850,27 @@
         clearMessages();
         break;
 
+      // Change tracking handlers
+      case 'changeTracking':
+        handleChangeTrackingUpdate(message.changeIds);
+        break;
+        
+      case 'pendingChanges':
+        updatePendingChanges(message.changes);
+        break;
+        
+      case 'changeAccepted':
+        handleChangeStatusUpdate(message.changeId, 'accepted');
+        break;
+        
+      case 'changeRejected':
+        handleChangeStatusUpdate(message.changeId, 'rejected');
+        break;
+        
+      case 'changeDiff':
+        showChangeDiff(message.changeId, message.htmlDiff);
+        break;
+
       // Streaming message handlers
       case 'streamingStart':
         createStreamingMessage(message.messageId, message.model);
@@ -856,6 +898,138 @@
         break;
     }
   });
+  
+  // Change tracking functions
+  function requestPendingChanges() {
+    vscode.postMessage({ type: 'getPendingChanges' });
+  }
+  
+  function showChangesPanel() {
+    changeTrackingPanel.style.display = 'block';
+    showChangesBtn.style.display = 'none';
+    isChangesPanelVisible = true;
+  }
+  
+  function hideChangesPanel() {
+    changeTrackingPanel.style.display = 'none';
+    if (pendingChanges.length > 0) {
+      showChangesBtn.style.display = 'block';
+    }
+    isChangesPanelVisible = false;
+  }
+  
+  function updatePendingChanges(changes) {
+    pendingChanges = changes || [];
+    updateChangeCount();
+    renderPendingChanges();
+    
+    // Show/hide the changes button
+    if (pendingChanges.length > 0 && !isChangesPanelVisible) {
+      showChangesBtn.style.display = 'block';
+    } else if (pendingChanges.length === 0) {
+      showChangesBtn.style.display = 'none';
+      hideChangesPanel();
+    }
+  }
+  
+  function updateChangeCount() {
+    changeCount.textContent = pendingChanges.length;
+  }
+  
+  function renderPendingChanges() {
+    if (pendingChanges.length === 0) {
+      changePanelContent.innerHTML = '<div class="no-changes">No pending changes</div>';
+      return;
+    }
+    
+    const changesHtml = pendingChanges.map(change => `
+      <div class="change-item" data-change-id="${change.id}">
+        <div class="change-header">
+          <div class="change-file-path">${getRelativePath(change.filePath)}</div>
+          <div class="change-actions">
+            <button class="change-btn diff" onclick="requestChangeDiff('${change.id}')">Diff</button>
+            <button class="change-btn accept" onclick="acceptChange('${change.id}')">✓</button>
+            <button class="change-btn reject" onclick="rejectChange('${change.id}')">✗</button>
+          </div>
+        </div>
+        <div class="change-details">
+          <span class="change-operation">${change.operation}</span>
+          <span class="change-tool">by ${change.toolName}</span>
+          <span class="change-timestamp">${formatTimestamp(change.timestamp)}</span>
+        </div>
+      </div>
+    `).join('');
+    
+    changePanelContent.innerHTML = changesHtml;
+  }
+  
+  function handleChangeTrackingUpdate(changeIds) {
+    if (changeIds && changeIds.length > 0) {
+      // Refresh pending changes when new changes are created
+      requestPendingChanges();
+    }
+  }
+  
+  function handleChangeStatusUpdate(changeId, status) {
+    // Remove the change from pending list
+    pendingChanges = pendingChanges.filter(change => change.id !== changeId);
+    updatePendingChanges(pendingChanges);
+  }
+  
+  function requestChangeDiff(changeId) {
+    vscode.postMessage({ 
+      type: 'getChangeDiff', 
+      changeId: changeId 
+    });
+  }
+  
+  function acceptChange(changeId) {
+    vscode.postMessage({ 
+      type: 'acceptChange', 
+      changeId: changeId 
+    });
+  }
+  
+  function rejectChange(changeId) {
+    if (confirm('Are you sure you want to reject this change? This will restore the file to its previous state.')) {
+      vscode.postMessage({ 
+        type: 'rejectChange', 
+        changeId: changeId 
+      });
+    }
+  }
+  
+  function showChangeDiff(changeId, htmlDiff) {
+    const changeItem = document.querySelector(`[data-change-id="${changeId}"]`);
+    if (changeItem && htmlDiff) {
+      let diffContainer = changeItem.querySelector('.change-diff');
+      if (!diffContainer) {
+        diffContainer = document.createElement('div');
+        diffContainer.className = 'change-diff';
+        changeItem.appendChild(diffContainer);
+      }
+      diffContainer.innerHTML = htmlDiff;
+    }
+  }
+  
+  function getRelativePath(fullPath) {
+    // Extract just the filename and immediate parent folder for display
+    const parts = fullPath.split(/[/\\]/);
+    if (parts.length > 2) {
+      return '...' + '/' + parts.slice(-2).join('/');
+    }
+    return parts.join('/');
+  }
+  
+  function formatTimestamp(timestamp) {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString();
+  }
+  
+  // Make functions global for onclick handlers
+  window.requestChangeDiff = requestChangeDiff;
+  window.acceptChange = acceptChange;
+  window.rejectChange = rejectChange;
   
   // Initialize when DOM is ready
   if (document.readyState === 'loading') {

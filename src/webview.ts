@@ -73,6 +73,22 @@ export function getWebviewContent(
           </div>
         </div>
 
+        <!-- Change Tracking Panel -->
+        <div class="change-tracking-panel" id="changeTrackingPanel" style="display: none;">
+          <div class="change-panel-header">
+            <h3>📝 File Changes</h3>
+            <button id="hideChangesBtn" class="header-btn" title="Hide Changes Panel">×</button>
+          </div>
+          <div class="change-panel-content" id="changePanelContent">
+            <div class="no-changes">No pending changes</div>
+          </div>
+        </div>
+
+        <!-- Change Tracking Toggle Button -->
+        <button id="showChangesBtn" class="show-changes-btn" title="Show File Changes" style="display: none;">
+          📝 <span id="changeCount">0</span>
+        </button>
+
         <!-- Input Container -->
         <div class="input-container">
           <div class="controls-row">

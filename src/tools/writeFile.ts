@@ -10,7 +10,7 @@ export class WriteFileTool extends ChangeAwareBaseTool {
     return {
       name: 'write_file',
       displayName: 'Write File',
-      description: 'Write or overwrite content to a file',
+      description: 'Write content to a file',
       category: 'file'
     };
   }
@@ -20,63 +20,73 @@ export class WriteFileTool extends ChangeAwareBaseTool {
       type: 'function',
       function: {
         name: 'write_file',
-        description: 'Write or overwrite content to a file',
+        description: 'Write content to a file',
         parameters: {
           type: 'object',
           properties: {
             path: {
               type: 'string',
-              description: 'Absolute or relative path to the file'
+              description: 'The file path to write to'
             },
             content: {
               type: 'string',
-              description: 'Content to write to the file'
-            },
-            append: {
-              type: 'boolean',
-              description: 'Whether to append to file instead of overwriting'
+              description: 'The content to write to the file'
             }
           },
-          required: ['path', 'content'],
-          additionalProperties: false
+          required: ['path', 'content']
         }
       }
     };
   }
 
-  async execute(args: any, workspaceRoot: string): Promise<ToolResult> {
-    return this.captureFileChange(args.path, async () => {
-      try {
-        const inputPath = args.path;
-        const content = args.content;
-        const append = args.append || false;
+  protected async executeOperation(args: any, workspaceRoot: string): Promise<ToolResult> {
+    const { path: inputPath, content } = args;
 
-        const fullPath = this.resolvePath(inputPath, workspaceRoot);
+    if (!inputPath || typeof inputPath !== 'string') {
+      return {
+        success: false,
+        error: 'Path is required and must be a string',
+        content: ''
+      };
+    }
 
-        // Ensure directory exists
-        const dir = path.dirname(fullPath);
-        if (!fs.existsSync(dir)) {
-          await fs.promises.mkdir(dir, { recursive: true });
-        }
+    if (content === undefined || content === null) {
+      return {
+        success: false,
+        error: 'Content is required',
+        content: ''
+      };
+    }
 
-        if (append) {
-          await fs.promises.appendFile(fullPath, content, 'utf8');
-        } else {
-          await fs.promises.writeFile(fullPath, content, 'utf8');
-        }
+    try {
+      const fullPath = this.getFilePath(args, workspaceRoot);
 
-        const action = append ? 'appended to' : 'written to';
-        return {
-          success: true,
-          content: `Content ${action}: ${fullPath}`
-        };
-      } catch (error) {
-        return {
-          success: false,
-          content: '',
-          error: `Failed to write file: ${error instanceof Error ? error.message : String(error)}`
-        };
-      }
-    }, workspaceRoot);
+      // Ensure directory exists
+      await fs.promises.mkdir(path.dirname(fullPath), { recursive: true });
+
+      await fs.promises.writeFile(fullPath, content, 'utf8');
+
+      return {
+        success: true,
+        content: `File written successfully to ${inputPath}`,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+        content: ''
+      };
+    }
+  }
+
+  protected getFilePath(args: any, workspaceRoot: string): string {
+    const inputPath = args.path;
+    return path.isAbsolute(inputPath) ? inputPath : path.join(workspaceRoot, inputPath);
+  }
+
+  protected getOperationType(args: any): 'create' | 'modify' | 'delete' | 'rename' {
+    // For write_file, we determine if it's create or modify based on whether the file exists
+    // This will be checked in the parent class
+    return 'modify'; // Default, will be adjusted in parent based on before content
   }
 }

@@ -54,8 +54,8 @@ export class ReadWebpageTool implements BaseTool {
       let content = await response.text();
       
       // Basic HTML stripping (for better readability)
-      content = content.replace(/<script[^>]*>.*?<\/script>/gis, '');
-      content = content.replace(/<style[^>]*>.*?<\/style>/gis, '');
+      content = content.replace(/<script[^>]*>.*?<\/script>/gi, '');
+      content = content.replace(/<style[^>]*>.*?<\/style>/gi, '');
       content = content.replace(/<[^>]*>/g, ' ');
       content = content.replace(/\s+/g, ' ').trim();
 

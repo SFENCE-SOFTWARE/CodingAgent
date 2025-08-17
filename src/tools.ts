@@ -23,11 +23,24 @@ export class ToolsService {
   private workspaceRoot: string;
   private tools: Map<string, BaseTool> = new Map();
   private changeTrackingService: ChangeTrackingService;
+  private changeNotificationCallback?: (changeId: string) => void;
 
   constructor() {
     this.workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
     this.changeTrackingService = new ChangeTrackingService(this.workspaceRoot);
     this.initializeTools();
+  }
+
+  // Set callback for change notifications to UI
+  public setChangeNotificationCallback(callback: (changeId: string) => void): void {
+    this.changeNotificationCallback = callback;
+    
+    // Update all change-aware tools with the callback
+    this.tools.forEach(tool => {
+      if ('setChangeNotificationCallback' in tool) {
+        (tool as any).setChangeNotificationCallback(callback);
+      }
+    });
   }
 
   private initializeTools(): void {
@@ -78,7 +91,7 @@ export class ToolsService {
       }
     } else {
       // Get all tool definitions
-      for (const [name, tool] of this.tools) {
+      for (const [name, tool] of Array.from(this.tools)) {
         definitions[name] = tool.getToolDefinition();
       }
     }
@@ -112,6 +125,46 @@ export class ToolsService {
   }
 
   /**
+   * Get the change tracking service
+   */
+  getChangeTrackingService(): ChangeTrackingService {
+    return this.changeTrackingService;
+  }
+
+  /**
+   * Get pending changes for UI
+   */
+  async getPendingChanges() {
+    return await this.changeTrackingService.getAllPendingChanges();
+  }
+
+  /**
+   * Accept a change
+   */
+  async acceptChange(changeId: string): Promise<void> {
+    await this.changeTrackingService.acceptChange(changeId);
+  }
+
+  /**
+   * Reject a change
+   */
+  async rejectChange(changeId: string): Promise<void> {
+    await this.changeTrackingService.rejectChange(changeId);
+  }
+
+  /**
+   * Get HTML diff for a change
+   */
+  async getChangeHtmlDiff(changeId: string): Promise<string | null> {
+    const allChanges = await this.changeTrackingService.getAllChanges();
+    const change = allChanges.find(c => c.id === changeId);
+    if (change) {
+      return await this.changeTrackingService.generateHtmlDiff(change);
+    }
+    return null;
+  }
+
+  /**
    * Check if a tool exists
    */
   hasTool(name: string): boolean {
@@ -124,7 +177,7 @@ export class ToolsService {
   getToolsByCategory(): Record<string, ToolInfo[]> {
     const categorized: Record<string, ToolInfo[]> = {};
     
-    for (const tool of this.tools.values()) {
+    for (const tool of Array.from(this.tools.values())) {
       const info = tool.getToolInfo();
       if (!categorized[info.category]) {
         categorized[info.category] = [];
@@ -133,12 +186,5 @@ export class ToolsService {
     }
     
     return categorized;
-  }
-
-  /**
-   * Get the change tracking service instance
-   */
-  getChangeTrackingService(): ChangeTrackingService {
-    return this.changeTrackingService;
   }
 }

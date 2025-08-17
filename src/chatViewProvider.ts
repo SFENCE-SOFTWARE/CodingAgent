@@ -4,6 +4,7 @@ import * as vscode from 'vscode';
 import { ChatService } from './chatService';
 import { getWebviewContent } from './webview';
 import { ChatMessage, StreamingUpdate, ChatUpdate } from './types';
+import { ToolsService } from './tools';
 
 export class ChatViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'codingagent-chat-view';
@@ -11,8 +12,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private _view?: vscode.WebviewView;
   private chatService: ChatService;
 
-  constructor(private readonly context: vscode.ExtensionContext) {
-    this.chatService = new ChatService();
+  constructor(private readonly context: vscode.ExtensionContext, toolsService?: ToolsService) {
+    this.chatService = new ChatService(toolsService);
     
     // Set up streaming callback
     this.chatService.setStreamingCallback((update: StreamingUpdate) => {
@@ -72,6 +73,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           type: 'streamingToolCalls',
           messageId: update.messageId,
           toolCalls: update.toolCalls
+        });
+        break;
+
+      case 'change_tracking':
+        this.sendMessage({
+          type: 'changeTracking',
+          changeIds: update.changeIds
         });
         break;
 
@@ -150,6 +158,22 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
           case 'openSettings':
             await this.handleOpenSettings();
+            break;
+
+          case 'getPendingChanges':
+            await this.handleGetPendingChanges();
+            break;
+
+          case 'acceptChange':
+            await this.handleAcceptChange(message.changeId);
+            break;
+
+          case 'rejectChange':
+            await this.handleRejectChange(message.changeId);
+            break;
+
+          case 'getChangeDiff':
+            await this.handleGetChangeDiff(message.changeId);
             break;
         }
       } catch (error) {
@@ -276,6 +300,82 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     await vscode.commands.executeCommand('codingagent.openSettingsPanel');
   }
 
+  private async handleGetPendingChanges() {
+    try {
+      const changes = await this.chatService.getPendingChanges();
+      this.sendMessage({
+        type: 'pendingChanges',
+        changes: changes.map(change => ({
+          id: change.id,
+          filePath: change.filePath,
+          operation: change.changeType,
+          status: change.status,
+          timestamp: change.timestamp,
+          toolName: change.toolName
+        }))
+      });
+    } catch (error) {
+      console.error('Failed to get pending changes:', error);
+      this.sendMessage({
+        type: 'showError',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }
+
+  private async handleAcceptChange(changeId: string) {
+    try {
+      await this.chatService.acceptChange(changeId);
+      this.sendMessage({
+        type: 'changeAccepted',
+        changeId: changeId
+      });
+      // Refresh pending changes
+      await this.handleGetPendingChanges();
+    } catch (error) {
+      console.error('Failed to accept change:', error);
+      this.sendMessage({
+        type: 'showError',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }
+
+  private async handleRejectChange(changeId: string) {
+    try {
+      await this.chatService.rejectChange(changeId);
+      this.sendMessage({
+        type: 'changeRejected',
+        changeId: changeId
+      });
+      // Refresh pending changes
+      await this.handleGetPendingChanges();
+    } catch (error) {
+      console.error('Failed to reject change:', error);
+      this.sendMessage({
+        type: 'showError',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }
+
+  private async handleGetChangeDiff(changeId: string) {
+    try {
+      const htmlDiff = await this.chatService.getChangeHtmlDiff(changeId);
+      this.sendMessage({
+        type: 'changeDiff',
+        changeId: changeId,
+        htmlDiff: htmlDiff
+      });
+    } catch (error) {
+      console.error('Failed to get change diff:', error);
+      this.sendMessage({
+        type: 'showError',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }
+
   private sendAvailableModesUpdate() {
     if (!this._view) return;
 
@@ -326,6 +426,21 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.chatService.clearMessages();
     if (this._view) {
       this.sendMessage({ type: 'clearMessages' });
+    }
+  }
+
+  public showChanges() {
+    if (this._view) {
+      this.sendMessage({ type: 'showChanges' });
+    }
+  }
+
+  public updateChanges(changes: any[]) {
+    if (this._view) {
+      this.sendMessage({
+        type: 'updateChanges',
+        changes: changes
+      });
     }
   }
 }

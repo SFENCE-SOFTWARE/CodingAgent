@@ -23,10 +23,26 @@ export class ChatService {
   private logging: LoggingService;
   private streamingCallback?: (update: StreamingUpdate) => void;
 
-  constructor() {
+  constructor(toolsService?: ToolsService) {
     this.openai = new OpenAIService();
-    this.tools = new ToolsService();
+    this.tools = toolsService || new ToolsService();
     this.logging = LoggingService.getInstance();
+    
+    // Set up change notification callback from tools to UI
+    this.tools.setChangeNotificationCallback((changeId: string) => {
+      this.handleChangeNotification(changeId);
+    });
+  }
+
+  private handleChangeNotification(changeId: string): void {
+    // Notify UI about new change
+    if (this.streamingCallback) {
+      this.streamingCallback({
+        type: 'change_tracking',
+        messageId: 'system',
+        changeIds: [changeId]
+      });
+    }
   }
 
   /**
@@ -969,6 +985,23 @@ export class ChatService {
 
   updateConfiguration(): void {
     this.openai.updateConfiguration();
+  }
+
+  // Change tracking methods
+  async getPendingChanges() {
+    return await this.tools.getPendingChanges();
+  }
+
+  async acceptChange(changeId: string): Promise<void> {
+    await this.tools.acceptChange(changeId);
+  }
+
+  async rejectChange(changeId: string): Promise<void> {
+    await this.tools.rejectChange(changeId);
+  }
+
+  async getChangeHtmlDiff(changeId: string): Promise<string | null> {
+    return await this.tools.getChangeHtmlDiff(changeId);
   }
 
   /**

@@ -120,6 +120,7 @@ export interface ChatMessage {
   model?: string;
   isStreaming?: boolean;
   isAlreadyDisplayed?: boolean; // Flag to prevent duplicate display in UI
+  changeIds?: string[]; // Track associated file changes
 }
 
 export interface ToolResult {
@@ -142,7 +143,7 @@ export interface BaseTool {
 }
 
 export interface StreamingUpdate {
-  type: 'start' | 'content' | 'thinking' | 'tool_calls' | 'end' | 'error';
+  type: 'start' | 'content' | 'thinking' | 'tool_calls' | 'end' | 'error' | 'change_tracking';
   messageId: string;
   content?: string;
   thinking?: string;
@@ -150,6 +151,7 @@ export interface StreamingUpdate {
   model?: string;
   error?: string;
   isComplete?: boolean;
+  changeIds?: string[]; // For change tracking updates
 }
 
 export interface MessageUpdate {
@@ -157,4 +159,18 @@ export interface MessageUpdate {
   message: ChatMessage;
 }
 
-export type ChatUpdate = StreamingUpdate | MessageUpdate;
+// Change tracking UI types
+export interface ChangeTrackingUpdate {
+  type: 'change_created' | 'change_status_updated' | 'changes_list';
+  changeId?: string;
+  changes?: Array<{
+    id: string;
+    filePath: string;
+    operation: string;
+    status: string;
+    timestamp: number;
+    toolName: string;
+  }>;
+}
+
+export type ChatUpdate = StreamingUpdate | MessageUpdate | ChangeTrackingUpdate;
