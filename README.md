@@ -119,7 +119,13 @@ Assistant: [Uses list_files tool to show directory structure]
 **Terminal Commands**:
 ```
 You: Run the tests for this project
-Assistant: [Uses execute_terminal tool to run npm test or similar]
+Assistant: [Uses execute_terminal tool - commands run in VS Code terminal where you can see output and interact]
+
+You: Start the development server
+Assistant: [Uses execute_terminal tool - opens VS Code terminal and runs "npm run dev"]
+
+You: Show me the git status
+Assistant: [Uses execute_terminal tool - runs "git status" in VS Code terminal]
 ```
 
 ## Configuration
@@ -163,7 +169,7 @@ Custom modes can be added via the `codingagent.modes` setting:
 | `get_file_size` | Get file size in lines and bytes | `path` |
 | `create_folder` | Create directories recursively | `path` |
 | `rename_file` | Rename or move files and folders | `old_path`, `new_path` |
-| `execute_terminal` | Run terminal commands | `command`, `cwd`, `timeout` |
+| `execute_terminal` | Run terminal commands in VS Code terminal (visible to user, interactive) | `command`, `cwd`, `newTerminal` |
 | `read_webpage` | Fetch and read webpage content | `url`, `max_length` |
 | `read_pdf` | Extract text from PDF files | `path`, `max_pages` |
 
