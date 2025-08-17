@@ -933,7 +933,8 @@
   }
   
   function updateChangeCount() {
-    changeCount.textContent = pendingChanges.length;
+    const totalChanges = pendingChanges.reduce((sum, fileChange) => sum + fileChange.changeCount, 0);
+    changeCount.textContent = `${pendingChanges.length} file(s), ${totalChanges} change(s)`;
   }
   
   function renderPendingChanges() {
@@ -942,25 +943,35 @@
       return;
     }
     
-    const changesHtml = pendingChanges.map(change => `
-      <div class="change-item" data-change-id="${change.id}">
-        <div class="change-header">
-          <div class="change-file-path">${getRelativePath(change.filePath)}</div>
-          <div class="change-actions">
-            <button class="change-btn diff" onclick="requestChangeDiff('${change.id}')">Diff</button>
-            <button class="change-btn accept" onclick="acceptChange('${change.id}')">✓</button>
-            <button class="change-btn reject" onclick="rejectChange('${change.id}')">✗</button>
+    // Header with global actions
+    const globalActionsHtml = `
+      <div class="global-actions">
+        <button class="change-btn accept-all" onclick="acceptAllChanges()">✓ Accept All</button>
+        <button class="change-btn reject-all" onclick="rejectAllChanges()">✗ Reject All</button>
+      </div>
+    `;
+    
+    // File-based changes
+    const changesHtml = pendingChanges.map(fileChange => `
+      <div class="file-change-item" data-file-path="${fileChange.filePath}">
+        <div class="file-change-header">
+          <div class="file-info">
+            <div class="file-path">${getRelativePath(fileChange.filePath)}</div>
+            <div class="change-count">${fileChange.changeCount} change(s)</div>
+          </div>
+          <div class="file-actions">
+            <button class="change-btn accept" onclick="acceptFileChanges('${fileChange.filePath}')">✓ Accept File</button>
+            <button class="change-btn reject" onclick="rejectFileChanges('${fileChange.filePath}')">✗ Reject File</button>
           </div>
         </div>
-        <div class="change-details">
-          <span class="change-operation">${change.operation}</span>
-          <span class="change-tool">by ${change.toolName}</span>
-          <span class="change-timestamp">${formatTimestamp(change.timestamp)}</span>
+        <div class="file-change-details">
+          <span class="change-tools">by ${fileChange.toolNames}</span>
+          <span class="change-timestamp">${formatTimestamp(fileChange.timestamp)}</span>
         </div>
       </div>
     `).join('');
     
-    changePanelContent.innerHTML = changesHtml;
+    changePanelContent.innerHTML = globalActionsHtml + changesHtml;
   }
   
   function handleChangeTrackingUpdate(changeIds) {
@@ -995,6 +1006,40 @@
       vscode.postMessage({ 
         type: 'rejectChange', 
         changeId: changeId 
+      });
+    }
+  }
+
+  function acceptFileChanges(filePath) {
+    if (confirm(`Accept all changes in ${getRelativePath(filePath)}?`)) {
+      vscode.postMessage({ 
+        type: 'acceptFileChanges', 
+        filePath: filePath 
+      });
+    }
+  }
+
+  function rejectFileChanges(filePath) {
+    if (confirm(`Reject all changes in ${getRelativePath(filePath)}? This will restore the file to its previous state.`)) {
+      vscode.postMessage({ 
+        type: 'rejectFileChanges', 
+        filePath: filePath 
+      });
+    }
+  }
+
+  function acceptAllChanges() {
+    if (confirm('Accept all pending changes?')) {
+      vscode.postMessage({ 
+        type: 'acceptAllChanges'
+      });
+    }
+  }
+
+  function rejectAllChanges() {
+    if (confirm('Reject all pending changes? This will restore all files to their previous state.')) {
+      vscode.postMessage({ 
+        type: 'rejectAllChanges'
       });
     }
   }

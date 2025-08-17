@@ -175,6 +175,22 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           case 'getChangeDiff':
             await this.handleGetChangeDiff(message.changeId);
             break;
+
+          case 'acceptFileChanges':
+            await this.handleAcceptFileChanges(message.filePath);
+            break;
+
+          case 'rejectFileChanges':
+            await this.handleRejectFileChanges(message.filePath);
+            break;
+
+          case 'acceptAllChanges':
+            await this.handleAcceptAllChanges();
+            break;
+
+          case 'rejectAllChanges':
+            await this.handleRejectAllChanges();
+            break;
         }
       } catch (error) {
         console.error('Error handling webview message:', error);
@@ -303,16 +319,36 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private async handleGetPendingChanges() {
     try {
       const changes = await this.chatService.getPendingChanges();
+      
+      // Group changes by file path
+      const fileGroups = new Map<string, any[]>();
+      
+      for (const change of changes) {
+        if (!fileGroups.has(change.filePath)) {
+          fileGroups.set(change.filePath, []);
+        }
+        fileGroups.get(change.filePath)!.push(change);
+      }
+      
+      // Convert to file-based format
+      const fileChanges = Array.from(fileGroups.entries()).map(([filePath, changesInFile]) => {
+        const latestTimestamp = Math.max(...changesInFile.map(c => c.timestamp));
+        const allTools = [...new Set(changesInFile.map(c => c.toolName))].join(', ');
+        const changeCount = changesInFile.length;
+        
+        return {
+          filePath: filePath,
+          changeCount: changeCount,
+          changes: changesInFile.map(c => c.id), // Array of change IDs
+          timestamp: latestTimestamp,
+          toolNames: allTools,
+          status: 'pending'
+        };
+      });
+      
       this.sendMessage({
         type: 'pendingChanges',
-        changes: changes.map(change => ({
-          id: change.id,
-          filePath: change.filePath,
-          operation: change.changeType,
-          status: change.status,
-          timestamp: change.timestamp,
-          toolName: change.toolName
-        }))
+        changes: fileChanges
       });
     } catch (error) {
       console.error('Failed to get pending changes:', error);
@@ -369,6 +405,98 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       });
     } catch (error) {
       console.error('Failed to get change diff:', error);
+      this.sendMessage({
+        type: 'showError',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }
+
+  private async handleAcceptFileChanges(filePath: string) {
+    try {
+      const changes = await this.chatService.getPendingChanges();
+      const fileChanges = changes.filter(change => change.filePath === filePath);
+      
+      for (const change of fileChanges) {
+        await this.chatService.acceptChange(change.id);
+      }
+      
+      this.sendMessage({
+        type: 'fileChangesAccepted',
+        filePath: filePath
+      });
+      // Refresh pending changes
+      await this.handleGetPendingChanges();
+    } catch (error) {
+      console.error('Failed to accept file changes:', error);
+      this.sendMessage({
+        type: 'showError',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }
+
+  private async handleRejectFileChanges(filePath: string) {
+    try {
+      const changes = await this.chatService.getPendingChanges();
+      const fileChanges = changes.filter(change => change.filePath === filePath);
+      
+      for (const change of fileChanges) {
+        await this.chatService.rejectChange(change.id);
+      }
+      
+      this.sendMessage({
+        type: 'fileChangesRejected',
+        filePath: filePath
+      });
+      // Refresh pending changes
+      await this.handleGetPendingChanges();
+    } catch (error) {
+      console.error('Failed to reject file changes:', error);
+      this.sendMessage({
+        type: 'showError',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }
+
+  private async handleAcceptAllChanges() {
+    try {
+      const changes = await this.chatService.getPendingChanges();
+      
+      for (const change of changes) {
+        await this.chatService.acceptChange(change.id);
+      }
+      
+      this.sendMessage({
+        type: 'allChangesAccepted'
+      });
+      // Refresh pending changes
+      await this.handleGetPendingChanges();
+    } catch (error) {
+      console.error('Failed to accept all changes:', error);
+      this.sendMessage({
+        type: 'showError',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }
+
+  private async handleRejectAllChanges() {
+    try {
+      const changes = await this.chatService.getPendingChanges();
+      
+      for (const change of changes) {
+        await this.chatService.rejectChange(change.id);
+      }
+      
+      this.sendMessage({
+        type: 'allChangesRejected'
+      });
+      // Refresh pending changes
+      await this.handleGetPendingChanges();
+    } catch (error) {
+      console.error('Failed to reject all changes:', error);
       this.sendMessage({
         type: 'showError',
         error: error instanceof Error ? error.message : String(error)

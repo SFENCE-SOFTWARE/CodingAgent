@@ -888,3 +888,81 @@
 .diff-line.unchanged {
   background-color: var(--vscode-editor-background);
 }
+
+/* File-based change styles */
+.global-actions {
+  background-color: var(--vscode-panel-background);
+  border: 1px solid var(--vscode-widget-border);
+  border-radius: 4px;
+  padding: 12px;
+  margin-bottom: 12px;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.accept-all {
+  background-color: var(--vscode-terminal-ansiGreen) !important;
+  color: var(--vscode-button-foreground) !important;
+}
+
+.reject-all {
+  background-color: var(--vscode-terminal-ansiRed) !important;
+  color: var(--vscode-button-foreground) !important;
+}
+
+.file-change-item {
+  background-color: var(--vscode-list-hoverBackground);
+  border: 1px solid var(--vscode-widget-border);
+  border-radius: 4px;
+  margin-bottom: 8px;
+  padding: 12px;
+  transition: all 0.2s ease;
+}
+
+.file-change-item:hover {
+  background-color: var(--vscode-list-activeSelectionBackground);
+}
+
+.file-change-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.file-info {
+  flex: 1;
+}
+
+.file-path {
+  font-family: var(--vscode-editor-font-family);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vscode-textLink-foreground);
+  word-break: break-all;
+  margin-bottom: 4px;
+}
+
+.change-count {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  font-style: italic;
+}
+
+.file-actions {
+  display: flex;
+  gap: 4px;
+  margin-left: 8px;
+}
+
+.file-change-details {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.change-tools {
+  font-style: italic;
+}
