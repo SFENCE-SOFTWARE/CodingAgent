@@ -1,6 +1,6 @@
 /* Settings Panel Styles */
 .settings-container {
-  max-width: 1000px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
   font-family: var(--vscode-font-family);
@@ -11,18 +11,30 @@
 
 .settings-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 10px;
   margin-bottom: 20px;
   padding-bottom: 15px;
   border-bottom: 1px solid var(--vscode-panel-border);
 }
 
-.settings-header h1 {
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-content h1 {
   margin: 0;
   color: var(--vscode-foreground);
   font-size: 24px;
   font-weight: 600;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
 }
 
 .reset-button {
@@ -40,38 +52,113 @@
   background: var(--vscode-button-secondaryHoverBackground);
 }
 
-/* Tab Navigation */
-.settings-tabs {
+/* Main Layout */
+.settings-layout {
   display: flex;
-  gap: 2px;
-  margin-bottom: 20px;
-  border-bottom: 1px solid var(--vscode-panel-border);
-  overflow-x: auto;
+  gap: 20px;
+  min-height: 60vh;
+}
+
+/* Sidebar Navigation */
+.settings-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 60px;
+  flex-shrink: 0;
+  background: var(--vscode-sideBar-background);
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 6px;
+  padding: 8px;
+  height: fit-content;
 }
 
 .tab-button {
-  background: var(--vscode-tab-inactiveBackground);
-  color: var(--vscode-tab-inactiveForeground);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--vscode-sideBar-foreground);
   border: none;
-  border-bottom: 2px solid transparent;
-  padding: 12px 16px;
+  border-radius: 4px;
+  padding: 12px;
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;
-  white-space: nowrap;
+  text-align: center;
   transition: all 0.2s;
-  min-width: 120px;
+  position: relative;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+}
+
+.tab-button img {
+  width: 20px;
+  height: 20px;
+  opacity: 0.7;
+  transition: all 0.2s;
 }
 
 .tab-button:hover {
-  background: var(--vscode-tab-hoverBackground);
-  color: var(--vscode-tab-hoverForeground);
+  background: var(--vscode-list-hoverBackground);
+}
+
+.tab-button:hover img {
+  opacity: 0.9;
 }
 
 .tab-button.active {
-  background: var(--vscode-tab-activeBackground);
-  color: var(--vscode-tab-activeForeground);
-  border-bottom-color: var(--vscode-focusBorder);
+  background: var(--vscode-list-activeSelectionBackground);
+  color: var(--vscode-list-activeSelectionForeground);
+}
+
+.tab-button.active img {
+  opacity: 1;
+}
+
+.tab-label {
+  display: none; /* Hidden by default in compact mode */
+}
+
+/* Tooltip for tab buttons */
+.tab-button[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--vscode-editorHoverWidget-background);
+  color: var(--vscode-editorHoverWidget-foreground);
+  border: 1px solid var(--vscode-editorHoverWidget-border);
+  border-radius: 3px;
+  padding: 6px 8px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 1000;
+  box-shadow: var(--vscode-widget-shadow);
+  pointer-events: none;
+  animation: tooltipFadeIn 0.2s ease-out;
+}
+
+@keyframes tooltipFadeIn {
+  from { 
+    opacity: 0; 
+    transform: translateY(-50%) translateX(-4px);
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(-50%) translateX(0);
+  }
+}
+
+/* Main Content Area */
+.settings-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0; /* Prevents flex item from overflowing */
 }
 
 /* Tab Content */
@@ -87,12 +174,6 @@
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
-}
-
-.settings-content {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
 }
 
 .settings-section {
@@ -401,7 +482,6 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 15px;
 }
 
 .save-status {
@@ -523,10 +603,56 @@
     padding: 15px;
   }
   
-  .settings-header {
+  .header-content {
     flex-direction: column;
     gap: 15px;
     align-items: flex-start;
+  }
+  
+  .settings-layout {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .settings-sidebar {
+    width: 100%;
+    flex-direction: row;
+    justify-content: center;
+    overflow-x: auto;
+    gap: 8px;
+    padding: 8px;
+    height: auto;
+  }
+  
+  .tab-button {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    min-height: 48px;
+  }
+  
+  .tab-button img {
+    width: 22px;
+    height: 22px;
+  }
+  
+  /* Tooltip below button on mobile */
+  .tab-button[title]:hover::after {
+    left: 50%;
+    top: calc(100% + 8px);
+    transform: translateX(-50%);
+    animation: tooltipFadeInMobile 0.2s ease-out;
+  }
+  
+  @keyframes tooltipFadeInMobile {
+    from { 
+      opacity: 0; 
+      transform: translateX(-50%) translateY(-4px);
+    }
+    to { 
+      opacity: 1; 
+      transform: translateX(-50%) translateY(0);
+    }
   }
   
   .form-row {
