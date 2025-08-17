@@ -1,10 +1,10 @@
 # CodingAgent - VS Code Extension
 
-A powerful AI coding assistant extension for Visual Studio Code that integrates with Ollama to provide GitHub Copilot Chat-like functionality with advanced tool capabilities.
+A powerful AI coding assistant extension for Visual Studio Code that integrates with OpenAI-compatible backends to provide GitHub Copilot Chat-like functionality with advanced tool capabilities.
 
 ## Features
 
-🤖 **AI-Powered Assistance**: Chat with AI models through Ollama for coding help, questions, and architecture guidance
+🤖 **AI-Powered Assistance**: Chat with AI models through OpenAI-compatible backends for coding help, questions, and architecture guidance
 
 🛠️ **Multiple Agent Modes**:
 - **Coder**: Expert programming assistant with file manipulation and terminal access
@@ -36,16 +36,16 @@ A powerful AI coding assistant extension for Visual Studio Code that integrates 
 - Real-time markdown rendering
 
 ⚙️ **Flexible Configuration**:
-- Configurable Ollama host and port
+- Configurable backend host and port
 - Multiple agent modes with custom tools
-- Model selection from available Ollama models
+- Model selection from available models
 - Custom system messages per mode
 
 ## Requirements
 
 - Visual Studio Code 1.103.0 or higher
-- [Ollama](https://ollama.ai/) installed and running
-- At least one language model pulled in Ollama (e.g., `ollama pull llama3`)
+- OpenAI-compatible AI backend (Ollama, llama.cpp, vLLM, LocalAI, Tabby, or custom)
+- At least one language model available on your backend
 
 ## Installation
 
@@ -61,23 +61,18 @@ A powerful AI coding assistant extension for Visual Studio Code that integrates 
 
 ## Setup
 
-1. **Install Ollama**: Download and install from [ollama.ai](https://ollama.ai/)
+1. **Set up your AI backend**: Choose and configure one of the supported backends:
+   - **Ollama**: Download from [ollama.ai](https://ollama.ai/), pull a model (`ollama pull llama3`), and start (`ollama serve`)
+   - **llama.cpp**: Use with `--api-key-required false` and `--host 0.0.0.0 --port 8080`
+   - **vLLM**: Start with `--api-key-required false` and OpenAI-compatible endpoint
+   - **LocalAI**: Configure with OpenAI-compatible settings
+   - **Tabby**: Use coding-focused models
+   - **Custom**: Any OpenAI API-compatible service
 
-2. **Pull a model**: 
-   ```bash
-   ollama pull llama3
-   # or any other compatible model
-   ```
-
-3. **Start Ollama**: 
-   ```bash
-   ollama serve
-   ```
-
-4. **Configure the extension** (if needed):
+2. **Configure the extension**:
    - Open VS Code settings
-   - Search for "CodingAgent"
-   - Set the Ollama host and port (default: localhost:11434)
+   - Search for "CodingAgent"  
+   - Set the backend host and port (default: localhost:11434)
 
 ## Usage
 
@@ -133,10 +128,10 @@ Access settings via VS Code Settings (Ctrl/Cmd + ,) and search for "CodingAgent"
 
 ### Basic Settings
 
-- **Host**: Ollama server host (default: localhost)
-- **Port**: Ollama server port (default: 11434)
+- **Host**: AI backend server host (default: localhost)
+- **Port**: AI backend server port (default: 11434)
 - **Current Mode**: Active agent mode (Coder, Ask, Architect)
-- **Current Model**: Active Ollama model
+- **Current Model**: Active model name
 - **Show Thinking**: Display model reasoning process
 
 ### Advanced Configuration
@@ -200,14 +195,14 @@ When the AI modifies files, you'll see:
 ### Common Issues
 
 **❌ "Failed to fetch models"**
-- Ensure Ollama is running (`ollama serve`)
+- Ensure your AI backend is running
 - Check host/port configuration
 - Verify network connectivity
 
 **❌ "No response from model"**
 - Try a different model
-- Check Ollama logs for errors
-- Restart Ollama service
+- Check backend logs for errors
+- Restart backend service
 
 **❌ "Tool execution failed"**
 - Check file permissions
@@ -217,7 +212,7 @@ When the AI modifies files, you'll see:
 ### Debug Information
 
 Enable debug mode by expanding the "Debug Info" section in error messages to see:
-- Full request payload sent to Ollama
+- Full request payload sent to the AI backend
 - Tool call details and responses
 - Model reasoning process
 

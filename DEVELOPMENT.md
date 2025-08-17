@@ -1,5 +1,23 @@
 # Development Guide
 
+## Project Overview
+
+CodingAgent is a VS Code extension that provides AI-powered coding assistance through a chat interface. The extension communicates with **OpenAI API-compatible backends**, making it flexible and vendor-agnostic.
+
+### Supported AI Backends
+
+The extension works with any server that implements the OpenAI API specification:
+
+- **🦙 Ollama** - Local AI model server (primary development target)
+- **🔥 llama.cpp** - Direct C++ implementation with OpenAI API wrapper
+- **⚡ vLLM** - High-performance inference server 
+- **🚀 Tabby** - Self-hosted coding AI with OpenAI compatibility
+- **🐳 LocalAI** - Self-hosted OpenAI alternative
+- **🌐 Custom Services** - Any OpenAI-compatible server or proxy
+- **📡 Remote Endpoints** - Team or organization-hosted AI services
+
+The extension uses the standard `/v1/chat/completions` endpoint with function calling support.
+
 ## Project Structure
 
 ```
@@ -58,7 +76,64 @@ CodingAgent/
 ### Prerequisites
 - Node.js 18+ and npm
 - VS Code 1.103.0+
-- Ollama installed locally
+- **OpenAI API-compatible backend** (see Backend Setup below)
+
+### Backend Setup Options
+
+Choose one of the following AI backends:
+
+#### Option 1: Ollama (Recommended for Development)
+```bash
+# Install Ollama
+# Download from https://ollama.ai/
+
+# Pull a model
+ollama pull llama3:8b
+
+# Start server (default: localhost:11434)
+ollama serve
+```
+
+#### Option 2: llama.cpp with OpenAI API
+```bash
+# Build llama.cpp with OpenAI API server
+git clone https://github.com/ggerganov/llama.cpp
+cd llama.cpp
+make server
+
+# Run with OpenAI-compatible API
+./server -m models/your-model.gguf --host 0.0.0.0 --port 8080
+```
+
+#### Option 3: vLLM
+```bash
+# Install vLLM
+pip install vllm
+
+# Start OpenAI-compatible server
+python -m vllm.entrypoints.openai.api_server \
+  --model microsoft/DialoGPT-medium \
+  --host 0.0.0.0 \
+  --port 8000
+```
+
+#### Option 4: LocalAI
+```bash
+# Using Docker
+docker run -p 8080:8080 --name local-ai -ti localai/localai:latest
+
+# Using binary release
+# Download from https://github.com/mudler/LocalAI/releases
+```
+
+#### Option 5: Remote OpenAI-Compatible Services
+```json
+// Settings for remote backends
+{
+  "codingagent.openai.host": "your-service.com",
+  "codingagent.openai.port": 443
+}
+```
 
 ### Setup
 ```bash
@@ -81,18 +156,30 @@ npm run lint
 2. **Start debugging**: Press F5 or go to Run > Start Debugging
 3. **Extension Host**: A new VS Code window will open with the extension loaded
 4. **Open chat**: Look for the CodingAgent view in the Explorer sidebar
+5. **Configure backend**: Set your AI backend in settings (default: Ollama localhost:11434)
 
-### Ollama Setup for Testing
+### Backend Configuration
 
-```bash
-# Install Ollama (if not already installed)
-# Download from https://ollama.ai/
+Configure your chosen backend in VS Code settings:
 
-# Pull a test model
-ollama pull llama3:8b
-
-# Start Ollama server
-ollama serve
+```json
+{
+  // For Ollama (default)
+  "codingagent.openai.host": "localhost",
+  "codingagent.openai.port": 11434,
+  
+  // For llama.cpp server
+  "codingagent.openai.host": "localhost", 
+  "codingagent.openai.port": 8080,
+  
+  // For vLLM
+  "codingagent.openai.host": "localhost",
+  "codingagent.openai.port": 8000,
+  
+  // For remote/cloud endpoints
+  "codingagent.openai.host": "your-api-endpoint.com",
+  "codingagent.openai.port": 443
+}
 ```
 
 ## Architecture Overview
@@ -111,9 +198,10 @@ ollama serve
    - Coordinates between Ollama API and Tools
 
 3. **OpenAI API Service (`openai_html_api.ts`)**
-   - Communicates with Ollama using OpenAI-compatible endpoints
+   - Communicates with OpenAI-compatible backends using standard `/v1/chat/completions` endpoint
    - Handles streaming responses and function calls
    - Manages configuration and model selection
+   - Supports Ollama, llama.cpp, vLLM, LocalAI, OpenAI, and other compatible services
 
 4. **Change Tracking System**
    - **`changeTrackingService.ts`**: Core change tracking and merging logic
@@ -140,8 +228,8 @@ ollama serve
 ### Data Flow
 
 ```
-User Input → WebView → ChatViewProvider → ChatService → OpenAI API → AI Model
-                                             ↓
+User Input → WebView → ChatViewProvider → ChatService → OpenAI API → AI Backend
+                                             ↓                        (Ollama/llama.cpp/vLLM/etc.)
                                     ToolsService → Tool Execution → ChangeTracking
                                              ↓                            ↓
 User Interface ← WebView ← ChatViewProvider ← ChatService ← Results ← File Changes
@@ -275,14 +363,55 @@ Update the default configuration in `package.json`:
 2. **Behavior**: Edit `media/chat.js`
 3. **HTML Structure**: Edit the template in `webview.ts`
 
-## Configuration Schema
+## Backend Compatibility
+
+### OpenAI API Standard
+
+The extension uses the OpenAI API specification for maximum compatibility:
+
+- **Endpoint**: `POST /v1/chat/completions`
+- **Streaming**: Server-Sent Events (SSE) support
+- **Function Calling**: OpenAI function calling format
+- **Authentication**: Works with services that don't require authentication
+
+### Tested Backends
+
+| Backend | Status | Notes |
+|---------|--------|-------|
+| 🦙 Ollama | ✅ Fully Supported | Primary development platform |
+| 🔥 llama.cpp | ✅ Compatible | Local inference with OpenAI API |
+| ⚡ vLLM | ✅ Compatible | Fast inference, good for production |
+| 🐳 LocalAI | ✅ Compatible | Easy Docker deployment |
+| ☁️ Remote Services | ✅ Compatible | Any OpenAI-compatible endpoint |
+
+### Backend-Specific Configuration
+
+#### Function Calling Requirements
+Some backends require specific configuration for tool support:
+
+```bash
+# llama.cpp - Enable function calling
+./server -m model.gguf --host 0.0.0.0 --port 8080
+
+# vLLM - Use function-calling capable models
+python -m vllm.entrypoints.openai.api_server --model microsoft/DialoGPT-medium
+
+# LocalAI - Configure function calling in model config
+```
+
+### Performance Considerations
+
+- **Ollama**: Best for local development, automatic model management
+- **llama.cpp**: Lowest memory usage, good for resource-constrained systems  
+- **vLLM**: Highest throughput, best for production deployments
+- **LocalAI**: Good balance of features and ease of deployment
 
 The extension uses VS Code's configuration system. Settings are defined in `package.json` under `contributes.configuration.properties`.
 
 ### Key Settings
 
-- `codingagent.ollama.host`: Ollama server host
-- `codingagent.ollama.port`: Ollama server port  
+- `codingagent.openai.host`: AI backend server host (supports Ollama, llama.cpp, vLLM, etc.)
+- `codingagent.openai.port`: AI backend server port  
 - `codingagent.currentMode`: Active agent mode
 - `codingagent.currentModel`: Active AI model
 - `codingagent.showThinking`: Show model reasoning
@@ -312,8 +441,12 @@ The extension uses VS Code's configuration system. Settings are defined in `pack
 
 1. **"Tool not found"**: Check tool name spelling in mode configuration
 2. **"Path not found"**: Ensure file paths are relative to workspace root
-3. **"No response from model"**: Check Ollama is running and model is pulled
+3. **"No response from model"**: Check AI backend is running and model is available
+   - For Ollama: `ollama list` to see available models
+   - For llama.cpp: Check server logs for model loading errors
+   - For vLLM: Verify model download and GPU memory
 4. **WebView not loading**: Check for CSP violations in browser dev tools
+5. **Connection refused**: Verify backend host/port configuration
 
 ### Debug Mode
 
@@ -347,7 +480,7 @@ Enable detailed debugging by:
 1. **Code Style**: Follow existing TypeScript conventions
 2. **Error Handling**: Always provide user-friendly error messages
 3. **Documentation**: Update README.md for user-facing changes
-4. **Testing**: Test with multiple Ollama models
+4. **Testing**: Test with multiple AI backends and models (Ollama, llama.cpp, etc.)
 5. **Security**: Review any new file/network operations
 
 ## Packaging for Distribution
@@ -380,3 +513,47 @@ npm run compile
 - Check CSP settings in webview.ts
 - Verify resource URIs are properly generated
 - Test JavaScript in browser dev tools
+
+### AI Backend Connection Issues
+- Verify backend is running: `curl http://localhost:11434/v1/models`
+- Check firewall/network settings
+- Test with different host/port combinations
+- Review backend logs for connection errors
+
+## Production Deployment Tips
+
+### For Team Usage
+
+1. **Shared Backend**: Deploy vLLM or LocalAI on a shared server
+2. **Model Selection**: Choose models based on team needs and hardware
+3. **Configuration**: Use workspace settings for team consistency
+
+```json
+// .vscode/settings.json (team shared)
+{
+  "codingagent.openai.host": "shared-ai-server.company.com",
+  "codingagent.openai.port": 8000,
+  "codingagent.currentModel": "codellama:7b"
+}
+```
+
+### Self-Hosted Setup
+
+```bash
+# Example: vLLM production setup
+docker run --gpus all \
+  -v ~/.cache/huggingface:/root/.cache/huggingface \
+  -p 8000:8000 \
+  --ipc=host \
+  vllm/vllm-openai:latest \
+  --model microsoft/DialoGPT-medium \
+  --trust-remote-code
+```
+
+### Cloud Integration
+
+The extension works with any OpenAI-compatible service that doesn't require authentication:
+- Self-hosted OpenAI-compatible servers
+- LocalAI cloud deployments
+- Custom OpenAI proxy services
+- Team-managed AI inference servers
