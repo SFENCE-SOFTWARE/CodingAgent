@@ -6,9 +6,34 @@ This is a VS Code extension that provides GitHub Copilot Chat-like functionality
 **Core Services:**
 - `ChatService` - Main orchestrator for AI conversations and tool execution loops
 - `OpenAIService` - HTTP client for Ollama API using OpenAI-compatible endpoints with streaming support
-- `ToolsService` - File system and terminal operations registry for AI agents
+- `ToolsService` - File system and terminal operations registry for AI agents with security controls
 - `ChatViewProvider` - WebView container following VS Code's patterns
+- `ChangeTrackingService` - Advanced file change tracking with accept/reject functionality
 - `LoggingService` - Singleton with raw JSON communication logging
+
+## Terminal Security System (NEW)
+**IMPORTANT**: All terminal commands now require explicit user approval before execution:
+
+### Implementation Details
+- **User approval modal** appears when AI requests terminal execution
+- **5-minute timeout** for approval requests
+- **Detailed command preview** with working directory display
+- **Comprehensive logging** for security audit trail
+- **Promise-based approval flow** between frontend and backend
+
+### Code Pattern for Terminal Approval
+```typescript
+// Backend: ExecuteTerminalTool waits for approval
+const approvalPromise = new Promise<boolean>((resolve, reject) => {
+  // Store pending command with timeout
+  setTimeout(() => reject(new Error('Approval timeout')), 5 * 60 * 1000);
+});
+
+// Frontend: User approval triggers resolution
+function approveTerminalCommand(commandId) {
+  vscode.postMessage({ type: 'approveTerminalCommand', commandId });
+}
+```
 
 ## Key Architectural Patterns
 

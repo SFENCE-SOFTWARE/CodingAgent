@@ -19,6 +19,10 @@
   const hideChangesBtn = document.getElementById('hideChangesBtn');
   const changeCount = document.getElementById('changeCount');
   
+  // Terminal approval elements
+  const terminalApprovalPanel = document.getElementById('terminalApprovalPanel');
+  const approvalPanelContent = document.getElementById('approvalPanelContent');
+  
   let isLoading = false;
   let currentMode = 'Coder';
   let currentModel = 'llama3:8b';
@@ -28,6 +32,7 @@
   let streamingMessages = new Map(); // Track streaming messages
   let pendingChanges = []; // Track pending file changes
   let isChangesPanelVisible = false;
+  let pendingTerminalCommands = []; // Track pending terminal commands
   
   // Initialize
   function init() {
@@ -896,6 +901,23 @@
       case 'streamingError':
         handleStreamingError(message.messageId, message.error);
         break;
+
+      // Terminal approval handlers
+      case 'terminalApprovalRequest':
+        showTerminalApprovalRequest(message.commandId, message.command, message.cwd);
+        break;
+        
+      case 'terminalCommandApproved':
+        hideTerminalApprovalPanel();
+        break;
+        
+      case 'terminalCommandRejected':
+        hideTerminalApprovalPanel();
+        break;
+        
+      case 'pendingTerminalCommands':
+        updatePendingTerminalCommands(message.commands);
+        break;
     }
   });
   
@@ -1071,6 +1093,103 @@
     return date.toLocaleTimeString();
   }
   
+  // Terminal approval functions
+  function showTerminalApprovalRequest(commandId, command, cwd) {
+    console.log(`[Frontend] Terminal approval request: ${commandId} - ${command}`);
+    console.log(`[Frontend] Working directory: ${cwd}`);
+    
+    // Update pending commands list
+    const existingIndex = pendingTerminalCommands.findIndex(cmd => cmd.id === commandId);
+    if (existingIndex === -1) {
+      pendingTerminalCommands.push({ id: commandId, command: command, cwd: cwd });
+    }
+    
+    // Render terminal approval panel
+    renderTerminalApprovalPanel();
+    
+    // Show the panel
+    terminalApprovalPanel.style.display = 'block';
+    
+    console.log(`[Frontend] Terminal approval panel shown for command: ${commandId}`);
+  }
+  
+  function hideTerminalApprovalPanel() {
+    console.log(`[Frontend] Hiding terminal approval panel`);
+    terminalApprovalPanel.style.display = 'none';
+    
+    // Clear pending commands since they're resolved
+    pendingTerminalCommands = [];
+  }
+  
+  function renderTerminalApprovalPanel() {
+    if (pendingTerminalCommands.length === 0) {
+      approvalPanelContent.innerHTML = '<div class="no-commands">No pending commands</div>';
+      return;
+    }
+    
+    const commandsHtml = pendingTerminalCommands.map(cmd => `
+      <div class="terminal-command-item" data-command-id="${cmd.id}">
+        <div class="command-header">
+          <div class="command-title">Terminal Command Request</div>
+        </div>
+        
+        <div class="approval-warning">
+          The AI wants to execute a terminal command. Please review and approve or reject.
+        </div>
+        
+        <div class="command-info">
+          <div class="command-text">${escapeHtml(cmd.command)}</div>
+          ${cmd.cwd ? `<div class="command-cwd">Working directory: ${escapeHtml(cmd.cwd)}</div>` : ''}
+        </div>
+        
+        <div class="command-actions">
+          <button class="approve-btn" onclick="approveTerminalCommand('${cmd.id}')">
+            ✅ Approve & Execute
+          </button>
+          <button class="reject-btn" onclick="rejectTerminalCommand('${cmd.id}')">
+            ❌ Reject
+          </button>
+        </div>
+      </div>
+    `).join('');
+    
+    approvalPanelContent.innerHTML = commandsHtml;
+  }
+  
+  function approveTerminalCommand(commandId) {
+    console.log(`[Frontend] Approving terminal command: ${commandId}`);
+    vscode.postMessage({
+      type: 'approveTerminalCommand',
+      commandId: commandId
+    });
+  }
+  
+  function rejectTerminalCommand(commandId) {
+    console.log(`[Frontend] Rejecting terminal command: ${commandId}`);
+    vscode.postMessage({
+      type: 'rejectTerminalCommand',
+      commandId: commandId
+    });
+  }
+  
+  function updatePendingTerminalCommands(commands) {
+    console.log(`[Frontend] Updating pending terminal commands:`, commands);
+    pendingTerminalCommands = commands || [];
+    
+    if (pendingTerminalCommands.length > 0) {
+      renderTerminalApprovalPanel();
+      terminalApprovalPanel.style.display = 'block';
+    } else {
+      hideTerminalApprovalPanel();
+    }
+  }
+  
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+  
   // Make functions global for onclick handlers
   window.requestChangeDiff = requestChangeDiff;
   window.acceptChange = acceptChange;
@@ -1079,6 +1198,8 @@
   window.rejectFileChanges = rejectFileChanges;
   window.acceptAllChanges = acceptAllChanges;
   window.rejectAllChanges = rejectAllChanges;
+  window.approveTerminalCommand = approveTerminalCommand;
+  window.rejectTerminalCommand = rejectTerminalCommand;
   
   // Debug: confirm functions are available
   console.log('Global functions assigned:', {

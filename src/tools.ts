@@ -43,6 +43,25 @@ export class ToolsService {
     });
   }
 
+  // Set callback for terminal command approval
+  public setTerminalApprovalCallback(callback: (commandId: string, command: string, cwd?: string) => Promise<boolean>): void {
+    ExecuteTerminalTool.setCommandApprovalCallback(callback);
+  }
+
+  // Handle terminal command approval/rejection
+  public approveTerminalCommand(commandId: string): void {
+    ExecuteTerminalTool.approveCommand(commandId);
+  }
+
+  public rejectTerminalCommand(commandId: string): void {
+    ExecuteTerminalTool.rejectCommand(commandId);
+  }
+
+  // Get pending terminal commands
+  public getPendingTerminalCommands(): Array<{id: string, command: string, cwd?: string}> {
+    return ExecuteTerminalTool.getPendingCommands();
+  }
+
   private initializeTools(): void {
     // Register all available tools
     const toolInstances: BaseTool[] = [

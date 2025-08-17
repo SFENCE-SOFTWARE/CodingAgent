@@ -11,9 +11,23 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
   private _view?: vscode.WebviewView;
   private chatService: ChatService;
+  private toolsService?: ToolsService;
 
   constructor(private readonly context: vscode.ExtensionContext, toolsService?: ToolsService) {
     this.chatService = new ChatService(toolsService);
+    this.toolsService = toolsService;
+    
+    // Set up streaming callback
+    this.chatService.setStreamingCallback((update: StreamingUpdate) => {
+      this.handleStreamingUpdate(update);
+    });
+
+    // Set up terminal approval callback
+    if (this.toolsService) {
+      this.toolsService.setTerminalApprovalCallback(async (commandId: string, command: string, cwd?: string) => {
+        return this.handleTerminalApprovalRequest(commandId, command, cwd);
+      });
+    }
     
     // Set up streaming callback
     this.chatService.setStreamingCallback((update: StreamingUpdate) => {
@@ -190,6 +204,18 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
           case 'rejectAllChanges':
             await this.handleRejectAllChanges();
+            break;
+
+          case 'approveTerminalCommand':
+            await this.handleApproveTerminalCommand(message.commandId);
+            break;
+
+          case 'rejectTerminalCommand':
+            await this.handleRejectTerminalCommand(message.commandId);
+            break;
+
+          case 'getPendingTerminalCommands':
+            await this.handleGetPendingTerminalCommands();
             break;
         }
       } catch (error) {
@@ -528,6 +554,86 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       type: 'updateAvailableModes',
       modes: Object.keys(modes)
     });
+  }
+
+  // Terminal approval methods
+  private async handleTerminalApprovalRequest(commandId: string, command: string, cwd?: string): Promise<boolean> {
+    console.log(`[ChatViewProvider] Terminal approval request: ${commandId} - ${command}`);
+    
+    if (!this._view) {
+      console.error(`[ChatViewProvider] No webview available for terminal approval request`);
+      return false;
+    }
+
+    // Send approval request to UI
+    this.sendMessage({
+      type: 'terminalApprovalRequest',
+      commandId: commandId,
+      command: command,
+      cwd: cwd
+    });
+
+    // The actual approval will come back via message handler
+    // This method just triggers the UI - the promise resolution happens in ExecuteTerminalTool
+    return true; // This return value is not used, ExecuteTerminalTool handles the promise
+  }
+
+  private async handleApproveTerminalCommand(commandId: string) {
+    try {
+      console.log(`[ChatViewProvider] Approving terminal command: ${commandId}`);
+      if (this.toolsService) {
+        this.toolsService.approveTerminalCommand(commandId);
+        this.sendMessage({
+          type: 'terminalCommandApproved',
+          commandId: commandId
+        });
+      }
+    } catch (error) {
+      console.error('Failed to approve terminal command:', error);
+      this.sendMessage({
+        type: 'showError',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }
+
+  private async handleRejectTerminalCommand(commandId: string) {
+    try {
+      console.log(`[ChatViewProvider] Rejecting terminal command: ${commandId}`);
+      if (this.toolsService) {
+        this.toolsService.rejectTerminalCommand(commandId);
+        this.sendMessage({
+          type: 'terminalCommandRejected',
+          commandId: commandId
+        });
+      }
+    } catch (error) {
+      console.error('Failed to reject terminal command:', error);
+      this.sendMessage({
+        type: 'showError',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }
+
+  private async handleGetPendingTerminalCommands() {
+    try {
+      console.log(`[ChatViewProvider] Getting pending terminal commands`);
+      if (this.toolsService) {
+        const pendingCommands = this.toolsService.getPendingTerminalCommands();
+        console.log(`[ChatViewProvider] Found ${pendingCommands.length} pending terminal commands`);
+        this.sendMessage({
+          type: 'pendingTerminalCommands',
+          commands: pendingCommands
+        });
+      }
+    } catch (error) {
+      console.error('Failed to get pending terminal commands:', error);
+      this.sendMessage({
+        type: 'showError',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
   }
 
   private sendMessage(message: any) {
