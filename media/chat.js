@@ -1011,37 +1011,37 @@
   }
 
   function acceptFileChanges(filePath) {
-    if (confirm(`Accept all changes in ${getRelativePath(filePath)}?`)) {
-      vscode.postMessage({ 
-        type: 'acceptFileChanges', 
-        filePath: filePath 
-      });
-    }
+    console.log('acceptFileChanges called with:', filePath);
+    console.log('Sending message to backend');
+    vscode.postMessage({ 
+      type: 'acceptFileChanges', 
+      filePath: filePath 
+    });
   }
 
   function rejectFileChanges(filePath) {
-    if (confirm(`Reject all changes in ${getRelativePath(filePath)}? This will restore the file to its previous state.`)) {
-      vscode.postMessage({ 
-        type: 'rejectFileChanges', 
-        filePath: filePath 
-      });
-    }
+    console.log('rejectFileChanges called with:', filePath);
+    console.log('Sending message to backend');
+    vscode.postMessage({ 
+      type: 'rejectFileChanges', 
+      filePath: filePath 
+    });
   }
 
   function acceptAllChanges() {
-    if (confirm('Accept all pending changes?')) {
-      vscode.postMessage({ 
-        type: 'acceptAllChanges'
-      });
-    }
+    console.log('acceptAllChanges called');
+    console.log('Sending message to backend');
+    vscode.postMessage({ 
+      type: 'acceptAllChanges'
+    });
   }
 
   function rejectAllChanges() {
-    if (confirm('Reject all pending changes? This will restore all files to their previous state.')) {
-      vscode.postMessage({ 
-        type: 'rejectAllChanges'
-      });
-    }
+    console.log('rejectAllChanges called');
+    console.log('Sending message to backend');
+    vscode.postMessage({ 
+      type: 'rejectAllChanges'
+    });
   }
   
   function showChangeDiff(changeId, htmlDiff) {
@@ -1075,6 +1075,18 @@
   window.requestChangeDiff = requestChangeDiff;
   window.acceptChange = acceptChange;
   window.rejectChange = rejectChange;
+  window.acceptFileChanges = acceptFileChanges;
+  window.rejectFileChanges = rejectFileChanges;
+  window.acceptAllChanges = acceptAllChanges;
+  window.rejectAllChanges = rejectAllChanges;
+  
+  // Debug: confirm functions are available
+  console.log('Global functions assigned:', {
+    acceptFileChanges: typeof window.acceptFileChanges,
+    rejectFileChanges: typeof window.rejectFileChanges,
+    acceptAllChanges: typeof window.acceptAllChanges,
+    rejectAllChanges: typeof window.rejectAllChanges
+  });
   
   // Initialize when DOM is ready
   if (document.readyState === 'loading') {
