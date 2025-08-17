@@ -13,11 +13,21 @@ A powerful AI coding assistant extension for Visual Studio Code that integrates 
 
 ⚡ **Powerful Tools**:
 - Read and write files with line range selection
+- Advanced file manipulation (insert, delete, replace lines)
 - List directory contents recursively
 - Execute terminal commands safely
 - Read webpage content
 - Get file size information
 - PDF reading capabilities (extensible)
+
+🔄 **Change Tracking**:
+- Real-time tracking of file modifications
+- Visual inline decorations for changes
+- Accept/Reject individual changes
+- Smart merging of overlapping changes
+- Non-adjacent changes maintained separately
+- Automatic backup and restoration
+- Persistence across sessions
 
 🎨 **Modern UI**: 
 - GitHub Copilot Chat-inspired interface
@@ -80,8 +90,8 @@ A powerful AI coding assistant extension for Visual Studio Code that integrates 
 ### Agent Modes
 
 **🛠️ Coder Mode**: Best for programming tasks
-- Available tools: read_file, write_file, list_files, get_file_size, execute_terminal
-- Use for: Code generation, debugging, file manipulation, project exploration
+- Available tools: read_file, write_file, insert_lines, delete_lines, replace_lines, patch_file, list_files, get_file_size, execute_terminal, create_folder, rename_file
+- Use for: Code generation, debugging, file manipulation, project exploration, refactoring
 
 **❓ Ask Mode**: Best for questions and research
 - Available tools: read_file, read_webpage
@@ -152,10 +162,39 @@ Custom modes can be added via the `codingagent.modes` setting:
 | `list_files` | List files and directories | `path`, `recursive` |
 | `read_file` | Read file content with line ranges | `path`, `start_line`, `end_line`, `max_bytes` |
 | `write_file` | Write or append to files | `path`, `content`, `append` |
+| `insert_lines` | Insert new lines at specific positions | `path`, `line_number`, `content`, `after_text`, `before_text` |
+| `delete_lines` | Delete lines by number, range, or content | `path`, `line_numbers`, `start_line`, `end_line`, `containing_text` |
+| `replace_lines` | Replace lines by number, range, or content | `path`, `line_number`, `new_content`, `line_numbers`, `start_line`, `end_line` |
+| `patch_file` | Apply text patches to files | `path`, `old_text`, `new_text` |
 | `get_file_size` | Get file size in lines and bytes | `path` |
+| `create_folder` | Create directories recursively | `path` |
+| `rename_file` | Rename or move files and folders | `old_path`, `new_path` |
 | `execute_terminal` | Run terminal commands | `command`, `cwd`, `timeout` |
 | `read_webpage` | Fetch and read webpage content | `url`, `max_length` |
 | `read_pdf` | Extract text from PDF files | `path`, `max_pages` |
+
+## Change Tracking
+
+The extension includes a powerful change tracking system that monitors file modifications:
+
+### Features
+- **Visual Indicators**: See added, modified, and deleted lines with color-coded decorations
+- **Accept/Reject Changes**: Review and selectively apply or discard modifications
+- **Smart Merging**: Overlapping changes are merged automatically
+- **Independent Changes**: Non-adjacent changes can be accepted/rejected separately
+- **Backup System**: Automatic backups enable safe rollback of rejected changes
+- **Persistence**: Changes are preserved across VS Code sessions
+
+### Usage
+When the AI modifies files, you'll see:
+1. **Inline decorations** highlighting changes in the editor
+2. **Code lens actions** for "Accept Change" and "Reject Change"
+3. **Status bar indicators** showing pending changes count
+
+### Change Types
+- **Adjacent changes** (within 2 lines): Automatically merged into single change
+- **Non-adjacent changes**: Maintained as separate, independently manageable changes
+- **Overlapping changes**: Intelligently merged while preserving original content
 
 ## Troubleshooting
 

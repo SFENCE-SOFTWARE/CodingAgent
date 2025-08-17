@@ -1,6 +1,18 @@
-# Inline Change Tracking Implementation Summary - FIXED
+# Inline Change Tracking Implementation Summary - ENHANCED
 
-## ✅ Implemented Features & Fixes
+## ✅ Latest Features & Improvements
+
+### 🧠 **Intelligent Change Merging**
+- **Adjacent changes** (within 2 lines): Automatically merged for streamlined management
+- **Non-adjacent changes**: Maintained as separate, independently manageable changes
+- **Smart detection**: Uses line diff analysis to determine change relationships
+- **User benefit**: Accept/reject changes independently based on their location and impact
+
+### 🔧 **Enhanced File Tools**
+- **New tools added**: `insert_lines`, `delete_lines`, `replace_lines`
+- **Change tracking integration**: All file modification tools now track changes automatically
+- **Comprehensive testing**: 124+ tests covering all scenarios including change merging
+- **Robust validation**: Edge cases for file operations thoroughly tested
 
 ### 🔧 **Real-time Updates Fixed**
 - **Issue**: Changes not visible immediately after creation
@@ -11,6 +23,7 @@
 - **Accepted changes**: Completely removed from tracking (no visual indicators)
 - **Rejected changes**: File reverted to original content + change removed
 - **Pending changes**: Only these are shown with decorations
+- **Content detection**: Changes that revert to original state are automatically removed
 
 ### 1. **InlineChangeDecorationService** - UPDATED
 - **File**: `src/inlineChangeDecorationService.ts`
@@ -38,20 +51,28 @@
 
 ## 🎯 New Behavior
 
-### **When AI makes a change:**
+### **When AI makes changes:**
 1. ✅ **Immediately visible** in editor with colored background
 2. ✅ **CodeLens actions** appear: ✓ Accept | ✗ Reject | 📋 Diff
-3. ✅ **No extension restart** required
+3. ✅ **Smart merging**: Adjacent changes combined, distant changes separate
+4. ✅ **No extension restart** required
 
 ### **When user accepts change:**
 1. ✅ **Visual indicator disappears** completely
 2. ✅ **Change is final** - no more tracking
-3. ✅ **Clean editor** - no clutter
+3. ✅ **Other changes unaffected** - only the accepted change is removed
+4. ✅ **Clean editor** - no clutter
 
 ### **When user rejects change:**
-1. ✅ **File content reverts** to original state
+1. ✅ **File content reverts** for that specific change
 2. ✅ **Visual indicator disappears** completely  
-3. ✅ **Change undone** - like it never happened
+3. ✅ **Other changes preserved** - only the rejected change is undone
+4. ✅ **Backup restoration** - safe rollback to original state
+
+### **Change merging intelligence:**
+- **Overlapping modifications**: Automatically merged into single manageable change
+- **Distant modifications**: Kept separate for independent accept/reject
+- **Example**: Changes on lines 2 and 8 = 2 separate changes, lines 2 and 3 = 1 merged change
 
 ## 🔧 User Experience
 

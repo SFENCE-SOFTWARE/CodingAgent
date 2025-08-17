@@ -27,15 +27,40 @@ The extension uses a **mode-based architecture** where each mode has specific to
 **Available Tools:**
 - `read_file` - Read file content with line range support
 - `write_file` - Write or append to files
+- `insert_lines` - Insert new lines at specific positions in files
+- `delete_lines` - Delete lines by number, range, or content matching
+- `replace_lines` - Replace lines by number, range, or content matching
+- `patch_file` - Apply text diffs without full file rewrites
 - `list_files` - Directory listing with recursive option  
 - `get_file_size` - Get file size in lines and bytes
 - `execute_terminal` - Run terminal commands with timeout
 - `search_pattern` - Search across workspace files (available in all modes)
 - `create_folder` - Create directories with recursive option (Coder mode)
-- `patch_file` - Apply text diffs without full file rewrites (Coder mode)  
 - `rename_file` - Rename/move files and folders (Coder mode)
 - `read_webpage` - Fetch and read webpage content (Ask/Architect modes)
 - `read_pdf` - Extract text from PDF files (Ask/Architect modes)
+
+### Change Tracking System
+**Critical:** All file modification tools integrate with advanced change tracking:
+- **ChangeTrackingService** - Tracks all file modifications with before/after content
+- **ChangeAwareBaseTool** - Base class that all file tools inherit from
+- **Smart Merging** - Adjacent/overlapping changes merge automatically, distant changes remain separate
+- **Accept/Reject** - Users can selectively accept or reject individual changes
+- **Visual Indicators** - Inline decorations and code lens show pending changes
+- **Backup System** - Automatic backups enable safe rollback of rejected changes
+- **Persistence** - Changes survive VS Code restarts
+
+```typescript
+// File tools automatically track changes via ChangeAwareBaseTool
+export class MyFileTool extends ChangeAwareBaseTool {
+  protected async executeOperation(args: any, workspaceRoot: string): Promise<ToolResult> {
+    // Tool implementation - tracking happens automatically
+    const filePath = this.getFilePath(args, workspaceRoot);
+    // Modify file content
+    return { success: true, content: 'Modified successfully' };
+  }
+}
+```
 
 ### Streaming Architecture
 **Critical:** The extension implements streaming responses with tool call interleaving:
@@ -136,7 +161,12 @@ export class ReadFileTool implements BaseTool {
 
 ### File Structure Logic
 - `src/` - TypeScript source following VS Code patterns
-- `src/tools/` - Individual tool implementations following BaseTool interface
+- `src/tools/` - Individual tool implementations following ChangeAwareBaseTool interface
+- `src/changeTrackingService.ts` - Core change tracking and merging logic
+- `src/changeCodeLensProvider.ts` - Code lens integration for Accept/Reject
+- `src/inlineChangeDecorationService.ts` - Visual change indicators
+- `src/backupManager.ts` - File backup and restoration system
+- `src/test/` - Comprehensive test suite (124+ tests) including change tracking scenarios
 - `media/` - WebView assets (HTML/CSS/JS, not bundled)
 - `out/` - Compiled JavaScript (gitignored)
 - Configuration in `package.json` contributes section defines UI elements

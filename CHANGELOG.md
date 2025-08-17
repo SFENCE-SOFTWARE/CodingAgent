@@ -2,6 +2,46 @@
 
 All notable changes to the "CodingAgent" extension will be documented in this file.
 
+## [0.0.2] - 2025-08-17
+
+### Added
+- **Advanced Change Tracking System**: Real-time tracking of file modifications with Accept/Reject functionality
+  - Visual inline decorations showing added, modified, and deleted lines
+  - Code lens integration for quick change acceptance/rejection
+  - Intelligent change merging for overlapping modifications
+  - Non-adjacent changes maintained as separate trackable changes
+  - Backup system with automatic restoration on rejection
+  - Persistence across VS Code sessions
+- **New File Manipulation Tools**:
+  - `insert_lines`: Insert new lines at specific positions in files
+  - `delete_lines`: Delete lines by number, range, or content matching
+  - `replace_lines`: Replace lines by number, range, or content matching
+  - `patch_file`: Apply text patches to files
+- **Enhanced Tool System**:
+  - All file modification tools now integrate with change tracking
+  - Smart detection of overlapping vs. non-adjacent changes
+  - Improved error handling and validation
+- **UI Improvements**:
+  - Status bar indicators for pending changes
+  - Enhanced debugging and logging capabilities
+  - Better tool call visualization
+
+### Changed
+- **Tool Architecture**: All file modification tools now inherit from `ChangeAwareBaseTool`
+- **Change Management**: Overlapping/adjacent changes merge automatically, distant changes remain separate
+- **User Experience**: File modifications now provide immediate visual feedback
+
+### Fixed
+- Various stability improvements in tool execution
+- Better handling of edge cases in file operations
+- Improved error messages and user feedback
+
+### Technical Details
+- Implemented LCS (Longest Common Subsequence) algorithm for accurate diff generation
+- BackupManager for safe file operation rollbacks
+- Comprehensive test suite with 124+ passing tests
+- TypeScript interfaces for all change tracking components
+
 ## [0.0.1] - 2025-08-13
 
 ### Added
@@ -65,12 +105,4 @@ All notable changes to the "CodingAgent" extension will be documented in this fi
 - Voice input support
 - Integration with VS Code themes
 - Performance optimizations for large file operations
-- Advanced search within conversation historyLog
-
-All notable changes to the "CoddingAgent" extension will be documented in this file.
-
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
-
-## [Unreleased]
-
-- Initial release
+- Advanced search within conversation history

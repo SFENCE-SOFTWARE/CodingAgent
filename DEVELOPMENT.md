@@ -3,23 +3,54 @@
 ## Project Structure
 
 ```
-Codi3. **Open chat**: Look for the CodingAgent icon in the Activity Bar (left sidebar)gAgent/
+CodingAgent/
 ├── src/
-│   ├── extension.ts          # Main extension entry point
-│   ├── types.ts             # TypeScript interfaces and types
-│   ├── ollama.ts            # Ollama API service
-│   ├── tools.ts             # Tool definitions and execution
-│   ├── chatService.ts       # Chat logic and conversation management
-│   ├── chatViewProvider.ts  # WebView provider for chat UI
-│   ├── webview.ts           # WebView HTML generation
-│   └── test/                # Test files
+│   ├── extension.ts                    # Main extension entry point
+│   ├── types.ts                        # TypeScript interfaces and types
+│   ├── chatService.ts                  # Chat logic and conversation management
+│   ├── chatViewProvider.ts             # WebView provider for chat UI
+│   ├── openai_html_api.ts             # Ollama API service (OpenAI compatible)
+│   ├── loggingService.ts               # Logging and debugging service
+│   ├── settingsPanel.ts               # Settings management UI
+│   ├── webview.ts                     # WebView HTML generation
+│   ├── tools.ts                       # Tool registry and management
+│   ├── changeTrackingService.ts       # File change tracking and management
+│   ├── changeCodeLensProvider.ts      # Code lens for change acceptance/rejection
+│   ├── inlineChangeDecorationService.ts # Visual change decorations
+│   ├── changeAwareBaseTool.ts         # Base class for change-aware tools
+│   ├── backupManager.ts               # File backup and restoration
+│   ├── tools/
+│   │   ├── readFile.ts                # Read file content with line ranges
+│   │   ├── writeFile.ts               # Write or append to files
+│   │   ├── insertLines.ts             # Insert lines at specific positions
+│   │   ├── deleteLines.ts             # Delete lines by various criteria
+│   │   ├── replaceLines.ts            # Replace lines by various criteria
+│   │   ├── patchFile.ts               # Apply text patches
+│   │   ├── listFiles.ts               # Directory listing
+│   │   ├── getFileSize.ts             # File size information
+│   │   ├── createFolder.ts            # Directory creation
+│   │   ├── renameFile.ts              # File/folder renaming
+│   │   ├── executeTerminal.ts         # Terminal command execution
+│   │   ├── searchPattern.ts           # Text search across files
+│   │   ├── readWebpage.ts             # Web content fetching
+│   │   └── readPdf.ts                 # PDF text extraction
+│   └── test/                          # Comprehensive test suite
+│       ├── extension.test.ts          # Extension integration tests
+│       ├── tools.test.ts              # Tool functionality tests
+│       ├── fileTools.test.ts          # File operation tests
+│       ├── systemWebTools.test.ts     # System and web tool tests
+│       ├── toolsIntegration.test.ts   # Tool integration tests
+│       ├── changeTrackingService.test.ts # Change tracking tests
+│       └── changeMerging.test.ts      # Change merging logic tests
 ├── media/
-│   ├── chat-icon.svg        # Extension icon
-│   ├── chat.css             # WebView styles
-│   └── chat.js              # WebView JavaScript
-├── package.json             # Extension manifest
-├── tsconfig.json            # TypeScript configuration
-└── README.md                # User documentation
+│   ├── chat-icon.svg                  # Extension icon
+│   ├── chat.css                       # WebView styles
+│   ├── chat.js                        # WebView JavaScript
+│   ├── settings.css                   # Settings panel styles
+│   └── settings.js                    # Settings panel JavaScript
+├── package.json                       # Extension manifest
+├── tsconfig.json                      # TypeScript configuration
+└── README.md                          # User documentation
 ```
 
 ## Building and Testing
@@ -70,83 +101,153 @@ ollama serve
 
 1. **Extension Main (`extension.ts`)**
    - Registers commands and providers
+   - Initializes change tracking system
    - Manages status bar and configuration
    - Entry point for all extension functionality
 
 2. **Chat Service (`chatService.ts`)**
-   - Handles conversation logic
-   - Manages message history
-   - Coordinates between Ollama and Tools
+   - Handles conversation logic with streaming support
+   - Manages message history and tool execution loops
+   - Coordinates between Ollama API and Tools
 
-3. **Ollama Service (`ollama.ts`)**
-   - Communicates with Ollama API
-   - Handles model listing and chat requests
-   - Manages configuration settings
+3. **OpenAI API Service (`openai_html_api.ts`)**
+   - Communicates with Ollama using OpenAI-compatible endpoints
+   - Handles streaming responses and function calls
+   - Manages configuration and model selection
 
-4. **Tools Service (`tools.ts`)**
-   - Implements all available tools
-   - Handles file operations, terminal commands, etc.
-   - Provides tool definitions for AI model
+4. **Change Tracking System**
+   - **`changeTrackingService.ts`**: Core change tracking and merging logic
+   - **`changeCodeLensProvider.ts`**: Accept/Reject code lens integration
+   - **`inlineChangeDecorationService.ts`**: Visual change indicators
+   - **`backupManager.ts`**: File backup and restoration
+   - **`changeAwareBaseTool.ts`**: Base class for tracking file modifications
 
-5. **Chat View Provider (`chatViewProvider.ts`)**
+5. **Tools Architecture**
+   - **`tools.ts`**: Central tool registry and execution coordinator
+   - **Individual tool files**: Each tool in its own module for maintainability
+   - **Modular design**: Easy to add new tools and modify existing ones
+
+6. **Chat View Provider (`chatViewProvider.ts`)**
    - Manages WebView lifecycle
    - Handles messages between extension and UI
    - Updates UI state based on chat events
 
-6. **WebView Components (`webview.ts`, `media/`)**
+7. **WebView Components (`webview.ts`, `media/`)**
    - HTML/CSS/JS for chat interface
-   - Handles user interactions
+   - Handles user interactions and streaming updates
    - Displays messages, tool calls, and debug info
 
 ### Data Flow
 
 ```
-User Input → WebView → ChatViewProvider → ChatService → OllamaService → AI Model
+User Input → WebView → ChatViewProvider → ChatService → OpenAI API → AI Model
                                              ↓
-                                         ToolsService → Tool Execution → Results
-                                             ↓
-User Interface ← WebView ← ChatViewProvider ← ChatService ← Ollama Response
+                                    ToolsService → Tool Execution → ChangeTracking
+                                             ↓                            ↓
+User Interface ← WebView ← ChatViewProvider ← ChatService ← Results ← File Changes
+                    ↑                                                      ↓
+              Visual Decorations ← InlineChangeDecorationService ← ChangeTrackingService
 ```
 
 ## Adding New Features
 
 ### Adding a New Tool
 
-1. **Define tool in `tools.ts`**:
+1. **Create new tool file in `src/tools/`**:
 ```typescript
-// Add to getToolDefinitions()
-new_tool: {
-  type: 'function',
-  function: {
-    name: 'new_tool',
-    description: 'Description of what the tool does',
-    parameters: {
-      type: 'object',
-      properties: {
-        param1: { type: 'string', description: 'Parameter description' }
-      },
-      required: ['param1']
-    }
+// src/tools/myNewTool.ts
+import { ToolDefinition, ToolResult, ToolInfo } from '../types';
+import { ChangeAwareBaseTool } from '../changeAwareBaseTool';
+
+export class MyNewTool extends ChangeAwareBaseTool {
+  getToolInfo(): ToolInfo {
+    return {
+      name: 'my_new_tool',
+      displayName: 'My New Tool',
+      description: 'Description of what the tool does',
+      category: 'file' // or 'system', 'web'
+    };
   }
-}
 
-// Add to executeTool()
-case 'new_tool':
-  return await this.executeNewTool(args.param1);
+  getToolDefinition(): ToolDefinition {
+    return {
+      type: 'function',
+      function: {
+        name: 'my_new_tool',
+        description: 'Detailed description for AI model',
+        parameters: {
+          type: 'object',
+          properties: {
+            param1: { type: 'string', description: 'Parameter description' }
+          },
+          required: ['param1']
+        }
+      }
+    };
+  }
 
-// Implement the tool
-private async executeNewTool(param1: string): Promise<ToolResult> {
-  // Tool implementation
+  protected async executeOperation(args: any, workspaceRoot: string): Promise<ToolResult> {
+    // Tool implementation
+    return {
+      success: true,
+      content: 'Tool executed successfully'
+    };
+  }
+
+  protected getFilePath(args: any, workspaceRoot: string): string {
+    // Return file path if tool modifies files
+    return path.join(workspaceRoot, args.path);
+  }
+
+  protected getOperationType(args: any): 'create' | 'modify' | 'delete' | 'rename' {
+    return 'modify';
+  }
 }
 ```
 
-2. **Add tool to agent modes** in `package.json`:
+2. **Register tool in `tools.ts`**:
+```typescript
+import { MyNewTool } from './tools/myNewTool';
+
+// Add to toolInstances array
+const myNewTool = new MyNewTool(this.changeTracker);
+this.toolInstances.set('my_new_tool', myNewTool);
+
+// Add to allowedTools for appropriate modes
+const allowedTools = {
+  'Coder': [...existingTools, 'my_new_tool']
+};
+```
+
+3. **Add tool to agent modes** in `package.json`:
 ```json
 {
-  "codingagent.modes": {
-    "Coder": {
-      "allowedTools": ["read_file", "write_file", "new_tool"]
-    }
+  "Coder": {
+    "allowedTools": ["read_file", "write_file", "my_new_tool"]
+  }
+}
+```
+
+### Adding Change Tracking to Existing Tools
+
+If creating a tool that modifies files, inherit from `ChangeAwareBaseTool`:
+
+```typescript
+export class MyFileTool extends ChangeAwareBaseTool {
+  // Implement required methods
+  protected async executeOperation(args: any, workspaceRoot: string): Promise<ToolResult> {
+    const filePath = this.getFilePath(args, workspaceRoot);
+    
+    // Read original content
+    const beforeContent = fs.readFileSync(filePath, 'utf8');
+    
+    // Perform modifications
+    const afterContent = this.modifyContent(beforeContent, args);
+    
+    // Write modified content
+    fs.writeFileSync(filePath, afterContent);
+    
+    return { success: true, content: 'File modified successfully' };
   }
 }
 ```
@@ -161,7 +262,8 @@ Update the default configuration in `package.json`:
     "NewMode": {
       "systemMessage": "You are a specialized assistant for...",
       "allowedTools": ["tool1", "tool2"],
-      "fallbackMessage": "I'm ready to help with..."
+      "fallbackMessage": "I'm ready to help with...",
+      "temperature": 0.1
     }
   }
 }
