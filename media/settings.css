@@ -121,37 +121,6 @@
   display: none; /* Hidden by default in compact mode */
 }
 
-/* Tooltip for tab buttons */
-.tab-button[title]:hover::after {
-  content: attr(title);
-  position: absolute;
-  left: calc(100% + 8px);
-  top: 50%;
-  transform: translateY(-50%);
-  background: var(--vscode-editorHoverWidget-background);
-  color: var(--vscode-editorHoverWidget-foreground);
-  border: 1px solid var(--vscode-editorHoverWidget-border);
-  border-radius: 3px;
-  padding: 6px 8px;
-  font-size: 12px;
-  white-space: nowrap;
-  z-index: 1000;
-  box-shadow: var(--vscode-widget-shadow);
-  pointer-events: none;
-  animation: tooltipFadeIn 0.2s ease-out;
-}
-
-@keyframes tooltipFadeIn {
-  from { 
-    opacity: 0; 
-    transform: translateY(-50%) translateX(-4px);
-  }
-  to { 
-    opacity: 1; 
-    transform: translateY(-50%) translateX(0);
-  }
-}
-
 /* Main Content Area */
 .settings-content {
   flex: 1;
@@ -634,25 +603,6 @@
   .tab-button img {
     width: 22px;
     height: 22px;
-  }
-  
-  /* Tooltip below button on mobile */
-  .tab-button[title]:hover::after {
-    left: 50%;
-    top: calc(100% + 8px);
-    transform: translateX(-50%);
-    animation: tooltipFadeInMobile 0.2s ease-out;
-  }
-  
-  @keyframes tooltipFadeInMobile {
-    from { 
-      opacity: 0; 
-      transform: translateX(-50%) translateY(-4px);
-    }
-    to { 
-      opacity: 1; 
-      transform: translateX(-50%) translateY(0);
-    }
   }
   
   .form-row {
