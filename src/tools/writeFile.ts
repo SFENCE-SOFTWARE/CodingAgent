@@ -2,9 +2,10 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { BaseTool, ToolDefinition, ToolResult, ToolInfo } from '../types';
+import { ToolDefinition, ToolResult, ToolInfo } from '../types';
+import { ChangeAwareBaseTool } from '../changeAwareBaseTool';
 
-export class WriteFileTool implements BaseTool {
+export class WriteFileTool extends ChangeAwareBaseTool {
   getToolInfo(): ToolInfo {
     return {
       name: 'write_file',
@@ -44,46 +45,38 @@ export class WriteFileTool implements BaseTool {
   }
 
   async execute(args: any, workspaceRoot: string): Promise<ToolResult> {
-    try {
-      const inputPath = args.path;
-      const content = args.content;
-      const append = args.append || false;
+    return this.captureFileChange(args.path, async () => {
+      try {
+        const inputPath = args.path;
+        const content = args.content;
+        const append = args.append || false;
 
-      const fullPath = this.resolvePath(inputPath, workspaceRoot);
+        const fullPath = this.resolvePath(inputPath, workspaceRoot);
 
-      // Ensure directory exists
-      const dir = path.dirname(fullPath);
-      if (!fs.existsSync(dir)) {
-        await fs.promises.mkdir(dir, { recursive: true });
+        // Ensure directory exists
+        const dir = path.dirname(fullPath);
+        if (!fs.existsSync(dir)) {
+          await fs.promises.mkdir(dir, { recursive: true });
+        }
+
+        if (append) {
+          await fs.promises.appendFile(fullPath, content, 'utf8');
+        } else {
+          await fs.promises.writeFile(fullPath, content, 'utf8');
+        }
+
+        const action = append ? 'appended to' : 'written to';
+        return {
+          success: true,
+          content: `Content ${action}: ${fullPath}`
+        };
+      } catch (error) {
+        return {
+          success: false,
+          content: '',
+          error: `Failed to write file: ${error instanceof Error ? error.message : String(error)}`
+        };
       }
-
-      if (append) {
-        await fs.promises.appendFile(fullPath, content, 'utf8');
-      } else {
-        await fs.promises.writeFile(fullPath, content, 'utf8');
-      }
-
-      const action = append ? 'appended to' : 'written to';
-      return {
-        success: true,
-        content: `Content ${action}: ${fullPath}`
-      };
-    } catch (error) {
-      return {
-        success: false,
-        content: '',
-        error: `Failed to write file: ${error instanceof Error ? error.message : String(error)}`
-      };
-    }
-  }
-
-  private resolvePath(inputPath: string, workspaceRoot: string): string {
-    if (path.isAbsolute(inputPath)) {
-      return inputPath;
-    }
-    if (inputPath === '.') {
-      return workspaceRoot;
-    }
-    return path.join(workspaceRoot, inputPath);
+    }, workspaceRoot);
   }
 }

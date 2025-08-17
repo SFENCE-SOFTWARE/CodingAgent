@@ -14,6 +14,18 @@ import { PatchFileTool } from '../tools/patchFile';
 import { InsertLinesTool } from '../tools/insertLines';
 import { SearchPatternTool } from '../tools/searchPattern';
 import { GetFileSizeTool } from '../tools/getFileSize';
+import { ChangeTrackingService } from '../changeTrackingService';
+
+// Mock change tracking service for tests
+class MockChangeTrackingService extends ChangeTrackingService {
+    constructor() {
+        super('/tmp');
+    }
+    
+    async trackFileOperation(): Promise<string> {
+        return 'mock-change-id';
+    }
+}
 import { ExecuteTerminalTool } from '../tools/executeTerminal';
 import { ReadPdfTool } from '../tools/readPdf';
 import { ReadWebpageTool } from '../tools/readWebpage';
@@ -54,9 +66,11 @@ suite('Tools Test Suite', () => {
 
     suite('WriteFileTool', () => {
         let tool: WriteFileTool;
+        let mockChangeTracker: MockChangeTrackingService;
 
         setup(() => {
-            tool = new WriteFileTool();
+            mockChangeTracker = new MockChangeTrackingService();
+            tool = new WriteFileTool(mockChangeTracker);
         });
 
         test('should provide correct tool info', () => {
@@ -159,9 +173,11 @@ suite('Tools Test Suite', () => {
 
     suite('PatchFileTool', () => {
         let tool: PatchFileTool;
+        let mockChangeTracker: MockChangeTrackingService;
 
         setup(() => {
-            tool = new PatchFileTool();
+            mockChangeTracker = new MockChangeTrackingService();
+            tool = new PatchFileTool(mockChangeTracker);
         });
 
         test('should provide correct tool info', () => {
@@ -193,9 +209,11 @@ suite('Tools Test Suite', () => {
 
     suite('InsertLinesTool', () => {
         let tool: InsertLinesTool;
+        let mockChangeTracker: MockChangeTrackingService;
 
         setup(() => {
-            tool = new InsertLinesTool();
+            mockChangeTracker = new MockChangeTrackingService();
+            tool = new InsertLinesTool(mockChangeTracker);
         });
 
         test('should provide correct tool info', () => {

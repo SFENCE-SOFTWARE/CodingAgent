@@ -2,9 +2,10 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { BaseTool, ToolDefinition, ToolResult, ToolInfo } from '../types';
+import { ToolDefinition, ToolResult, ToolInfo } from '../types';
+import { ChangeAwareBaseTool } from '../changeAwareBaseTool';
 
-export class PatchFileTool implements BaseTool {
+export class PatchFileTool extends ChangeAwareBaseTool {
   getToolInfo(): ToolInfo {
     return {
       name: 'patch_file',
@@ -48,83 +49,75 @@ export class PatchFileTool implements BaseTool {
   }
 
   async execute(args: any, workspaceRoot: string): Promise<ToolResult> {
-    try {
-      const inputPath = args.path;
-      const oldText = args.old_text;
-      const newText = args.new_text;
-      const lineNumber = args.line_number;
+    return this.captureFileChange(args.path, async () => {
+      try {
+        const inputPath = args.path;
+        const oldText = args.old_text;
+        const newText = args.new_text;
+        const lineNumber = args.line_number;
 
-      const fullPath = this.resolvePath(inputPath, workspaceRoot);
-      
-      // Check if file exists
-      if (!fs.existsSync(fullPath)) {
-        return {
-          success: false,
-          content: '',
-          error: `File not found: ${fullPath}`
-        };
-      }
-
-      // Read the file
-      const content = await fs.promises.readFile(fullPath, 'utf8');
-      const lines = content.split('\n');
-
-      // Find and replace the text
-      let found = false;
-      let modifiedLines = lines;
-
-      if (lineNumber && lineNumber > 0 && lineNumber <= lines.length) {
-        // If line number is provided, check that line first
-        const targetLine = lines[lineNumber - 1];
-        if (targetLine.includes(oldText)) {
-          modifiedLines[lineNumber - 1] = targetLine.replace(oldText, newText);
-          found = true;
+        const fullPath = this.resolvePath(inputPath, workspaceRoot);
+        
+        // Check if file exists
+        if (!fs.existsSync(fullPath)) {
+          return {
+            success: false,
+            content: '',
+            error: `File not found: ${fullPath}`
+          };
         }
-      }
 
-      if (!found) {
-        // Search through all lines
-        for (let i = 0; i < lines.length; i++) {
-          if (lines[i].includes(oldText)) {
-            modifiedLines[i] = lines[i].replace(oldText, newText);
+        // Read the file
+        const content = await fs.promises.readFile(fullPath, 'utf8');
+        const lines = content.split('\n');
+
+        // Find and replace the text
+        let found = false;
+        let modifiedLines = lines;
+
+        if (lineNumber && lineNumber > 0 && lineNumber <= lines.length) {
+          // If line number is provided, check that line first
+          const targetLine = lines[lineNumber - 1];
+          if (targetLine.includes(oldText)) {
+            modifiedLines[lineNumber - 1] = targetLine.replace(oldText, newText);
             found = true;
-            break; // Replace only first occurrence
           }
         }
-      }
 
-      if (!found) {
+        if (!found) {
+          // Search through all lines
+          for (let i = 0; i < lines.length; i++) {
+            if (lines[i].includes(oldText)) {
+              modifiedLines[i] = lines[i].replace(oldText, newText);
+              found = true;
+              break; // Replace only first occurrence
+            }
+          }
+        }
+
+        if (!found) {
+          return {
+            success: false,
+            content: '',
+            error: `Text not found in file: "${oldText}"`
+          };
+        }
+
+        // Write the modified content back
+        const newContent = modifiedLines.join('\n');
+        await fs.promises.writeFile(fullPath, newContent, 'utf8');
+
+        return {
+          success: true,
+          content: `File patched successfully: ${fullPath}`
+        };
+      } catch (error) {
         return {
           success: false,
           content: '',
-          error: `Text not found in file: "${oldText}"`
+          error: `Failed to patch file: ${error instanceof Error ? error.message : String(error)}`
         };
       }
-
-      // Write the modified content back
-      const newContent = modifiedLines.join('\n');
-      await fs.promises.writeFile(fullPath, newContent, 'utf8');
-
-      return {
-        success: true,
-        content: `File patched successfully: ${fullPath}`
-      };
-    } catch (error) {
-      return {
-        success: false,
-        content: '',
-        error: `Failed to patch file: ${error instanceof Error ? error.message : String(error)}`
-      };
-    }
-  }
-
-  private resolvePath(inputPath: string, workspaceRoot: string): string {
-    if (path.isAbsolute(inputPath)) {
-      return inputPath;
-    }
-    if (inputPath === '.') {
-      return workspaceRoot;
-    }
-    return path.join(workspaceRoot, inputPath);
+    }, workspaceRoot);
   }
 }

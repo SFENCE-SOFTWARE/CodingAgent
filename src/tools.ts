@@ -2,6 +2,7 @@
 
 import * as vscode from 'vscode';
 import { BaseTool, ToolDefinition, ToolResult, ToolInfo } from './types';
+import { ChangeTrackingService } from './changeTrackingService';
 
 // Import all tool classes
 import { ListFilesTool } from './tools/listFiles';
@@ -21,9 +22,11 @@ import { ReadPdfTool } from './tools/readPdf';
 export class ToolsService {
   private workspaceRoot: string;
   private tools: Map<string, BaseTool> = new Map();
+  private changeTrackingService: ChangeTrackingService;
 
   constructor() {
     this.workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
+    this.changeTrackingService = new ChangeTrackingService(this.workspaceRoot);
     this.initializeTools();
   }
 
@@ -32,12 +35,12 @@ export class ToolsService {
     const toolInstances: BaseTool[] = [
       new ListFilesTool(),
       new ReadFileTool(),
-      new WriteFileTool(),
+      new WriteFileTool(this.changeTrackingService),
       new GetFileSizeTool(),
       new ExecuteTerminalTool(),
       new CreateFolderTool(),
-      new PatchFileTool(),
-      new InsertLinesTool(),
+      new PatchFileTool(this.changeTrackingService),
+      new InsertLinesTool(this.changeTrackingService),
       new RenameFileTool(),
       new SearchPatternTool(),
       new SearchInPathTool(),
@@ -130,5 +133,12 @@ export class ToolsService {
     }
     
     return categorized;
+  }
+
+  /**
+   * Get the change tracking service instance
+   */
+  getChangeTrackingService(): ChangeTrackingService {
+    return this.changeTrackingService;
   }
 }

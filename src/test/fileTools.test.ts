@@ -12,6 +12,18 @@ import { RenameFileTool } from '../tools/renameFile';
 import { InsertLinesTool } from '../tools/insertLines';
 import { PatchFileTool } from '../tools/patchFile';
 import { GetFileSizeTool } from '../tools/getFileSize';
+import { ChangeTrackingService } from '../changeTrackingService';
+
+// Mock change tracking service for tests
+class MockChangeTrackingService extends ChangeTrackingService {
+    constructor() {
+        super('/tmp');
+    }
+    
+    async trackFileOperation(): Promise<string> {
+        return 'mock-change-id';
+    }
+}
 
 suite('File Tools Integration Tests', () => {
     let tempDir: string;
@@ -121,9 +133,11 @@ suite('File Tools Integration Tests', () => {
 
     suite('WriteFileTool Integration', () => {
         let tool: WriteFileTool;
+        let mockChangeTracker: MockChangeTrackingService;
 
         setup(() => {
-            tool = new WriteFileTool();
+            mockChangeTracker = new MockChangeTrackingService();
+            tool = new WriteFileTool(mockChangeTracker);
         });
 
         test('should write new file when temp dir available', async () => {
@@ -350,9 +364,11 @@ suite('File Tools Integration Tests', () => {
 
     suite('PatchFileTool Integration', () => {
         let tool: PatchFileTool;
+        let mockChangeTracker: MockChangeTrackingService;
 
         setup(() => {
-            tool = new PatchFileTool();
+            mockChangeTracker = new MockChangeTrackingService();
+            tool = new PatchFileTool(mockChangeTracker);
         });
 
         test('should patch file content when temp dir available', async () => {
