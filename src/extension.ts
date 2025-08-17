@@ -52,7 +52,7 @@ export function activate(context: vscode.ExtensionContext) {
     console.log('Setting up change tracking callback...');
     // Create a comprehensive callback that handles all updates
     changeTracker.setChangeUpdateCallback(async (filePath: string, changeType: 'created' | 'accepted' | 'rejected') => {
-      console.log(`Extension: Change ${changeType} for ${filePath}`);
+      console.log(`[Extension] Change ${changeType} for ${filePath}`);
       
       // Update decorations
       await inlineDecorationService.updateFileDecorations(filePath);
@@ -62,15 +62,42 @@ export function activate(context: vscode.ExtensionContext) {
       
       // Update UI panel with current changes
       try {
+        console.log(`[Extension] Callback: Getting all pending changes after ${changeType}`);
         const allChanges = await changeTracker.getAllPendingChanges();
-        chatViewProvider.updateChanges(allChanges.map(change => ({
-          id: change.id,
-          filePath: change.filePath,
-          operation: change.changeType,
-          status: change.status,
-          timestamp: change.timestamp,
-          toolName: change.toolName
-        })));
+        console.log(`[Extension] Callback: Found ${allChanges.length} pending changes after ${changeType}`);
+        
+        // Add delay to avoid race with chatViewProvider
+        console.log(`[Extension] Callback: Waiting 200ms before sending to UI`);
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        // Group changes by file path (same logic as handleGetPendingChanges)
+        const fileGroups = new Map<string, any[]>();
+        
+        for (const change of allChanges) {
+          if (!fileGroups.has(change.filePath)) {
+            fileGroups.set(change.filePath, []);
+          }
+          fileGroups.get(change.filePath)!.push(change);
+        }
+        
+        // Convert to file-based format (same as handleGetPendingChanges)
+        const fileChanges = Array.from(fileGroups.entries()).map(([filePath, changesInFile]) => {
+          const latestTimestamp = Math.max(...changesInFile.map(c => c.timestamp));
+          const allTools = [...new Set(changesInFile.map(c => c.toolName))].join(', ');
+          const changeCount = changesInFile.length;
+          
+          return {
+            filePath: filePath,
+            changeCount: changeCount,
+            changes: changesInFile.map(c => c.id), // Array of change IDs
+            timestamp: latestTimestamp,
+            toolNames: allTools,
+            status: 'pending'
+          };
+        });
+        
+        console.log(`[Extension] Callback: Sending ${fileChanges.length} file groups to UI panel`);
+        chatViewProvider.updateChanges(fileChanges);
       } catch (error) {
         console.warn('Failed to update UI panel:', error);
       }

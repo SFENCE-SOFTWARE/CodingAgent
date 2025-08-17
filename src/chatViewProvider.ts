@@ -318,7 +318,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
   private async handleGetPendingChanges() {
     try {
+      console.log(`[ChatViewProvider] handleGetPendingChanges: Starting`);
       const changes = await this.chatService.getPendingChanges();
+      console.log(`[ChatViewProvider] handleGetPendingChanges: Got ${changes.length} pending changes from service`);
       
       // Group changes by file path
       const fileGroups = new Map<string, any[]>();
@@ -345,6 +347,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           status: 'pending'
         };
       });
+      
+      console.log(`[ChatViewProvider] handleGetPendingChanges: Converted to ${fileChanges.length} file groups`);
       
       this.sendMessage({
         type: 'pendingChanges',
@@ -414,10 +418,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
   private async handleAcceptFileChanges(filePath: string) {
     try {
+      console.log(`[ChatViewProvider] handleAcceptFileChanges: Starting for ${filePath}`);
       const changes = await this.chatService.getPendingChanges();
+      console.log(`[ChatViewProvider] handleAcceptFileChanges: Found ${changes.length} pending changes before accept`);
       const fileChanges = changes.filter(change => change.filePath === filePath);
+      console.log(`[ChatViewProvider] handleAcceptFileChanges: Found ${fileChanges.length} changes for file ${filePath}`);
       
       for (const change of fileChanges) {
+        console.log(`[ChatViewProvider] handleAcceptFileChanges: Accepting change ${change.id}`);
         await this.chatService.acceptChange(change.id);
       }
       
@@ -425,7 +433,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         type: 'fileChangesAccepted',
         filePath: filePath
       });
+      
+      // Add delay to see if callback interferes
+      console.log(`[ChatViewProvider] handleAcceptFileChanges: Waiting 100ms before refresh`);
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       // Refresh pending changes
+      console.log(`[ChatViewProvider] handleAcceptFileChanges: About to refresh pending changes`);
       await this.handleGetPendingChanges();
     } catch (error) {
       console.error('Failed to accept file changes:', error);
@@ -565,8 +579,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
   public updateChanges(changes: any[]) {
     if (this._view) {
+      console.log(`[ChatViewProvider] updateChanges: Sending ${changes.length} changes to frontend`);
       this.sendMessage({
-        type: 'updateChanges',
+        type: 'pendingChanges',  // Changed from 'updateChanges' to match frontend handler
         changes: changes
       });
     }
