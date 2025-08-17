@@ -42,24 +42,14 @@ export class InlineChangeDecorationService {
       backgroundColor: 'rgba(0, 255, 0, 0.15)',
       border: '1px solid rgba(0, 255, 0, 0.5)',
       borderWidth: '0 0 0 3px',
-      isWholeLine: true,
-      after: {
-        contentText: ' ✓ Accept | ✗ Reject',
-        color: '#888',
-        margin: '0 0 0 1em'
-      }
+      isWholeLine: true
     });
 
     this.pendingModifiedDecoration = vscode.window.createTextEditorDecorationType({
       backgroundColor: 'rgba(255, 165, 0, 0.15)',
       border: '1px solid rgba(255, 165, 0, 0.5)',
       borderWidth: '0 0 0 3px',
-      isWholeLine: true,
-      after: {
-        contentText: ' ✓ Accept | ✗ Reject',
-        color: '#888',
-        margin: '0 0 0 1em'
-      }
+      isWholeLine: true
     });
 
     this.pendingDeletedDecoration = vscode.window.createTextEditorDecorationType({
@@ -67,12 +57,7 @@ export class InlineChangeDecorationService {
       border: '1px solid rgba(255, 0, 0, 0.5)',
       borderWidth: '0 0 0 3px',
       isWholeLine: true,
-      textDecoration: 'line-through',
-      after: {
-        contentText: ' ✓ Accept | ✗ Reject',
-        color: '#888',
-        margin: '0 0 0 1em'
-      }
+      textDecoration: 'line-through'
     });
   }
 
