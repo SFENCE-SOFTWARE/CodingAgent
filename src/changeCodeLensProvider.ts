@@ -25,58 +25,45 @@ export class ChangeCodeLensProvider implements vscode.CodeLensProvider {
 
     // Only show CodeLenses for pending changes (accepted/rejected are removed)
     for (const change of changes) {
-      // Group by line number to avoid duplicates
-      const lineGroups = new Map<number, any[]>();
-      
       for (const lineChange of change.lineChanges) {
-        const lineNum = lineChange.lineNumber;
-        if (!lineGroups.has(lineNum)) {
-          lineGroups.set(lineNum, []);
+        // Only show CodeLens for added and modified lines, not deleted ones
+        if (lineChange.type === 'delete') {
+          continue;
         }
-        lineGroups.get(lineNum)!.push(lineChange);
-      }
 
-      // Create CodeLens for each unique line
-      for (const [lineNum, lineChanges] of lineGroups) {
+        const lineNum = lineChange.lineNumber;
         if (processedLines.has(lineNum)) {
           continue; // Skip if already processed
         }
         processedLines.add(lineNum);
 
+        // Ensure line number is valid
+        if (lineNum < 1 || lineNum > document.lineCount) {
+          continue;
+        }
+
         const range = new vscode.Range(
           Math.max(0, lineNum - 1),
           0,
           Math.max(0, lineNum - 1),
-          Number.MAX_SAFE_INTEGER
+          document.lineAt(Math.max(0, lineNum - 1)).text.length
         );
-
-        // Determine change type (prefer modify > add > delete)
-        const changeTypes = lineChanges.map(lc => lc.type);
-        const changeType = changeTypes.includes('modify') ? 'modify' : 
-                          changeTypes.includes('add') ? 'add' : 'delete';
 
         // Accept change CodeLens
         const acceptLens = new vscode.CodeLens(range, {
-          title: `✓ Accept ${changeType}`,
+          title: `✓ Accept`,
           command: 'codingagent.acceptSpecificChange',
           arguments: [change.id, lineNum]
         });
 
         // Reject change CodeLens  
         const rejectLens = new vscode.CodeLens(range, {
-          title: `✗ Reject ${changeType}`,
+          title: `✗ Reject`,
           command: 'codingagent.rejectSpecificChange',
           arguments: [change.id, lineNum]
         });
 
-        // Show diff CodeLens
-        const diffLens = new vscode.CodeLens(range, {
-          title: `📋 Diff`,
-          command: 'codingagent.showChangeDiff',
-          arguments: [change.id]
-        });
-
-        codeLenses.push(acceptLens, rejectLens, diffLens);
+        codeLenses.push(acceptLens, rejectLens);
       }
     }
 

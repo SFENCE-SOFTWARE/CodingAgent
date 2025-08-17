@@ -317,54 +317,102 @@ export class ChangeTrackingService {
     const afterLines = after.split('\n');
     const changes: LineChange[] = [];
 
-    // Simple line-by-line diff algorithm
-    let beforeIndex = 0;
-    let afterIndex = 0;
-
-    while (beforeIndex < beforeLines.length || afterIndex < afterLines.length) {
-      const beforeLine = beforeLines[beforeIndex];
-      const afterLine = afterLines[afterIndex];
-
-      if (beforeIndex >= beforeLines.length) {
-        // Only after lines remaining - additions
+    // Use a more sophisticated diff algorithm similar to git diff
+    const lcsMatrix = this.calculateLCS(beforeLines, afterLines);
+    const diffResult = this.backtrackLCS(beforeLines, afterLines, lcsMatrix);
+    
+    let afterLineNum = 1;
+    
+    for (const operation of diffResult) {
+      if (operation.type === 'add') {
         changes.push({
           type: 'add',
-          lineNumber: afterIndex + 1,
-          newContent: afterLine,
-          contextBefore: this.getContext(afterLines, afterIndex, true),
-          contextAfter: this.getContext(afterLines, afterIndex, false)
+          lineNumber: afterLineNum,
+          newContent: operation.line,
+          contextBefore: this.getContext(afterLines, afterLineNum - 1, true),
+          contextAfter: this.getContext(afterLines, afterLineNum - 1, false)
         });
-        afterIndex++;
-      } else if (afterIndex >= afterLines.length) {
-        // Only before lines remaining - deletions
+        afterLineNum++;
+      } else if (operation.type === 'delete') {
         changes.push({
           type: 'delete',
-          lineNumber: beforeIndex + 1,
-          oldContent: beforeLine,
-          contextBefore: this.getContext(beforeLines, beforeIndex, true),
-          contextAfter: this.getContext(beforeLines, beforeIndex, false)
+          lineNumber: afterLineNum,
+          oldContent: operation.line,
+          contextBefore: this.getContext(beforeLines, operation.beforeIndex || 0, true),
+          contextAfter: this.getContext(beforeLines, operation.beforeIndex || 0, false)
         });
-        beforeIndex++;
-      } else if (beforeLine === afterLine) {
-        // Lines are the same
-        beforeIndex++;
-        afterIndex++;
-      } else {
-        // Lines are different - modification
+        // Don't increment afterLineNum for deletions
+      } else if (operation.type === 'modify') {
         changes.push({
           type: 'modify',
-          lineNumber: beforeIndex + 1,
-          oldContent: beforeLine,
-          newContent: afterLine,
-          contextBefore: this.getContext(beforeLines, beforeIndex, true),
-          contextAfter: this.getContext(afterLines, afterIndex, false)
+          lineNumber: afterLineNum,
+          oldContent: operation.oldLine,
+          newContent: operation.line,
+          contextBefore: this.getContext(beforeLines, operation.beforeIndex || 0, true),
+          contextAfter: this.getContext(afterLines, afterLineNum - 1, false)
         });
-        beforeIndex++;
-        afterIndex++;
+        afterLineNum++;
+      } else if (operation.type === 'equal') {
+        afterLineNum++;
       }
     }
 
     return changes;
+  }
+
+  // Longest Common Subsequence algorithm for better diff
+  private calculateLCS(beforeLines: string[], afterLines: string[]): number[][] {
+    const m = beforeLines.length;
+    const n = afterLines.length;
+    const lcs = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
+
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        if (beforeLines[i - 1] === afterLines[j - 1]) {
+          lcs[i][j] = lcs[i - 1][j - 1] + 1;
+        } else {
+          lcs[i][j] = Math.max(lcs[i - 1][j], lcs[i][j - 1]);
+        }
+      }
+    }
+
+    return lcs;
+  }
+
+  // Backtrack LCS to get diff operations
+  private backtrackLCS(beforeLines: string[], afterLines: string[], lcs: number[][]): any[] {
+    const operations: any[] = [];
+    let i = beforeLines.length;
+    let j = afterLines.length;
+
+    while (i > 0 || j > 0) {
+      if (i > 0 && j > 0 && beforeLines[i - 1] === afterLines[j - 1]) {
+        operations.unshift({
+          type: 'equal',
+          line: beforeLines[i - 1],
+          beforeIndex: i - 1,
+          afterIndex: j - 1
+        });
+        i--;
+        j--;
+      } else if (j > 0 && (i === 0 || lcs[i][j - 1] >= lcs[i - 1][j])) {
+        operations.unshift({
+          type: 'add',
+          line: afterLines[j - 1],
+          afterIndex: j - 1
+        });
+        j--;
+      } else if (i > 0) {
+        operations.unshift({
+          type: 'delete',
+          line: beforeLines[i - 1],
+          beforeIndex: i - 1
+        });
+        i--;
+      }
+    }
+
+    return operations;
   }
 
   async generateHtmlDiff(change: FileChange): Promise<string> {
