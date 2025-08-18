@@ -1134,7 +1134,7 @@
         </div>
         
         <div class="approval-warning">
-          The AI wants to execute a terminal command. Please review and approve or reject.
+          ⚠️ AI wants to execute a terminal command. Review and approve or reject.
         </div>
         
         <div class="command-info">
@@ -1143,11 +1143,11 @@
         </div>
         
         <div class="command-actions">
-          <button class="approve-btn" onclick="approveTerminalCommand('${cmd.id}')">
-            ✅ Approve & Execute
+          <button class="approve-btn" onclick="approveTerminalCommand('${cmd.id}')" title="Approve & Execute">
+            ✓
           </button>
-          <button class="reject-btn" onclick="rejectTerminalCommand('${cmd.id}')">
-            ❌ Reject
+          <button class="reject-btn" onclick="rejectTerminalCommand('${cmd.id}')" title="Reject">
+            ✗
           </button>
         </div>
       </div>

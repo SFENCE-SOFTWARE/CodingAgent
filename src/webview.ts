@@ -92,7 +92,7 @@ export function getWebviewContent(
         <!-- Terminal Approval Panel -->
         <div class="terminal-approval-panel" id="terminalApprovalPanel" style="display: none;">
           <div class="approval-panel-header">
-            <h3>⚠️ Terminal Command Approval Required</h3>
+            <h3>⚠️ Terminal Command Approval</h3>
           </div>
           <div class="approval-panel-content" id="approvalPanelContent">
             <!-- Commands will be populated dynamically -->

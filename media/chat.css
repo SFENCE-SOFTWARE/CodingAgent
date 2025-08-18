@@ -970,43 +970,43 @@
 /* Terminal Approval Panel Styles */
 .terminal-approval-panel {
   position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  top: 20px;
+  left: 10px;
+  right: 10px;
   background-color: var(--vscode-notifications-background);
   border: 2px solid var(--vscode-notificationWarning-border);
   border-radius: 6px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
   z-index: 1000;
-  min-width: 400px;
-  max-width: 600px;
-  max-height: 70vh;
+  max-height: 60vh;
   overflow-y: auto;
+  width: calc(100% - 20px);
+  box-sizing: border-box;
 }
 
 .approval-panel-header {
   background-color: var(--vscode-notificationWarning-background);
   color: var(--vscode-notificationWarning-foreground);
-  padding: 12px 16px;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--vscode-notificationWarning-border);
 }
 
 .approval-panel-header h3 {
   margin: 0;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
 }
 
 .approval-panel-content {
-  padding: 16px;
+  padding: 12px;
 }
 
 .terminal-command-item {
   background-color: var(--vscode-editor-background);
   border: 1px solid var(--vscode-panel-border);
   border-radius: 4px;
-  padding: 12px;
-  margin-bottom: 12px;
+  padding: 8px;
+  margin-bottom: 8px;
 }
 
 .terminal-command-item:last-child {
@@ -1017,42 +1017,44 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .command-title {
   font-weight: 600;
   color: var(--vscode-foreground);
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .command-info {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .command-text {
   font-family: var(--vscode-editor-font-family);
   background-color: var(--vscode-textCodeBlock-background);
   color: var(--vscode-textPreformat-foreground);
-  padding: 8px 12px;
+  padding: 6px 8px;
   border-radius: 3px;
   border-left: 3px solid var(--vscode-textBlockQuote-border);
-  font-size: 12px;
+  font-size: 11px;
   word-break: break-all;
+  max-height: 60px;
+  overflow-y: auto;
 }
 
 .command-cwd {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--vscode-descriptionForeground);
   font-style: italic;
 }
 
 .command-actions {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   justify-content: flex-end;
 }
 
@@ -1061,10 +1063,13 @@
   color: var(--vscode-button-foreground);
   border: none;
   border-radius: 3px;
-  padding: 6px 12px;
+  padding: 4px 8px;
   cursor: pointer;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 14px;
+  min-width: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .approve-btn:hover {
@@ -1076,10 +1081,13 @@
   color: var(--vscode-inputValidation-errorForeground);
   border: 1px solid var(--vscode-inputValidation-errorBorder);
   border-radius: 3px;
-  padding: 6px 12px;
+  padding: 4px 8px;
   cursor: pointer;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 14px;
+  min-width: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .reject-btn:hover {
@@ -1091,15 +1099,45 @@
   color: var(--vscode-inputValidation-warningForeground);
   border: 1px solid var(--vscode-inputValidation-warningBorder);
   border-radius: 3px;
-  padding: 8px 12px;
-  margin-bottom: 12px;
-  font-size: 12px;
+  padding: 6px 8px;
+  margin-bottom: 8px;
+  font-size: 11px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .approval-warning::before {
   content: "⚠️";
   font-size: 14px;
+}
+
+/* Responsive adjustments for small viewports */
+@media (max-width: 300px) {
+  .terminal-approval-panel {
+    left: 5px;
+    right: 5px;
+    width: calc(100% - 10px);
+  }
+  
+  .approval-panel-content {
+    padding: 8px;
+  }
+  
+  .command-text {
+    font-size: 10px;
+    padding: 4px 6px;
+    max-height: 40px;
+  }
+  
+  .command-actions {
+    gap: 4px;
+  }
+  
+  .approve-btn,
+  .reject-btn {
+    min-width: 28px;
+    padding: 3px 6px;
+    font-size: 12px;
+  }
 }
