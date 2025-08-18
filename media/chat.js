@@ -1139,7 +1139,7 @@
         
         <div class="command-info">
           <div class="command-text">${escapeHtml(cmd.command)}</div>
-          ${cmd.cwd ? `<div class="command-cwd">Working directory: ${escapeHtml(cmd.cwd)}</div>` : ''}
+          <div class="command-cwd">Working directory: ${escapeHtml(cmd.cwd)} (workspace root)</div>
         </div>
         
         <div class="command-actions">

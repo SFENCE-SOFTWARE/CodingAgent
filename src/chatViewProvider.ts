@@ -24,7 +24,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
     // Set up terminal approval callback
     if (this.toolsService) {
-      this.toolsService.setTerminalApprovalCallback(async (commandId: string, command: string, cwd?: string) => {
+      this.toolsService.setTerminalApprovalCallback(async (commandId: string, command: string, cwd: string) => {
         return this.handleTerminalApprovalRequest(commandId, command, cwd);
       });
     }
@@ -557,8 +557,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   // Terminal approval methods
-  private async handleTerminalApprovalRequest(commandId: string, command: string, cwd?: string): Promise<boolean> {
+  private async handleTerminalApprovalRequest(commandId: string, command: string, cwd: string): Promise<boolean> {
     console.log(`[ChatViewProvider] Terminal approval request: ${commandId} - ${command}`);
+    console.log(`[ChatViewProvider] Working directory: ${cwd} (workspace root)`);
     
     if (!this._view) {
       console.error(`[ChatViewProvider] No webview available for terminal approval request`);

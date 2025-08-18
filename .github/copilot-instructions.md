@@ -1,4 +1,10 @@
-# CodingAgent VS Code Extension - AI Coding Guide
+# CodingAgent### Terminal Execution Security
+- **User approval required** for all terminal commands
+- **Modal dialog** shows command details before execution
+- **Workspace root only** - Commands always execute in workspace root directory
+- **No directory changes** - Prevents LLM from changing terminal's working directory
+- **Timeout mechanism** for approval requests (5 minutes)
+- **Detailed logging** for debugging and security auditExtension - AI Coding Guide
 
 ## Architecture Overview
 This is a VS Code extension that provides GitHub Copilot Chat-like functionality using Ollama as the AI backend. The extension follows a multi-service architecture with streaming support and tool-based AI interactions.

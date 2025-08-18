@@ -44,7 +44,7 @@ export class ToolsService {
   }
 
   // Set callback for terminal command approval
-  public setTerminalApprovalCallback(callback: (commandId: string, command: string, cwd?: string) => Promise<boolean>): void {
+  public setTerminalApprovalCallback(callback: (commandId: string, command: string, cwd: string) => Promise<boolean>): void {
     ExecuteTerminalTool.setCommandApprovalCallback(callback);
   }
 
@@ -58,7 +58,7 @@ export class ToolsService {
   }
 
   // Get pending terminal commands
-  public getPendingTerminalCommands(): Array<{id: string, command: string, cwd?: string}> {
+  public getPendingTerminalCommands(): Array<{id: string, command: string, cwd: string}> {
     return ExecuteTerminalTool.getPendingCommands();
   }
 

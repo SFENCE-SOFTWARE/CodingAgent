@@ -6,7 +6,7 @@ import { BaseTool, ToolDefinition, ToolResult, ToolInfo } from '../types';
 interface PendingCommand {
   id: string;
   command: string;
-  cwd?: string;
+  cwd: string; // Always workspace root
   newTerminal?: boolean;
   resolvePromise: (approved: boolean) => void;
   rejectPromise: (error: Error) => void;
@@ -15,7 +15,7 @@ interface PendingCommand {
 export class ExecuteTerminalTool implements BaseTool {
   private static activeTerminal: vscode.Terminal | undefined;
   private static pendingCommands: Map<string, PendingCommand> = new Map();
-  private static commandApprovalCallback?: (commandId: string, command: string, cwd?: string) => Promise<boolean>;
+  private static commandApprovalCallback?: (commandId: string, command: string, cwd: string) => Promise<boolean>;
 
   getToolInfo(): ToolInfo {
     return {
@@ -31,17 +31,13 @@ export class ExecuteTerminalTool implements BaseTool {
       type: 'function',
       function: {
         name: 'execute_terminal',
-        description: 'Execute a terminal command in VS Code terminal for user to see and interact with',
+        description: 'Execute a terminal command in VS Code terminal with user approval. Commands run in workspace root directory.',
         parameters: {
           type: 'object',
           properties: {
             command: {
               type: 'string',
-              description: 'Command to execute in VS Code terminal'
-            },
-            cwd: {
-              type: 'string',
-              description: 'Working directory for the command (optional, defaults to workspace root)'
+              description: 'Command to execute in VS Code terminal (runs in workspace root)'
             },
             newTerminal: {
               type: 'boolean',
@@ -58,21 +54,20 @@ export class ExecuteTerminalTool implements BaseTool {
   async execute(args: any, workspaceRoot: string): Promise<ToolResult> {
     try {
       const command = args.command;
-      const cwd = args.cwd || workspaceRoot;
       const newTerminal = args.newTerminal || false;
 
       console.log(`[ExecuteTerminalTool] Requesting approval for command: ${command}`);
-      console.log(`[ExecuteTerminalTool] Working directory: ${cwd}`);
+      console.log(`[ExecuteTerminalTool] Working directory: ${workspaceRoot} (workspace root)`);
       console.log(`[ExecuteTerminalTool] New terminal: ${newTerminal}`);
 
       // Generate unique command ID
       const commandId = `cmd_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
-      // Create pending command entry
+      // Create pending command entry (no cwd parameter)
       const pendingCommand: PendingCommand = {
         id: commandId,
         command,
-        cwd,
+        cwd: workspaceRoot, // Always use workspace root
         newTerminal,
         resolvePromise: () => {},
         rejectPromise: () => {}
@@ -93,10 +88,10 @@ export class ExecuteTerminalTool implements BaseTool {
       // Store pending command
       ExecuteTerminalTool.pendingCommands.set(commandId, pendingCommand);
 
-      // Request approval from UI
+      // Request approval from UI (pass workspace root as cwd)
       if (ExecuteTerminalTool.commandApprovalCallback) {
         console.log(`[ExecuteTerminalTool] Calling approval callback for command: ${commandId}`);
-        ExecuteTerminalTool.commandApprovalCallback(commandId, command, cwd);
+        ExecuteTerminalTool.commandApprovalCallback(commandId, command, workspaceRoot);
       } else {
         console.error(`[ExecuteTerminalTool] No approval callback set - cannot request user approval`);
         ExecuteTerminalTool.pendingCommands.delete(commandId);
@@ -125,8 +120,8 @@ export class ExecuteTerminalTool implements BaseTool {
 
       console.log(`[ExecuteTerminalTool] Command approved by user, executing: ${command}`);
 
-      // Execute the approved command
-      const terminal = this.getOrCreateTerminal(newTerminal, cwd);
+      // Execute the approved command (always in workspace root)
+      const terminal = this.getOrCreateTerminal(newTerminal, workspaceRoot);
       
       // Show the terminal so user can see what's happening
       terminal.show(true); // true = take focus to show the command execution
@@ -138,7 +133,7 @@ export class ExecuteTerminalTool implements BaseTool {
 
       return {
         success: true,
-        content: `Command executed in VS Code terminal: ${command}\n\nThe terminal is now active and you can see the command execution. You can interact with the command if it requires input.`
+        content: `Command executed in VS Code terminal: ${command}\n\nThe terminal is now active and you can see the command execution. You can interact with the command if it requires input.\nWorking directory: ${workspaceRoot}`
       };
 
     } catch (error: any) {
@@ -151,12 +146,12 @@ export class ExecuteTerminalTool implements BaseTool {
     }
   }
 
-  private getOrCreateTerminal(forceNew: boolean = false, cwd?: string): vscode.Terminal {
+  private getOrCreateTerminal(forceNew: boolean = false, workspaceRoot?: string): vscode.Terminal {
     // If forcing new terminal or no active terminal exists, create new one
     if (forceNew || !ExecuteTerminalTool.activeTerminal || ExecuteTerminalTool.activeTerminal.exitStatus) {
       const terminalOptions: vscode.TerminalOptions = {
         name: 'CodingAgent',
-        cwd: cwd
+        cwd: workspaceRoot // Always use workspace root
       };
 
       ExecuteTerminalTool.activeTerminal = vscode.window.createTerminal(terminalOptions);
@@ -179,7 +174,7 @@ export class ExecuteTerminalTool implements BaseTool {
   }
 
   // Set callback for command approval requests
-  static setCommandApprovalCallback(callback: (commandId: string, command: string, cwd?: string) => Promise<boolean>): void {
+  static setCommandApprovalCallback(callback: (commandId: string, command: string, cwd: string) => Promise<boolean>): void {
     console.log(`[ExecuteTerminalTool] Setting command approval callback`);
     ExecuteTerminalTool.commandApprovalCallback = callback;
   }
@@ -206,7 +201,7 @@ export class ExecuteTerminalTool implements BaseTool {
   }
 
   // Get pending commands for UI display
-  static getPendingCommands(): Array<{id: string, command: string, cwd?: string}> {
+  static getPendingCommands(): Array<{id: string, command: string, cwd: string}> {
     return Array.from(ExecuteTerminalTool.pendingCommands.values()).map(cmd => ({
       id: cmd.id,
       command: cmd.command,
