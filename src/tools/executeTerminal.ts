@@ -12,6 +12,69 @@ interface PendingCommand {
   rejectPromise: (error: Error) => void;
 }
 
+/**
+ * Parse command string and extract individual commands from complex command lines
+ * Handles operators: &&, ||, |, ;, &
+ */
+function parseCommandString(command: string): string[] {
+  // Split by common command separators
+  // Note: This is a simplified parser - complex shell parsing would require a proper lexer
+  const separators = /(\s*&&\s*|\s*\|\|\s*|\s*[|;&]\s*)/;
+  const parts = command.split(separators);
+  
+  const commands: string[] = [];
+  for (const part of parts) {
+    const trimmed = part.trim();
+    // Skip empty parts and separator operators
+    if (trimmed && !trimmed.match(/^(&&|\|\||[|;&])$/)) {
+      // Extract just the command name (first word)
+      const commandName = trimmed.split(/\s+/)[0];
+      if (commandName) {
+        commands.push(commandName);
+      }
+    }
+  }
+  
+  return commands;
+}
+
+/**
+ * Check if command(s) are in the auto-approve list
+ */
+function isCommandAutoApproved(command: string): boolean {
+  const config = vscode.workspace.getConfiguration('codingagent');
+  const autoApproveCommands = config.get<string>('tools.autoApproveCommands', '');
+  
+  if (!autoApproveCommands.trim()) {
+    return false; // No auto-approve list configured
+  }
+  
+  // Parse the auto-approve list (comma-separated)
+  const approvedCommands = autoApproveCommands
+    .split(',')
+    .map(cmd => cmd.trim().toLowerCase())
+    .filter(cmd => cmd.length > 0);
+  
+  if (approvedCommands.length === 0) {
+    return false;
+  }
+  
+  // Parse the command to extract individual commands
+  const commandsInInput = parseCommandString(command);
+  
+  console.log(`[ExecuteTerminalTool] Checking auto-approval for command: "${command}"`);
+  console.log(`[ExecuteTerminalTool] Extracted commands: [${commandsInInput.join(', ')}]`);
+  console.log(`[ExecuteTerminalTool] Auto-approved commands: [${approvedCommands.join(', ')}]`);
+  
+  // All extracted commands must be in the approved list
+  const allApproved = commandsInInput.every(cmd => 
+    approvedCommands.includes(cmd.toLowerCase())
+  );
+  
+  console.log(`[ExecuteTerminalTool] Auto-approval result: ${allApproved}`);
+  return allApproved;
+}
+
 export class ExecuteTerminalTool implements BaseTool {
   private static activeTerminal: vscode.Terminal | undefined;
   private static pendingCommands: Map<string, PendingCommand> = new Map();
@@ -31,13 +94,13 @@ export class ExecuteTerminalTool implements BaseTool {
       type: 'function',
       function: {
         name: 'execute_terminal',
-        description: 'Execute a terminal command in VS Code terminal with user approval. Commands run in workspace root directory.',
+        description: 'Execute a terminal command in VS Code terminal with user approval. Commands run in workspace root directory. Some commands may be auto-approved based on user settings.',
         parameters: {
           type: 'object',
           properties: {
             command: {
               type: 'string',
-              description: 'Command to execute in VS Code terminal (runs in workspace root)'
+              description: 'Command to execute in VS Code terminal (runs in workspace root). Simple commands like ls, pwd, git status may be auto-approved.'
             },
             newTerminal: {
               type: 'boolean',
@@ -56,9 +119,31 @@ export class ExecuteTerminalTool implements BaseTool {
       const command = args.command;
       const newTerminal = args.newTerminal || false;
 
-      console.log(`[ExecuteTerminalTool] Requesting approval for command: ${command}`);
+      console.log(`[ExecuteTerminalTool] Requesting execution for command: ${command}`);
       console.log(`[ExecuteTerminalTool] Working directory: ${workspaceRoot} (workspace root)`);
       console.log(`[ExecuteTerminalTool] New terminal: ${newTerminal}`);
+
+      // Check if command is auto-approved
+      const autoApproved = isCommandAutoApproved(command);
+      
+      if (autoApproved) {
+        console.log(`[ExecuteTerminalTool] Command auto-approved, executing immediately: ${command}`);
+        
+        // Execute immediately without user approval
+        const terminal = this.getOrCreateTerminal(newTerminal, workspaceRoot);
+        terminal.show(true);
+        terminal.sendText(command);
+        
+        console.log(`[ExecuteTerminalTool] Auto-approved command executed successfully: ${command}`);
+        
+        return {
+          success: true,
+          content: `Command auto-approved and executed: ${command}\n\nThe terminal is now active and you can see the command execution. You can interact with the command if it requires input.\nWorking directory: ${workspaceRoot}\n\n✅ This command was automatically approved based on your auto-approve settings.`
+        };
+      }
+
+      // Command requires manual approval
+      console.log(`[ExecuteTerminalTool] Command requires manual approval: ${command}`);
 
       // Generate unique command ID
       const commandId = `cmd_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -207,5 +292,25 @@ export class ExecuteTerminalTool implements BaseTool {
       command: cmd.command,
       cwd: cmd.cwd
     }));
+  }
+
+  // Get current auto-approve settings for UI display
+  static getAutoApproveCommands(): string[] {
+    const config = vscode.workspace.getConfiguration('codingagent');
+    const autoApproveCommands = config.get<string>('tools.autoApproveCommands', '');
+    
+    if (!autoApproveCommands.trim()) {
+      return [];
+    }
+    
+    return autoApproveCommands
+      .split(',')
+      .map(cmd => cmd.trim())
+      .filter(cmd => cmd.length > 0);
+  }
+
+  // Check if a command would be auto-approved (for UI preview)
+  static wouldCommandBeAutoApproved(command: string): boolean {
+    return isCommandAutoApproved(command);
   }
 }

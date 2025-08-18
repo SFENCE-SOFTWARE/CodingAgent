@@ -22,6 +22,7 @@
     logMode: document.getElementById('logMode'),
     logModeFilePath: document.getElementById('logModeFilePath'),
     readFileMaxLines: document.getElementById('readFileMaxLines'),
+    autoApproveCommands: document.getElementById('autoApproveCommands'),
     toolsGrid: document.getElementById('tools-grid'),
     modesList: document.getElementById('modesList'),
     resetBtn: document.getElementById('resetBtn'),
@@ -202,6 +203,7 @@
     
     // Tools settings
     elements.readFileMaxLines.value = config.tools?.readFileMaxLines || 1000;
+    elements.autoApproveCommands.value = config.tools?.autoApproveCommands || '';
     
     // Update modes dropdown
     updateModeDropdown(config.modes || {});
@@ -407,7 +409,8 @@
       'logging.verbosity': elements.logVerbosity.value,
       'logging.logMode': elements.logMode.checked,
       'logging.logModeFilePath': elements.logModeFilePath.value,
-      'tools.readFileMaxLines': parseInt(elements.readFileMaxLines.value) || 1000
+      'tools.readFileMaxLines': parseInt(elements.readFileMaxLines.value) || 1000,
+      'tools.autoApproveCommands': elements.autoApproveCommands.value
     };
     
     showSaveStatus('Saving...', 'pending');

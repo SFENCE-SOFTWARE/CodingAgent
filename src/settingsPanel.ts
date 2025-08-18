@@ -149,7 +149,8 @@ export class SettingsPanel {
         enableStreaming: config.get('enableStreaming'),
         modes: config.get('modes'),
         tools: {
-          readFileMaxLines: config.get('tools.readFileMaxLines')
+          readFileMaxLines: config.get('tools.readFileMaxLines'),
+          autoApproveCommands: config.get('tools.autoApproveCommands')
         },
         logging: {
           enabled: config.get('logging.enabled'),
@@ -211,6 +212,8 @@ export class SettingsPanel {
         await config.update('logging.verbosity', undefined, vscode.ConfigurationTarget.Global);
         await config.update('logging.logMode', undefined, vscode.ConfigurationTarget.Global);
         await config.update('logging.logModeFilePath', undefined, vscode.ConfigurationTarget.Global);
+        await config.update('tools.readFileMaxLines', undefined, vscode.ConfigurationTarget.Global);
+        await config.update('tools.autoApproveCommands', undefined, vscode.ConfigurationTarget.Global);
 
         this._sendConfiguration();
         
@@ -571,6 +574,30 @@ export class SettingsPanel {
                   <input type="number" id="readFileMaxLines" min="10" max="10000" step="10" />
                   <small class="form-hint">Maximum number of lines read_file tool can read in one operation (10-10000)</small>
                 </div>
+              </section>
+
+              <section class="settings-section">
+                <h2>🔒 Terminal Security</h2>
+                <p class="section-description">Configure terminal command security and auto-approval</p>
+                
+                <div class="form-group">
+                  <label for="autoApproveCommands">Auto-Approve Commands:</label>
+                  <input type="text" id="autoApproveCommands" placeholder="ls,pwd,git status,npm --version" />
+                  <small class="form-hint">Comma-separated list of commands that are automatically approved without user confirmation. Use with caution!</small>
+                </div>
+                
+                <div class="security-notice">
+                  <div class="notice-icon">⚠️</div>
+                  <div class="notice-content">
+                    <strong>Security Notice:</strong> Commands in this list execute automatically. 
+                    Only add commands you trust completely.
+                  </div>
+                </div>
+              </section>
+
+              <section class="settings-section">
+                <h2>📋 Available Tools</h2>
+                <p class="section-description">Overview of available AI tools and their capabilities</p>
                 
                 <div class="tool-info">
                   <h3>Available Tools</h3>
@@ -579,6 +606,7 @@ export class SettingsPanel {
                   </div>
                 </div>
               </section>
+            </div>
             </div>
 
             <!-- Modes Tab -->

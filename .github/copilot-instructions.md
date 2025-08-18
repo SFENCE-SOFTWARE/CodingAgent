@@ -1,6 +1,9 @@
 # CodingAgent### Terminal Execution Security
 - **User approval required** for all terminal commands
-- **Modal dialog** shows command details before execution
+- **Auto-approval whitelist** - Commands in user's whitelist execute immediately
+- **Complex command parsing** - Handles &&, ||, |, ;, & operators correctly
+- **All-or-nothing approval** - For complex commands, ALL sub-commands must be whitelisted
+- **Modal dialog** shows command details before execution (for non-whitelisted commands)
 - **Workspace root only** - Commands always execute in workspace root directory
 - **No directory changes** - Prevents LLM from changing terminal's working directory
 - **Timeout mechanism** for approval requests (5 minutes)
@@ -20,11 +23,28 @@ This is a VS Code extension that provides GitHub Copilot Chat-like functionality
 ## Terminal Security System (NEW)
 **IMPORTANT**: All terminal commands now require explicit user approval before execution:
 
-### Implementation Details
-- **User approval modal** appears when AI requests terminal execution
-- **5-minute timeout** for approval requests
-- **Detailed command preview** with working directory display
-- **Comprehensive logging** for security audit trail
+### Security Considerations
+- **Always validate** tool parameters
+- **Sanitize** user input before display
+- **Require approval** for destructive operations (or add to auto-approve whitelist for safe commands)
+- **Parse complex commands** correctly (handle &&, ||, |, ;, & operators)
+- **Log security-relevant** actions
+- **Use timeouts** for user interactions
+
+### Auto-Approval System
+Configure safe commands for automatic execution without user confirmation:
+
+```json
+{
+  "codingagent.tools.autoApproveCommands": "ls,pwd,git status,npm --version"
+}
+```
+
+**Supported command parsing:**
+- `ls && pwd` - Both `ls` and `pwd` must be in whitelist
+- `git status | grep modified` - Both `git` and `grep` must be whitelisted  
+- `npm install; npm start` - Both `npm` commands execute if `npm` is whitelisted
+- Complex commands are parsed to extract individual command names
 - **Promise-based approval flow** between frontend and backend
 
 ### Code Pattern for Terminal Approval

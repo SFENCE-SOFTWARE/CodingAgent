@@ -171,25 +171,32 @@
 
 /* Notice Boxes */
 .privacy-notice,
-.warning-notice {
+.warning-notice,
+.security-notice {
   display: flex;
+  align-items: flex-start;
   gap: 12px;
-  padding: 12px 16px;
-  margin-bottom: 20px;
-  border-radius: 4px;
-  border: 1px solid;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 16px;
 }
 
 .privacy-notice {
-  background: var(--vscode-inputValidation-infoBackground);
-  border-color: var(--vscode-inputValidation-infoBorder);
-  color: var(--vscode-inputValidation-infoForeground);
+  background-color: var(--vscode-editorInfo-background);
+  border: 1px solid var(--vscode-editorInfo-border);
+  color: var(--vscode-editorInfo-foreground);
 }
 
 .warning-notice {
-  background: var(--vscode-inputValidation-warningBackground);
-  border-color: var(--vscode-inputValidation-warningBorder);
-  color: var(--vscode-inputValidation-warningForeground);
+  background-color: var(--vscode-editorWarning-background);
+  border: 1px solid var(--vscode-editorWarning-border);
+  color: var(--vscode-editorWarning-foreground);
+}
+
+.security-notice {
+  background-color: var(--vscode-editorError-background);
+  border: 1px solid var(--vscode-editorError-border);
+  color: var(--vscode-editorError-foreground);
 }
 
 .notice-icon {

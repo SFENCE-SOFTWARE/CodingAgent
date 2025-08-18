@@ -144,105 +144,134 @@
         }
       ]
     },
-    "configuration": {
-      "title": "CodingAgent",
-      "properties": {
-        "codingagent.openai.host": {
-          "type": "string",
-          "default": "localhost",
-          "description": "OpenAI API server host/IP address"
-        },
-        "codingagent.openai.port": {
-          "type": "number",
-          "default": 11434,
-          "description": "OpenAI API server port"
-        },
-        "codingagent.currentMode": {
-          "type": "string",
-          "default": "Coder",
-          "enum": ["Coder", "Ask", "Architect"],
-          "description": "Current agent mode"
-        },
-        "codingagent.currentModel": {
-          "type": "string",
-          "default": "llama3:8b",
-          "description": "Current OpenAI API model to use"
-        },
-        "codingagent.showThinking": {
-          "type": "boolean",
-          "default": true,
-          "description": "Show model reasoning/thinking process"
-        },
-        "codingagent.enableStreaming": {
-          "type": "boolean",
-          "default": true,
-          "description": "Enable streaming responses from the AI model"
-        },
-        "codingagent.modes": {
-          "type": "object",
-          "default": {
-            "Coder": {
-              "systemMessage": "You are an expert programming assistant. You can read, write, and execute code. Use the available tools to help with coding tasks.",
-              "allowedTools": ["read_file", "write_file", "list_files", "get_file_size", "execute_terminal", "create_folder", "patch_file", "modify_lines", "rename_file", "search_pattern", "search_in_path"],
-              "fallbackMessage": "I'm ready to help with your coding tasks. What would you like me to do?",
-              "temperature": 0.1,
-              "topP": 0.9,
-              "description": "Expert coding assistant with file and terminal access"
-            },
-            "Ask": {
-              "systemMessage": "You are a helpful AI assistant. Answer questions clearly and concisely.",
-              "allowedTools": ["read_file", "list_files", "get_file_size", "read_webpage", "read_pdf", "search_pattern", "search_in_path"],
-              "fallbackMessage": "I'm here to answer your questions. What would you like to know?",
-              "temperature": 0.3,
-              "topP": 0.9,
-              "description": "General purpose assistant for questions and research"
-            },
-            "Architect": {
-              "systemMessage": "You are a software architect assistant. Help design systems, review architecture, and provide technical guidance.",
-              "allowedTools": ["read_file", "list_files", "get_file_size", "read_webpage", "read_pdf", "search_pattern", "search_in_path"],
-              "fallbackMessage": "I'm ready to help with architecture and design decisions. What system are you working on?",
-              "temperature": 0.2,
-              "topP": 0.85,
-              "description": "Software architecture and system design specialist"
-            }
+    "configuration": [
+      {
+        "title": "CodingAgent - Connection",
+        "properties": {
+          "codingagent.openai.host": {
+            "type": "string",
+            "default": "localhost",
+            "description": "OpenAI API server host/IP address"
           },
-          "description": "Configuration for different agent modes"
-        },
-        "codingagent.logging.enabled": {
-          "type": "boolean",
-          "default": false,
-          "description": "Enable logging of AI communication"
-        },
-        "codingagent.logging.filePath": {
-          "type": "string",
-          "default": "",
-          "description": "Path to log file (empty = workspace/.codingagent/logs)"
-        },
-        "codingagent.logging.verbosity": {
-          "type": "string",
-          "default": "Standard",
-          "enum": ["Minimal", "Standard", "Verbose"],
-          "description": "Logging verbosity level"
-        },
-        "codingagent.logging.logMode": {
-          "type": "boolean",
-          "default": false,
-          "description": "Enable raw JSON logging mode for OpenAI API communication"
-        },
-        "codingagent.logging.logModeFilePath": {
-          "type": "string",
-          "default": "",
-          "description": "Path to raw JSON log file (empty = workspace/.codingagent/logs/openai-raw-json.log)"
-        },
-        "codingagent.tools.readFileMaxLines": {
-          "type": "number",
-          "default": 1000,
-          "minimum": 10,
-          "maximum": 10000,
-          "description": "Maximum number of lines that read_file tool can read in one operation"
+          "codingagent.openai.port": {
+            "type": "number",
+            "default": 11434,
+            "description": "OpenAI API server port"
+          }
+        }
+      },
+      {
+        "title": "CodingAgent - Agent Settings",
+        "properties": {
+          "codingagent.currentMode": {
+            "type": "string",
+            "default": "Coder",
+            "enum": ["Coder", "Ask", "Architect"],
+            "description": "Current agent mode"
+          },
+          "codingagent.currentModel": {
+            "type": "string",
+            "default": "llama3:8b",
+            "description": "Current OpenAI API model to use"
+          },
+          "codingagent.showThinking": {
+            "type": "boolean",
+            "default": true,
+            "description": "Show model reasoning/thinking process"
+          },
+          "codingagent.enableStreaming": {
+            "type": "boolean",
+            "default": true,
+            "description": "Enable streaming responses from the AI model"
+          }
+        }
+      },
+      {
+        "title": "CodingAgent - Advanced",
+        "properties": {
+          "codingagent.modes": {
+            "type": "object",
+            "default": {
+              "Coder": {
+                "systemMessage": "You are an expert programming assistant. You can read, write, and execute code. Use the available tools to help with coding tasks.",
+                "allowedTools": ["read_file", "write_file", "list_files", "get_file_size", "execute_terminal", "create_folder", "patch_file", "modify_lines", "rename_file", "search_pattern", "search_in_path"],
+                "fallbackMessage": "I'm ready to help with your coding tasks. What would you like me to do?",
+                "temperature": 0.1,
+                "topP": 0.9,
+                "description": "Expert coding assistant with file and terminal access"
+              },
+              "Ask": {
+                "systemMessage": "You are a helpful AI assistant. Answer questions clearly and concisely.",
+                "allowedTools": ["read_file", "list_files", "get_file_size", "read_webpage", "read_pdf", "search_pattern", "search_in_path"],
+                "fallbackMessage": "I'm here to answer your questions. What would you like to know?",
+                "temperature": 0.3,
+                "topP": 0.9,
+                "description": "General purpose assistant for questions and research"
+              },
+              "Architect": {
+                "systemMessage": "You are a software architect assistant. Help design systems, review architecture, and provide technical guidance.",
+                "allowedTools": ["read_file", "list_files", "get_file_size", "read_webpage", "read_pdf", "search_pattern", "search_in_path"],
+                "fallbackMessage": "I'm ready to help with architecture and design decisions. What system are you working on?",
+                "temperature": 0.2,
+                "topP": 0.85,
+                "description": "Software architecture and system design specialist"
+              }
+            },
+            "description": "Configuration for different agent modes"
+          }
+        }
+      },
+      {
+        "title": "CodingAgent - Logging",
+        "properties": {
+          "codingagent.logging.enabled": {
+            "type": "boolean",
+            "default": false,
+            "description": "Enable logging of AI communication"
+          },
+          "codingagent.logging.filePath": {
+            "type": "string",
+            "default": "",
+            "description": "Path to log file (empty = workspace/.codingagent/logs)"
+          },
+          "codingagent.logging.verbosity": {
+            "type": "string",
+            "default": "Standard",
+            "enum": ["Minimal", "Standard", "Verbose"],
+            "description": "Logging verbosity level"
+          },
+          "codingagent.logging.logMode": {
+            "type": "boolean",
+            "default": false,
+            "description": "Enable raw JSON logging mode for OpenAI API communication"
+          },
+          "codingagent.logging.logModeFilePath": {
+            "type": "string",
+            "default": "",
+            "description": "Path to raw JSON log file (empty = workspace/.codingagent/logs/openai-raw-json.log)"
+          }
+        }
+      },
+      {
+        "title": "CodingAgent - Tools & Security",
+        "properties": {
+          "codingagent.tools.readFileMaxLines": {
+            "type": "number",
+            "default": 1000,
+            "minimum": 10,
+            "maximum": 10000,
+            "description": "Maximum number of lines that read_file tool can read in one operation",
+            "scope": "window"
+          },
+          "codingagent.tools.autoApproveCommands": {
+            "type": "string",
+            "default": "",
+            "description": "Comma-separated list of terminal commands that are automatically approved without user confirmation (e.g. 'ls,pwd,git status'). Use with caution.",
+            "scope": "window"
+          }
         }
       }
-    }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
