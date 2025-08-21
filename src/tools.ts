@@ -16,7 +16,8 @@ import { ModifyLinesTool } from './tools/modifyLines';
 import { RenameFileTool } from './tools/renameFile';
 import { SearchPatternTool } from './tools/searchPattern';
 import { SearchInPathTool } from './tools/searchInPath';
-import { ReadWebpageTool } from './tools/readWebpage';
+import { ReadWebpageAsHTMLTool } from './tools/readWebpageAsHTML';
+import { ReadWebpageAsMarkdownTool } from './tools/readWebpageAsMarkdown';
 import { ReadPdfTool } from './tools/readPdf';
 
 export class ToolsService {
@@ -76,7 +77,8 @@ export class ToolsService {
       new RenameFileTool(),
       new SearchPatternTool(),
       new SearchInPathTool(),
-      new ReadWebpageTool(),
+      new ReadWebpageAsHTMLTool(),
+      new ReadWebpageAsMarkdownTool(),
       new ReadPdfTool()
     ];
 

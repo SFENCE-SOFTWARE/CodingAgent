@@ -166,7 +166,11 @@
           "codingagent.currentMode": {
             "type": "string",
             "default": "Coder",
-            "enum": ["Coder", "Ask", "Architect"],
+            "enum": [
+              "Coder",
+              "Ask",
+              "Architect"
+            ],
             "description": "Current agent mode"
           },
           "codingagent.currentModel": {
@@ -194,7 +198,19 @@
             "default": {
               "Coder": {
                 "systemMessage": "You are an expert programming assistant. You can read, write, and execute code. Use the available tools to help with coding tasks.",
-                "allowedTools": ["read_file", "write_file", "list_files", "get_file_size", "execute_terminal", "create_folder", "patch_file", "modify_lines", "rename_file", "search_pattern", "search_in_path"],
+                "allowedTools": [
+                  "read_file",
+                  "write_file",
+                  "list_files",
+                  "get_file_size",
+                  "execute_terminal",
+                  "create_folder",
+                  "patch_file",
+                  "modify_lines",
+                  "rename_file",
+                  "search_pattern",
+                  "search_in_path"
+                ],
                 "fallbackMessage": "I'm ready to help with your coding tasks. What would you like me to do?",
                 "temperature": 0.1,
                 "topP": 0.9,
@@ -202,7 +218,16 @@
               },
               "Ask": {
                 "systemMessage": "You are a helpful AI assistant. Answer questions clearly and concisely.",
-                "allowedTools": ["read_file", "list_files", "get_file_size", "read_webpage", "read_pdf", "search_pattern", "search_in_path"],
+                "allowedTools": [
+                  "read_file",
+                  "list_files",
+                  "get_file_size",
+                  "read_webpage_as_html",
+                  "read_webpage_as_markdown",
+                  "read_pdf",
+                  "search_pattern",
+                  "search_in_path"
+                ],
                 "fallbackMessage": "I'm here to answer your questions. What would you like to know?",
                 "temperature": 0.3,
                 "topP": 0.9,
@@ -210,7 +235,16 @@
               },
               "Architect": {
                 "systemMessage": "You are a software architect assistant. Help design systems, review architecture, and provide technical guidance.",
-                "allowedTools": ["read_file", "list_files", "get_file_size", "read_webpage", "read_pdf", "search_pattern", "search_in_path"],
+                "allowedTools": [
+                  "read_file",
+                  "list_files",
+                  "get_file_size",
+                  "read_webpage_as_html",
+                  "read_webpage_as_markdown",
+                  "read_pdf",
+                  "search_pattern",
+                  "search_in_path"
+                ],
                 "fallbackMessage": "I'm ready to help with architecture and design decisions. What system are you working on?",
                 "temperature": 0.2,
                 "topP": 0.85,
@@ -237,7 +271,11 @@
           "codingagent.logging.verbosity": {
             "type": "string",
             "default": "Standard",
-            "enum": ["Minimal", "Standard", "Verbose"],
+            "enum": [
+              "Minimal",
+              "Standard",
+              "Verbose"
+            ],
             "description": "Logging verbosity level"
           },
           "codingagent.logging.logMode": {
@@ -282,14 +320,17 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.102.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
+    "@types/vscode": "^1.102.0",
     "@typescript-eslint/eslint-plugin": "^8.39.0",
     "@typescript-eslint/parser": "^8.39.0",
-    "eslint": "^9.32.0",
-    "typescript": "^5.9.2",
     "@vscode/test-cli": "^0.0.11",
-    "@vscode/test-electron": "^2.5.2"
+    "@vscode/test-electron": "^2.5.2",
+    "eslint": "^9.32.0",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "node-html-markdown": "^1.3.0"
   }
 }

@@ -16,17 +16,20 @@ suite('Tools Integration Tests', () => {
         const toolsInfo = toolsService.getAllToolsInfo();
         
         const expectedToolNames = [
-            'read_file',
+            'read_file', 
+            'modify_lines',
             'write_file', 
             'list_files',
             'create_folder',
             'rename_file',
             'patch_file',
             'search_pattern',
+            'search_in_path',
             'get_file_size',
             'execute_terminal',
             'read_pdf',
-            'read_webpage'
+            'read_webpage_as_html',
+            'read_webpage_as_markdown'
         ];
         
         // Check that all expected tools are registered
@@ -130,7 +133,9 @@ suite('Tools Integration Tests', () => {
                     args.command = 'echo test';
                 } else if (info.name === 'read_pdf') {
                     args.path = 'test.pdf';
-                } else if (info.name === 'read_webpage') {
+                } else if (info.name === 'read_webpage_as_html') {
+                    args.url = 'https://example.com';
+                } else if (info.name === 'read_webpage_as_markdown') {
                     args.url = 'https://example.com';
                 }
                 

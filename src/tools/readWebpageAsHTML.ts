@@ -1,13 +1,13 @@
-// src/tools/readWebpage.ts
+// src/tools/readWebpageAsHTML.ts
 
 import { BaseTool, ToolDefinition, ToolResult, ToolInfo } from '../types';
 
-export class ReadWebpageTool implements BaseTool {
+export class ReadWebpageAsHTMLTool implements BaseTool {
   getToolInfo(): ToolInfo {
     return {
-      name: 'read_webpage',
-      displayName: 'Read Webpage',
-      description: 'Read content from a webpage',
+      name: 'read_webpage_as_html',
+      displayName: 'Read Webpage as HTML',
+      description: 'Read webpage content and return it as cleaned HTML',
       category: 'web'
     };
   }
@@ -16,8 +16,8 @@ export class ReadWebpageTool implements BaseTool {
     return {
       type: 'function',
       function: {
-        name: 'read_webpage',
-        description: 'Read content from a webpage',
+        name: 'read_webpage_as_html',
+        description: 'Read webpage content and return it as cleaned HTML',
         parameters: {
           type: 'object',
           properties: {
@@ -53,10 +53,12 @@ export class ReadWebpageTool implements BaseTool {
 
       let content = await response.text();
       
-      // Basic HTML stripping (for better readability)
+      // Remove script and style tags but keep HTML structure
       content = content.replace(/<script[^>]*>.*?<\/script>/gi, '');
       content = content.replace(/<style[^>]*>.*?<\/style>/gi, '');
-      content = content.replace(/<[^>]*>/g, ' ');
+      content = content.replace(/<!--[\s\S]*?-->/g, ''); // Remove comments
+      
+      // Clean up whitespace but preserve HTML structure
       content = content.replace(/\s+/g, ' ').trim();
 
       if (maxLength && content.length > maxLength) {
