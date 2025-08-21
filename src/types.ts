@@ -143,7 +143,7 @@ export interface BaseTool {
 }
 
 export interface StreamingUpdate {
-  type: 'start' | 'content' | 'thinking' | 'tool_calls' | 'end' | 'error' | 'change_tracking' | 'tool_calls_start' | 'tool_calls_end';
+  type: 'start' | 'content' | 'thinking' | 'tool_calls' | 'end' | 'error' | 'change_tracking' | 'tool_calls_start' | 'tool_calls_end' | 'correction_request';
   messageId: string;
   content?: string;
   thinking?: string;

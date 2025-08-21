@@ -8,10 +8,17 @@
   const messageInput = document.getElementById('messageInput');
   const sendButton = document.getElementById('sendButton');
   const interruptButton = document.getElementById('interruptButton');
+  const correctionButton = document.getElementById('correctionButton');
   const modeSelect = document.getElementById('modeSelect');
   const modelSelect = document.getElementById('modelSelect');
   const settingsBtn = document.getElementById('settingsBtn');
   const clearBtn = document.getElementById('clearBtn');
+  
+  // Correction dialog elements
+  const correctionDialog = document.getElementById('correctionDialog');
+  const correctionInput = document.getElementById('correctionInput');
+  const cancelCorrectionBtn = document.getElementById('cancelCorrectionBtn');
+  const submitCorrectionBtn = document.getElementById('submitCorrectionBtn');
   
   // Change tracking elements
   const changeTrackingPanel = document.getElementById('changeTrackingPanel');
@@ -49,10 +56,21 @@
     // Send message events
     sendButton.addEventListener('click', sendMessage);
     interruptButton.addEventListener('click', interruptLLM);
+    correctionButton.addEventListener('click', requestCorrection);
     messageInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
         sendMessage();
+      }
+    });
+    
+    // Correction dialog events
+    cancelCorrectionBtn.addEventListener('click', cancelCorrection);
+    submitCorrectionBtn.addEventListener('click', submitCorrection);
+    correctionInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        submitCorrection();
       }
     });
     
@@ -159,6 +177,7 @@
     // Show interrupt button only when tool calls are running
     if (isToolCallsRunning) {
       interruptButton.style.display = 'flex';
+      correctionButton.style.display = 'flex';
       
       // Update button appearance based on pending state
       if (isInterruptPending) {
@@ -172,6 +191,7 @@
       }
     } else {
       interruptButton.style.display = 'none';
+      correctionButton.style.display = 'none';
     }
   }
 
@@ -188,6 +208,46 @@
     updateInterruptButtonVisibility();
     
     // Don't show any immediate message - it will come from the backend when actually interrupted
+  }
+
+  function requestCorrection() {
+    // Show correction dialog
+    correctionInput.value = '';
+    correctionDialog.style.display = 'flex';
+    correctionInput.focus();
+    
+    // Send request to backend
+    vscode.postMessage({
+      type: 'requestCorrection'
+    });
+  }
+
+  function submitCorrection() {
+    const correctionText = correctionInput.value.trim();
+    
+    if (!correctionText) {
+      correctionInput.focus();
+      return;
+    }
+    
+    // Send correction to backend
+    vscode.postMessage({
+      type: 'submitCorrection',
+      correction: correctionText
+    });
+    
+    // Hide dialog
+    correctionDialog.style.display = 'none';
+  }
+
+  function cancelCorrection() {
+    // Send cancel to backend
+    vscode.postMessage({
+      type: 'cancelCorrection'
+    });
+    
+    // Hide dialog
+    correctionDialog.style.display = 'none';
   }
   
   function addMessage(message) {
@@ -970,6 +1030,13 @@
 
       case 'toolCallsEnd':
         setToolCallsRunning(false);
+        break;
+
+      case 'correctionRequest':
+        // Show correction dialog if it's not already visible
+        if (correctionDialog.style.display === 'none') {
+          requestCorrection();
+        }
         break;
 
       // Terminal approval handlers

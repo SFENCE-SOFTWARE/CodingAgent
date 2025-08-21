@@ -516,6 +516,32 @@
   opacity: 0.6;
 }
 
+.correction-button {
+  background-color: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border: 1px solid var(--vscode-button-border);
+  border-radius: 4px;
+  padding: 8px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  margin-left: 8px;
+}
+
+.correction-button:hover {
+  background-color: var(--vscode-button-hoverBackground);
+}
+
+.correction-button:disabled {
+  background-color: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .input-hint {
   margin-top: 6px;
   text-align: center;
@@ -1001,7 +1027,115 @@
   font-style: italic;
 }
 
-/* Terminal Approval Panel Styles */
+/* Correction Dialog Styles */
+.correction-dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.correction-dialog-content {
+  background-color: var(--vscode-editor-background);
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 6px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90%;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.correction-dialog-header {
+  background-color: var(--vscode-panel-background);
+  border-bottom: 1px solid var(--vscode-panel-border);
+  padding: 12px 16px;
+}
+
+.correction-dialog-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--vscode-foreground);
+}
+
+.correction-dialog-body {
+  padding: 16px;
+}
+
+.correction-dialog-body p {
+  margin: 0 0 12px 0;
+  color: var(--vscode-foreground);
+  font-size: 13px;
+}
+
+.correction-input {
+  width: 100%;
+  background-color: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border);
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+  resize: vertical;
+  min-height: 80px;
+}
+
+.correction-input:focus {
+  outline: none;
+  border-color: var(--vscode-focusBorder);
+}
+
+.correction-dialog-footer {
+  background-color: var(--vscode-panel-background);
+  border-top: 1px solid var(--vscode-panel-border);
+  padding: 12px 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.correction-cancel-btn {
+  background-color: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.correction-cancel-btn:hover {
+  background-color: var(--vscode-button-secondaryHoverBackground);
+}
+
+.correction-submit-btn {
+  background-color: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.correction-submit-btn:hover {
+  background-color: var(--vscode-button-hoverBackground);
+}
+
+.correction-submit-btn:disabled {
+  background-color: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
 .terminal-approval-panel {
   position: fixed;
   top: 20px;

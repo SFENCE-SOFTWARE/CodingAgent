@@ -23,6 +23,8 @@ export class ChatService {
   private logging: LoggingService;
   private streamingCallback?: (update: StreamingUpdate) => void;
   private isInterrupted: boolean = false;
+  private pendingCorrection: string | null = null;
+  private isWaitingForCorrection: boolean = false;
 
   constructor(toolsService?: ToolsService) {
     this.openai = new OpenAIService();
@@ -84,6 +86,28 @@ export class ChatService {
 
   interruptLLM(): void {
     this.isInterrupted = true;
+  }
+
+  requestCorrection(): void {
+    this.isWaitingForCorrection = true;
+    
+    // Signal correction request to UI
+    if (this.streamingCallback) {
+      this.streamingCallback({
+        type: 'correction_request',
+        messageId: this.generateId()
+      });
+    }
+  }
+
+  submitCorrection(correctionText: string): void {
+    this.pendingCorrection = correctionText;
+    this.isWaitingForCorrection = false;
+  }
+
+  cancelCorrection(): void {
+    this.isWaitingForCorrection = false;
+    this.pendingCorrection = null;
   }
 
   private resetInterrupt(): void {
@@ -617,6 +641,30 @@ export class ChatService {
 
       // Execute each tool call in the normalized tool calls
       for (const toolCall of normalizedToolCalls) {
+        // Wait for correction if one is pending
+        if (this.isWaitingForCorrection) {
+          // Wait until correction is resolved
+          while (this.isWaitingForCorrection) {
+            await new Promise(resolve => setTimeout(resolve, 100)); // Wait 100ms and check again
+          }
+        }
+
+        // Check if we have a pending correction to apply
+        if (this.pendingCorrection) {
+          const correctionMessage: OpenAIChatMessage = {
+            role: 'tool',
+            tool_call_id: toolCall.id,
+            name: toolCall.function.name,
+            content: `Error: User correction: ${this.pendingCorrection}`
+          };
+
+          toolMessages.push(correctionMessage);
+          
+          // Clear the pending correction after using it
+          this.pendingCorrection = null;
+          continue; // Skip normal tool execution
+        }
+
         try {
           const args = JSON.parse(toolCall.function.arguments);
           const toolResult = await this.tools.executeTool(toolCall.function.name, args);

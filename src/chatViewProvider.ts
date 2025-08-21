@@ -109,6 +109,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         });
         break;
 
+      case 'correction_request':
+        this.sendMessage({
+          type: 'correctionRequest'
+        });
+        break;
+
       case 'end':
         this.sendMessage({
           type: 'streamingEnd',
@@ -157,6 +163,18 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
           case 'interruptLLM':
             this.chatService.interruptLLM();
+            break;
+
+          case 'requestCorrection':
+            this.chatService.requestCorrection();
+            break;
+
+          case 'submitCorrection':
+            this.chatService.submitCorrection(message.correction);
+            break;
+
+          case 'cancelCorrection':
+            this.chatService.cancelCorrection();
             break;
 
           case 'setMode':

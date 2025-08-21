@@ -99,6 +99,23 @@ export function getWebviewContent(
           </div>
         </div>
 
+        <!-- Correction Dialog -->
+        <div class="correction-dialog" id="correctionDialog" style="display: none;">
+          <div class="correction-dialog-content">
+            <div class="correction-dialog-header">
+              <h3>✏️ Send Correction</h3>
+            </div>
+            <div class="correction-dialog-body">
+              <p>Provide a correction or additional instruction for the AI:</p>
+              <textarea id="correctionInput" class="correction-input" placeholder="Describe what should be corrected or done differently..." rows="4"></textarea>
+            </div>
+            <div class="correction-dialog-footer">
+              <button id="cancelCorrectionBtn" class="correction-cancel-btn">Cancel</button>
+              <button id="submitCorrectionBtn" class="correction-submit-btn">Send Correction</button>
+            </div>
+          </div>
+        </div>
+
         <!-- Input Container -->
         <div class="input-container">
           <div class="controls-row">
@@ -113,6 +130,9 @@ export function getWebviewContent(
             </button>
             <button id="interruptButton" class="interrupt-button" title="Interrupt LLM" style="display: none;">
               <span class="codicon codicon-debug-stop"></span>
+            </button>
+            <button id="correctionButton" class="correction-button" title="Send Correction" style="display: none;">
+              <span class="codicon codicon-edit"></span>
             </button>
           </div>
           <textarea 
