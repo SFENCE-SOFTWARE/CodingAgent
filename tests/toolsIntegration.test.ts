@@ -1,8 +1,8 @@
 import * as assert from 'assert';
 
 // Import the tools service to test tool registration
-import { ToolsService } from '../tools';
-import { BaseTool } from '../types';
+import { ToolsService } from '../src/tools';
+import { BaseTool } from '../src/types';
 
 suite('Tools Integration Tests', () => {
     let toolsService: ToolsService;

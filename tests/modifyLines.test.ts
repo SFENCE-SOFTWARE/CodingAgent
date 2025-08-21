@@ -1,11 +1,11 @@
-// src/test/modifyLines.test.ts
+// tests/modifyLines.test.ts
 
 import * as assert from 'assert';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { ModifyLinesTool } from '../tools/modifyLines';
-import { ChangeTrackingService } from '../changeTrackingService';
+import { ModifyLinesTool } from '../src/tools/modifyLines';
+import { ChangeTrackingService } from '../src/changeTrackingService';
 
 suite('ModifyLinesTool Tests', () => {
   let tempDir: string;

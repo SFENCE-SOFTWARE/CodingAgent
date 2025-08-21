@@ -215,7 +215,7 @@ export class ReadFileTool implements BaseTool {
 - `src/changeCodeLensProvider.ts` - Code lens integration for Accept/Reject
 - `src/inlineChangeDecorationService.ts` - Visual change indicators
 - `src/backupManager.ts` - File backup and restoration system
-- `src/test/` - Comprehensive test suite (124+ tests) including change tracking scenarios
+- `tests/` - Comprehensive test suite (56+ tests) including change tracking scenarios
 - `media/` - WebView assets (HTML/CSS/JS, not bundled)
 - `out/` - Compiled JavaScript (gitignored)
 - Configuration in `package.json` contributes section defines UI elements

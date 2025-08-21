@@ -1,11 +1,11 @@
 import * as assert from 'assert';
 
 // Import system and web tools
-import { ExecuteTerminalTool } from '../tools/executeTerminal';
-import { ReadPdfTool } from '../tools/readPdf';
-import { ReadWebpageAsHTMLTool } from '../tools/readWebpageAsHTML';
-import { ReadWebpageAsMarkdownTool } from '../tools/readWebpageAsMarkdown';
-import { SearchPatternTool } from '../tools/searchPattern';
+import { ExecuteTerminalTool } from '../src/tools/executeTerminal';
+import { ReadPdfTool } from '../src/tools/readPdf';
+import { ReadWebpageAsHTMLTool } from '../src/tools/readWebpageAsHTML';
+import { ReadWebpageAsMarkdownTool } from '../src/tools/readWebpageAsMarkdown';
+import { SearchPatternTool } from '../src/tools/searchPattern';
 
 suite('System and Web Tools Tests', () => {
     suite('ExecuteTerminalTool', () => {
