@@ -53,7 +53,7 @@ All notable changes to the "CodingAgent" extension will be documented in this fi
 
 ### Added
 - Initial release of CodingAgent VS Code extension
-- Integration with Ollama backend for AI chat functionality
+- Integration with OpenAI-compatible backends for AI chat functionality
 - Three built-in agent modes: Coder, Ask, and Architect
 - Comprehensive tool system with 7 available tools:
   - `list_files`: Browse directory structures

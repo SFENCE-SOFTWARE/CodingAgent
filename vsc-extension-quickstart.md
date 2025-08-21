@@ -10,7 +10,7 @@
   * Registers the chat view provider, settings panel, and change tracking services
   * Sets up command handlers and initializes the extension components
 * `src/chatViewProvider.ts` - implements the main chat UI and conversation handling
-* `src/chatService.ts` - handles communication with Ollama backend and tool execution
+* `src/chatService.ts` - handles communication with OpenAI-compatible backend and tool execution
 * `src/changeTrackingService.ts` - manages file change tracking, diff generation, and accept/reject operations
 * `src/settingsPanel.ts` - provides the settings configuration interface
 * `src/loggingService.ts` - handles AI communication logging with multiple verbosity levels
@@ -29,7 +29,7 @@
 ## Get up and running
 
 * Press `F5` to open a new window with the CodingAgent extension loaded.
-* Configure Ollama connection in VS Code settings (`Ctrl+,` and search for "codingagent").
+* Configure your OpenAI-compatible backend connection in VS Code settings (`Ctrl+,` and search for "codingagent").
 * Open the CodingAgent chat by clicking the chat icon in the Activity Bar or using `Ctrl+Shift+P` and typing "CodingAgent: Open Chat".
 * Use the settings panel (gear icon in chat header) to configure modes, tools, and logging options.
 * Start chatting with the AI - it can read files, execute commands, and modify your workspace with change tracking.
@@ -37,7 +37,7 @@
 
 ## Key Features
 
-* **AI Chat Interface**: GitHub Copilot-like chat interface powered by Ollama
+* **AI Chat Interface**: GitHub Copilot-like chat interface powered by OpenAI-compatible backends
 * **Configurable Modes**: Built-in modes (Coder, Ask, Architect) plus custom mode creation
 * **Comprehensive Tools**: File operations, terminal execution, web scraping, PDF reading
 * **Change Tracking**: Visual diff viewer with accept/reject capabilities for all AI modifications
@@ -56,7 +56,7 @@
 The CodingAgent extension follows a modular architecture:
 
 1. **Chat Interface** (`chatViewProvider.ts`) - Main user interface with webview
-2. **AI Communication** (`chatService.ts`) - Handles Ollama backend communication and tool orchestration
+2. **AI Communication** (`chatService.ts`) - Handles OpenAI-compatible backend communication and tool orchestration
 3. **Tool System** (`tools/`) - Modular AI-callable tools with change tracking integration
 4. **Change Management** (`changeTrackingService.ts`) - Tracks, visualizes, and manages all AI modifications
 5. **Settings & Configuration** (`settingsPanel.ts`) - User configuration interface

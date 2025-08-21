@@ -10,11 +10,11 @@
 - **Detailed logging** for debugging and security auditExtension - AI Coding Guide
 
 ## Architecture Overview
-This is a VS Code extension that provides GitHub Copilot Chat-like functionality using Ollama as the AI backend. The extension follows a multi-service architecture with streaming support and tool-based AI interactions.
+This is a VS Code extension that provides GitHub Copilot Chat-like functionality using any LLM that provides OpenAI-compatible API (such as Ollama, OpenAI, Azure OpenAI, local LLM servers, etc.). The extension follows a multi-service architecture with streaming support and tool-based AI interactions.
 
 **Core Services:**
 - `ChatService` - Main orchestrator for AI conversations and tool execution loops
-- `OpenAIService` - HTTP client for Ollama API using OpenAI-compatible endpoints with streaming support
+- `OpenAIService` - HTTP client for OpenAI-compatible APIs with streaming support
 - `ToolsService` - File system and terminal operations registry for AI agents with security controls
 - `ChatViewProvider` - WebView container following VS Code's patterns
 - `ChangeTrackingService` - Advanced file change tracking with accept/reject functionality
@@ -143,7 +143,7 @@ npm run watch      # Watch mode for development (use task: "npm: 0")
 - Status bar shows current mode/model: `$(comment-discussion) Coder (llama3:8b)`
 
 ### Debugging Patterns
-**Log Mode:** Enable raw JSON logging for Ollama communication debugging:
+**Log Mode:** Enable raw JSON logging for LLM communication debugging:
 ```json
 "codingagent.logging.logMode": true
 ```
@@ -235,11 +235,11 @@ try {
 
 ## Integration Points
 
-### Ollama API Contract
-Uses **OpenAI-compatible API** (`/v1/chat/completions`) not native Ollama format:
+### OpenAI API Contract
+Uses **OpenAI-compatible API** (`/v1/chat/completions`) format for maximum compatibility:
 - Supports streaming via Server-Sent Events
 - Tool calls follow OpenAI function calling spec
-- Model names from `/api/tags` endpoint
+- Works with Ollama (`/api/tags` endpoint for model names), OpenAI, Azure OpenAI, and other compatible providers
 
 ### VS Code Extension API Usage
 - **WebView Views** for activity bar integration
