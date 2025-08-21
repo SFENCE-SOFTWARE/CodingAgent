@@ -22,6 +22,7 @@ export class ChatService {
   private tools: ToolsService;
   private logging: LoggingService;
   private streamingCallback?: (update: StreamingUpdate) => void;
+  private isInterrupted: boolean = false;
 
   constructor(toolsService?: ToolsService) {
     this.openai = new OpenAIService();
@@ -81,11 +82,22 @@ export class ChatService {
     this.streamingCallback = callback;
   }
 
+  interruptLLM(): void {
+    this.isInterrupted = true;
+  }
+
+  private resetInterrupt(): void {
+    this.isInterrupted = false;
+  }
+
   getLoggingService(): LoggingService {
     return this.logging;
   }
 
   async processMessage(content: string, callback?: (update: ChatUpdate) => void): Promise<ChatMessage[]> {
+    // Reset interrupt flag at the start of new message processing
+    this.resetInterrupt();
+    
     // This assumes user message is already added via addUserMessage
     const currentMode = this.openai.getCurrentMode();
     const currentModel = this.openai.getCurrentModel();
@@ -562,6 +574,45 @@ export class ChatService {
     const maxIterations = 10; // Prevent infinite loops
 
     while (normalizedToolCalls.length > 0 && iterationCount < maxIterations) {
+      // Signal tool calls start on first iteration
+      if (iterationCount === 0 && this.streamingCallback) {
+        this.streamingCallback({
+          type: 'tool_calls_start',
+          messageId: existingMessageId || this.generateId()
+        });
+      }
+
+      // Check for interrupt before each iteration
+      if (this.isInterrupted) {
+        const interruptMessage: ChatMessage = {
+          id: this.generateId(),
+          role: 'notice',
+          content: 'Notice: Interrupted at user request.',
+          timestamp: Date.now()
+        };
+
+        this.messages.push(interruptMessage);
+        results.push(interruptMessage);
+        
+        if (callback) {
+          callback({
+            type: 'message_ready',
+            message: interruptMessage
+          });
+          interruptMessage.isAlreadyDisplayed = true;
+        }
+        
+        // Signal tool calls end
+        if (this.streamingCallback) {
+          this.streamingCallback({
+            type: 'tool_calls_end',
+            messageId: existingMessageId || this.generateId()
+          });
+        }
+        
+        return results;
+      }
+
       iterationCount++;
 
       // Execute each tool call in the normalized tool calls
@@ -920,6 +971,14 @@ export class ChatService {
         // Mark as displayed to prevent duplication in final message loop
         timeoutMessage.isAlreadyDisplayed = true;
       }
+    }
+
+    // Signal tool calls end
+    if (this.streamingCallback) {
+      this.streamingCallback({
+        type: 'tool_calls_end',
+        messageId: existingMessageId || this.generateId()
+      });
     }
 
     return results;

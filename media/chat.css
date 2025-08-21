@@ -187,6 +187,13 @@
   margin-left: 28px;
 }
 
+.message.notice .message-content {
+  background-color: var(--vscode-inputValidation-infoBackground);
+  border: 1px solid var(--vscode-inputValidation-infoBorder);
+  color: var(--vscode-inputValidation-infoForeground);
+  margin-left: 28px;
+}
+
 /* Code blocks in messages */
 .message-content pre {
   background-color: var(--vscode-textCodeBlock-background);
@@ -476,6 +483,33 @@
 }
 
 .send-button:disabled {
+  background-color: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.interrupt-button {
+  background-color: var(--vscode-inputValidation-errorBackground);
+  color: var(--vscode-inputValidation-errorForeground);
+  border: 1px solid var(--vscode-inputValidation-errorBorder);
+  border-radius: 4px;
+  padding: 8px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  margin-left: 8px;
+}
+
+.interrupt-button:hover {
+  background-color: var(--vscode-button-hoverBackground);
+  color: var(--vscode-button-foreground);
+}
+
+.interrupt-button:disabled {
   background-color: var(--vscode-button-secondaryBackground);
   color: var(--vscode-button-secondaryForeground);
   cursor: not-allowed;

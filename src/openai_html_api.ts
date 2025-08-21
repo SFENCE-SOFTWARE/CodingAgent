@@ -33,7 +33,7 @@ export class OpenAIService {
     }
   }
 
-  async sendChat(request: OpenAIChatRequest): Promise<OpenAIChatResponse> {
+  async sendChat(request: OpenAIChatRequest, abortSignal?: AbortSignal): Promise<OpenAIChatResponse> {
     try {
       const response = await fetch(`${this.baseApiUrl}/v1/chat/completions`, {
         method: 'POST',
@@ -41,7 +41,8 @@ export class OpenAIService {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer dummy' // OpenAI API compatible - auth not required for local models
         },
-        body: JSON.stringify(request)
+        body: JSON.stringify(request),
+        signal: abortSignal
       });
 
       if (!response.ok) {
@@ -58,7 +59,7 @@ export class OpenAIService {
     }
   }
 
-  async *sendChatStream(request: OpenAIChatRequest): AsyncGenerator<OpenAIStreamChunk, void, unknown> {
+  async *sendChatStream(request: OpenAIChatRequest, abortSignal?: AbortSignal): AsyncGenerator<OpenAIStreamChunk, void, unknown> {
     try {
       const streamRequest = { ...request, stream: true };
       
@@ -68,7 +69,8 @@ export class OpenAIService {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer dummy'
         },
-        body: JSON.stringify(streamRequest)
+        body: JSON.stringify(streamRequest),
+        signal: abortSignal
       });
 
       if (!response.ok) {

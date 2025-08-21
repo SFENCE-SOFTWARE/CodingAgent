@@ -111,7 +111,7 @@ export interface AgentModes {
 
 export interface ChatMessage {
   id: string;
-  role: 'user' | 'assistant' | 'error';
+  role: 'user' | 'assistant' | 'error' | 'notice';
   content: string;
   timestamp: number;
   toolCalls?: ToolCall[];
@@ -143,7 +143,7 @@ export interface BaseTool {
 }
 
 export interface StreamingUpdate {
-  type: 'start' | 'content' | 'thinking' | 'tool_calls' | 'end' | 'error' | 'change_tracking';
+  type: 'start' | 'content' | 'thinking' | 'tool_calls' | 'end' | 'error' | 'change_tracking' | 'tool_calls_start' | 'tool_calls_end';
   messageId: string;
   content?: string;
   thinking?: string;

@@ -90,6 +90,18 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         });
         break;
 
+      case 'tool_calls_start':
+        this.sendMessage({
+          type: 'toolCallsStart'
+        });
+        break;
+
+      case 'tool_calls_end':
+        this.sendMessage({
+          type: 'toolCallsEnd'
+        });
+        break;
+
       case 'change_tracking':
         this.sendMessage({
           type: 'changeTracking',
@@ -141,6 +153,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         switch (message.type) {
           case 'sendMessage':
             await this.handleSendMessage(message.content);
+            break;
+
+          case 'interruptLLM':
+            this.chatService.interruptLLM();
             break;
 
           case 'setMode':

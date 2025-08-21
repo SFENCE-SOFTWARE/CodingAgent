@@ -111,6 +111,9 @@ export function getWebviewContent(
             <button id="sendButton" class="send-button" title="Send Message">
               <span class="codicon codicon-send"></span>
             </button>
+            <button id="interruptButton" class="interrupt-button" title="Interrupt LLM" style="display: none;">
+              <span class="codicon codicon-debug-stop"></span>
+            </button>
           </div>
           <textarea 
             id="messageInput" 

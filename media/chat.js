@@ -7,6 +7,7 @@
   const messagesContainer = document.getElementById('messagesContainer');
   const messageInput = document.getElementById('messageInput');
   const sendButton = document.getElementById('sendButton');
+  const interruptButton = document.getElementById('interruptButton');
   const modeSelect = document.getElementById('modeSelect');
   const modelSelect = document.getElementById('modelSelect');
   const settingsBtn = document.getElementById('settingsBtn');
@@ -24,6 +25,8 @@
   const approvalPanelContent = document.getElementById('approvalPanelContent');
   
   let isLoading = false;
+  let isToolCallsRunning = false; // New state specifically for tool calls
+  let isInterruptPending = false; // Track if interrupt was requested
   let currentMode = 'Coder';
   let currentModel = 'llama3:8b';
   let isThinkingExpanded = true;
@@ -45,6 +48,7 @@
   function setupEventListeners() {
     // Send message events
     sendButton.addEventListener('click', sendMessage);
+    interruptButton.addEventListener('click', interruptLLM);
     messageInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
@@ -135,6 +139,55 @@
     } else {
       sendButton.innerHTML = '<span class="codicon codicon-send"></span>';
     }
+    
+    // Update interrupt button visibility based on tool calls state
+    updateInterruptButtonVisibility();
+  }
+
+  function setToolCallsRunning(running) {
+    isToolCallsRunning = running;
+    
+    // Reset interrupt pending state when tool calls end
+    if (!running) {
+      isInterruptPending = false;
+    }
+    
+    updateInterruptButtonVisibility();
+  }
+
+  function updateInterruptButtonVisibility() {
+    // Show interrupt button only when tool calls are running
+    if (isToolCallsRunning) {
+      interruptButton.style.display = 'flex';
+      
+      // Update button appearance based on pending state
+      if (isInterruptPending) {
+        interruptButton.innerHTML = '<span class="codicon codicon-loading codicon-modifier-spin"></span>';
+        interruptButton.disabled = true;
+        interruptButton.title = 'Interrupt pending...';
+      } else {
+        interruptButton.innerHTML = '<span class="codicon codicon-debug-stop"></span>';
+        interruptButton.disabled = false;
+        interruptButton.title = 'Interrupt LLM';
+      }
+    } else {
+      interruptButton.style.display = 'none';
+    }
+  }
+
+  function interruptLLM() {
+    // Don't allow multiple interrupt requests
+    if (isInterruptPending) return;
+    
+    vscode.postMessage({
+      type: 'interruptLLM'
+    });
+    
+    // Set pending state and update button appearance
+    isInterruptPending = true;
+    updateInterruptButtonVisibility();
+    
+    // Don't show any immediate message - it will come from the backend when actually interrupted
   }
   
   function addMessage(message) {
@@ -337,6 +390,7 @@
       case 'user': return '👤';
       case 'assistant': return '🤖';
       case 'error': return '⚠️';
+      case 'notice': return 'ℹ️';
       default: return '?';
     }
   }
@@ -815,6 +869,14 @@
       case 'setLoading':
         setLoading(message.loading);
         break;
+
+      case 'toolCallsStart':
+        setToolCallsRunning(true);
+        break;
+
+      case 'toolCallsEnd':
+        setToolCallsRunning(false);
+        break;
         
       case 'showThinking':
         showThinking(message.thinking);
@@ -900,6 +962,14 @@
 
       case 'streamingError':
         handleStreamingError(message.messageId, message.error);
+        break;
+
+      case 'toolCallsStart':
+        setToolCallsRunning(true);
+        break;
+
+      case 'toolCallsEnd':
+        setToolCallsRunning(false);
         break;
 
       // Terminal approval handlers
@@ -1188,6 +1258,10 @@
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+  }
+  
+  function generateId() {
+    return Math.random().toString(36).substring(2, 15);
   }
   
   // Make functions global for onclick handlers
