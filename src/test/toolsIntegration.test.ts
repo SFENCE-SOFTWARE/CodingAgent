@@ -109,6 +109,11 @@ suite('Tools Integration Tests', () => {
         const toolsInfo = toolsService.getAllToolsInfo();
         
         for (const info of toolsInfo) {
+            // Skip execute_terminal in tests as it requires user approval
+            if (info.name === 'execute_terminal') {
+                continue;
+            }
+            
             // Test that executeTool can find and attempt to execute each tool
             try {
                 // Use minimal valid arguments for each tool type
@@ -127,10 +132,12 @@ suite('Tools Integration Tests', () => {
                     }
                 } else if (info.name === 'patch_file') {
                     args = { path: 'test', old_text: 'old', new_text: 'new' };
+                } else if (info.name === 'modify_lines') {
+                    args = { path: 'test', operation: 'insert', line_number: 1, content: 'test' };
                 } else if (info.name === 'search_pattern') {
                     args = { pattern: 'test' };  // SearchPatternTool doesn't need path
-                } else if (info.name === 'execute_terminal') {
-                    args.command = 'echo test';
+                } else if (info.name === 'search_in_path') {
+                    args = { pattern: 'test', path: '/tmp' };
                 } else if (info.name === 'read_pdf') {
                     args.path = 'test.pdf';
                 } else if (info.name === 'read_webpage_as_html') {
