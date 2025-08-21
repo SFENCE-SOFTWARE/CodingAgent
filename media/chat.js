@@ -59,7 +59,7 @@
     updateInterruptButtonVisibility();
     
     // Set initial correction button icon
-    correctionButton.innerHTML = '<span class="codicon codicon-edit"></span>';
+    correctionButton.innerHTML = '<span class="icon-edit"></span>';
     correctionButton.title = 'Send Correction (not available - no tool calls running)';
   }
   
@@ -171,10 +171,10 @@
     sendButton.disabled = isLoading;
     
     if (isLoading) {
-      sendButton.innerHTML = '<div class="loading"><div class="loading-dots"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div></div>';
+      sendButton.innerHTML = '<span class="icon-loading"></span>';
       sendButton.title = 'Sending...';
     } else {
-      sendButton.innerHTML = '<span class="codicon codicon-send"></span>';
+      sendButton.innerHTML = '<span class="icon-send"></span>';
       sendButton.title = 'Send Message';
     }
   }
@@ -199,10 +199,10 @@
       
       // Update interrupt button appearance based on pending state
       if (isInterruptPending) {
-        interruptButton.innerHTML = '<span class="codicon codicon-loading codicon-modifier-spin"></span>';
+        interruptButton.innerHTML = '<span class="icon-loading"></span>';
         interruptButton.title = 'Interrupt pending...';
       } else {
-        interruptButton.innerHTML = '<span class="codicon codicon-debug-stop"></span>';
+        interruptButton.innerHTML = '<span class="icon-stop"></span>';
         interruptButton.title = 'Interrupt LLM';
       }
       
@@ -212,7 +212,7 @@
       // Disable buttons when no tool calls are running
       interruptButton.disabled = true;
       correctionButton.disabled = true;
-      interruptButton.innerHTML = '<span class="codicon codicon-debug-stop"></span>';
+      interruptButton.innerHTML = '<span class="icon-stop"></span>';
       interruptButton.title = 'Interrupt LLM (not available - no tool calls running)';
       correctionButton.title = 'Send Correction (not available - no tool calls running)';
     }

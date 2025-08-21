@@ -134,13 +134,13 @@ export function getWebviewContent(
           ></textarea>
           <div class="button-row">
             <button id="sendButton" class="action-button send-button" title="Send Message">
-              <span class="codicon codicon-send"></span>
+              <span class="icon-send"></span>
             </button>
             <button id="correctionButton" class="action-button correction-button" title="Send Correction">
-              <span class="codicon codicon-edit"></span>
+              <span class="icon-edit"></span>
             </button>
             <button id="interruptButton" class="action-button interrupt-button" title="Interrupt LLM">
-              <span class="codicon codicon-debug-stop"></span>
+              <span class="icon-stop"></span>
             </button>
           </div>
           <div class="input-hint">

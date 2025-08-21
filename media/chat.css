@@ -1,3 +1,36 @@
+/* Icon definitions using Unicode symbols */
+.icon-send:before { content: "▶"; font-weight: bold; }
+.icon-edit:before { content: "✏"; }
+.icon-stop:before { content: "⏹"; }
+.icon-loading:before { content: "⟳"; }
+
+/* Icon base styles */
+.icon-send, .icon-edit, .icon-stop, .icon-loading {
+  font-size: 16px;
+  font-style: normal;
+  font-variant: normal;
+  line-height: 1;
+  text-decoration: none;
+  text-rendering: auto;
+  text-transform: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Spinning animation for loading icon */
+.icon-loading {
+  animation: icon-spin 1.4s linear infinite;
+}
+
+@keyframes icon-spin {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 /* Chat Container Styles */
 .chat-container {
   display: flex;
