@@ -60,7 +60,7 @@
     
     // Set initial correction button icon
     correctionButton.innerHTML = '<span class="icon-edit"></span>';
-    correctionButton.title = 'Send Correction (not available - no tool calls running)';
+    correctionButton.title = 'Send Correction (not available - no active request)';
   }
   
   function setupEventListeners() {
@@ -191,9 +191,9 @@
   }
 
   function updateInterruptButtonVisibility() {
-    // Update button states based on tool calls running
-    if (isToolCallsRunning) {
-      // Enable interrupt and correction buttons during tool calls
+    // Update button states based on loading or tool calls running
+    if (isLoading || isToolCallsRunning) {
+      // Enable interrupt and correction buttons during loading or tool calls
       interruptButton.disabled = isInterruptPending;
       correctionButton.disabled = false;
       
@@ -203,18 +203,26 @@
         interruptButton.title = 'Interrupt pending...';
       } else {
         interruptButton.innerHTML = '<span class="icon-stop"></span>';
-        interruptButton.title = 'Interrupt LLM';
+        if (isLoading && !isToolCallsRunning) {
+          interruptButton.title = 'Interrupt LLM (ready to interrupt)';
+        } else {
+          interruptButton.title = 'Interrupt LLM';
+        }
       }
       
       // Update correction button
-      correctionButton.title = 'Send Correction';
+      if (isLoading && !isToolCallsRunning) {
+        correctionButton.title = 'Send Correction (ready to inject)';
+      } else {
+        correctionButton.title = 'Send Correction';
+      }
     } else {
-      // Disable buttons when no tool calls are running
+      // Disable buttons when no loading or tool calls are running
       interruptButton.disabled = true;
       correctionButton.disabled = true;
       interruptButton.innerHTML = '<span class="icon-stop"></span>';
-      interruptButton.title = 'Interrupt LLM (not available - no tool calls running)';
-      correctionButton.title = 'Send Correction (not available - no tool calls running)';
+      interruptButton.title = 'Interrupt LLM (not available - no active request)';
+      correctionButton.title = 'Send Correction (not available - no active request)';
     }
     
     // Always update send button state
