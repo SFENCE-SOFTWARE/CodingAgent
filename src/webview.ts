@@ -125,15 +125,6 @@ export function getWebviewContent(
             <select id="modelSelect" class="control-select" title="AI Model">
               <option value="llama3:8b">llama3:8b</option>
             </select>
-            <button id="sendButton" class="send-button" title="Send Message">
-              <span class="codicon codicon-send"></span>
-            </button>
-            <button id="interruptButton" class="interrupt-button" title="Interrupt LLM" style="display: none;">
-              <span class="codicon codicon-debug-stop"></span>
-            </button>
-            <button id="correctionButton" class="correction-button" title="Send Correction" style="display: none;">
-              <span class="codicon codicon-edit"></span>
-            </button>
           </div>
           <textarea 
             id="messageInput" 
@@ -141,6 +132,17 @@ export function getWebviewContent(
             rows="3"
             class="message-input"
           ></textarea>
+          <div class="button-row">
+            <button id="sendButton" class="action-button send-button" title="Send Message">
+              <span class="codicon codicon-send"></span>
+            </button>
+            <button id="correctionButton" class="action-button correction-button" title="Send Correction">
+              <span class="codicon codicon-edit"></span>
+            </button>
+            <button id="interruptButton" class="action-button interrupt-button" title="Interrupt LLM">
+              <span class="codicon codicon-debug-stop"></span>
+            </button>
+          </div>
           <div class="input-hint">
             <span class="hint-text">Press Ctrl+Enter to send • Use @filename to reference files</span>
           </div>

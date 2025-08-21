@@ -441,7 +441,7 @@
 }
 
 .message-input {
-  flex: 1;
+  width: 100%;
   min-height: 36px;
   max-height: 120px;
   padding: 8px 12px;
@@ -453,6 +453,7 @@
   font-size: var(--vscode-font-size);
   resize: none;
   overflow-y: auto;
+  margin-bottom: 8px;
 }
 
 .message-input:focus {
@@ -464,78 +465,70 @@
   color: var(--vscode-input-placeholderForeground);
 }
 
-.send-button {
+/* Button Row - All action buttons under textarea */
+.button-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+/* Common styles for all action buttons */
+.action-button {
   background-color: var(--vscode-button-background);
   color: var(--vscode-button-foreground);
-  border: none;
+  border: 1px solid var(--vscode-button-border);
   border-radius: 4px;
-  padding: 8px 12px;
+  padding: 8px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 36px;
+  width: 36px;
   height: 36px;
+  font-size: 16px;
+  font-family: var(--vscode-font-family);
+  transition: background-color 0.1s ease;
 }
 
-.send-button:hover {
+.action-button:hover:not(:disabled) {
   background-color: var(--vscode-button-hoverBackground);
 }
 
-.send-button:disabled {
+.action-button:disabled {
   background-color: var(--vscode-button-secondaryBackground);
   color: var(--vscode-button-secondaryForeground);
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+/* Specific button styles */
+.send-button {
+  background-color: var(--vscode-button-background);
 }
 
 .interrupt-button {
   background-color: var(--vscode-inputValidation-errorBackground);
   color: var(--vscode-inputValidation-errorForeground);
-  border: 1px solid var(--vscode-inputValidation-errorBorder);
-  border-radius: 4px;
-  padding: 8px 12px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 36px;
-  height: 36px;
-  margin-left: 8px;
+  border-color: var(--vscode-inputValidation-errorBorder);
 }
 
-.interrupt-button:hover {
+.interrupt-button:hover:not(:disabled) {
   background-color: var(--vscode-button-hoverBackground);
   color: var(--vscode-button-foreground);
-}
-
-.interrupt-button:disabled {
-  background-color: var(--vscode-button-secondaryBackground);
-  color: var(--vscode-button-secondaryForeground);
-  cursor: not-allowed;
-  opacity: 0.6;
 }
 
 .correction-button {
   background-color: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
-  border: 1px solid var(--vscode-button-border);
-  border-radius: 4px;
-  padding: 8px 12px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 36px;
-  height: 36px;
-  margin-left: 8px;
 }
 
-.correction-button:hover {
+/* Legacy styles for compatibility - remove later */
+.send-button:hover {
   background-color: var(--vscode-button-hoverBackground);
 }
 
-.correction-button:disabled {
+.send-button:disabled {
   background-color: var(--vscode-button-secondaryBackground);
   color: var(--vscode-button-secondaryForeground);
   cursor: not-allowed;
@@ -733,6 +726,16 @@
   .control-select {
     min-width: 60px;
     font-size: 11px;
+  }
+  
+  .button-row {
+    justify-content: center;
+  }
+  
+  .action-button {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
   }
   
   .input-hint {

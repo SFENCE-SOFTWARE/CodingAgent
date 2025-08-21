@@ -47,9 +47,20 @@
   // Initialize
   function init() {
     setupEventListeners();
+    initializeButtonStates();
     requestConfiguration();
     requestAvailableModels();
     requestAvailableModes();
+  }
+  
+  function initializeButtonStates() {
+    // Initialize all button states
+    updateSendButtonState();
+    updateInterruptButtonVisibility();
+    
+    // Set initial correction button icon
+    correctionButton.innerHTML = '<span class="codicon codicon-edit"></span>';
+    correctionButton.title = 'Send Correction (not available - no tool calls running)';
   }
   
   function setupEventListeners() {
@@ -149,17 +160,23 @@
   
   function setLoading(loading) {
     isLoading = loading;
-    sendButton.disabled = loading;
+    updateSendButtonState();
     messageInput.disabled = loading;
-    
-    if (loading) {
-      sendButton.innerHTML = '<div class="loading"><div class="loading-dots"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div></div>';
-    } else {
-      sendButton.innerHTML = '<span class="codicon codicon-send"></span>';
-    }
     
     // Update interrupt button visibility based on tool calls state
     updateInterruptButtonVisibility();
+  }
+  
+  function updateSendButtonState() {
+    sendButton.disabled = isLoading;
+    
+    if (isLoading) {
+      sendButton.innerHTML = '<div class="loading"><div class="loading-dots"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div></div>';
+      sendButton.title = 'Sending...';
+    } else {
+      sendButton.innerHTML = '<span class="codicon codicon-send"></span>';
+      sendButton.title = 'Send Message';
+    }
   }
 
   function setToolCallsRunning(running) {
@@ -174,25 +191,34 @@
   }
 
   function updateInterruptButtonVisibility() {
-    // Show interrupt button only when tool calls are running
+    // Update button states based on tool calls running
     if (isToolCallsRunning) {
-      interruptButton.style.display = 'flex';
-      correctionButton.style.display = 'flex';
+      // Enable interrupt and correction buttons during tool calls
+      interruptButton.disabled = isInterruptPending;
+      correctionButton.disabled = false;
       
-      // Update button appearance based on pending state
+      // Update interrupt button appearance based on pending state
       if (isInterruptPending) {
         interruptButton.innerHTML = '<span class="codicon codicon-loading codicon-modifier-spin"></span>';
-        interruptButton.disabled = true;
         interruptButton.title = 'Interrupt pending...';
       } else {
         interruptButton.innerHTML = '<span class="codicon codicon-debug-stop"></span>';
-        interruptButton.disabled = false;
         interruptButton.title = 'Interrupt LLM';
       }
+      
+      // Update correction button
+      correctionButton.title = 'Send Correction';
     } else {
-      interruptButton.style.display = 'none';
-      correctionButton.style.display = 'none';
+      // Disable buttons when no tool calls are running
+      interruptButton.disabled = true;
+      correctionButton.disabled = true;
+      interruptButton.innerHTML = '<span class="codicon codicon-debug-stop"></span>';
+      interruptButton.title = 'Interrupt LLM (not available - no tool calls running)';
+      correctionButton.title = 'Send Correction (not available - no tool calls running)';
     }
+    
+    // Always update send button state
+    updateSendButtonState();
   }
 
   function interruptLLM() {
