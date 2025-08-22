@@ -607,7 +607,6 @@ export class SettingsPanel {
                 </div>
               </section>
             </div>
-            </div>
 
             <!-- Modes Tab -->
             <div id="modes-tab" class="tab-content">

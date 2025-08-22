@@ -524,15 +524,49 @@
 
   // Tab Management
   function switchTab(tabName) {
-    // Update tab buttons
+    // FORCE REMOVE all active classes first
     elements.tabButtons.forEach(button => {
-      button.classList.toggle('active', button.dataset.tab === tabName);
+      button.classList.remove('active');
+    });
+    elements.tabContents.forEach(content => {
+      content.classList.remove('active');
     });
     
-    // Update tab content
-    elements.tabContents.forEach(content => {
-      content.classList.toggle('active', content.id === `${tabName}-tab`);
+    // AGGRESSIVE DOM MANIPULATION - Force hide ALL tabs first
+    const allTabs = ['connection-tab', 'behavior-tab', 'tools-tab', 'modes-tab', 'logging-tab', 'advanced-tab'];
+    allTabs.forEach(tabId => {
+      const tab = document.getElementById(tabId);
+      if (tab) {
+        tab.style.display = 'none';
+        tab.style.visibility = 'hidden';
+        tab.style.position = 'absolute';
+        tab.style.left = '-10000px';
+        tab.style.top = '-10000px';
+        tab.style.zIndex = '-999';
+        tab.style.opacity = '0';
+        tab.classList.remove('active');
+      }
     });
+    
+    // Then add active to the correct ones
+    elements.tabButtons.forEach(button => {
+      if (button.dataset.tab === tabName) {
+        button.classList.add('active');
+      }
+    });
+    
+    // AGGRESSIVE DOM MANIPULATION - Force show ONLY the active tab
+    const activeTab = document.getElementById(`${tabName}-tab`);
+    if (activeTab) {
+      activeTab.style.display = 'flex';
+      activeTab.style.visibility = 'visible';
+      activeTab.style.position = 'static';
+      activeTab.style.left = 'auto';
+      activeTab.style.top = 'auto';
+      activeTab.style.zIndex = 'auto';
+      activeTab.style.opacity = '1';
+      activeTab.classList.add('active');
+    }
   }
 
   // Connection Testing

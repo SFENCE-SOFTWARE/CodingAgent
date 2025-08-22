@@ -2,7 +2,7 @@
 .settings-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 8px;
   font-family: var(--vscode-font-family);
   background: var(--vscode-editor-background);
   color: var(--vscode-editor-foreground);
@@ -12,9 +12,9 @@
 .settings-header {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-bottom: 20px;
-  padding-bottom: 15px;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
   border-bottom: 1px solid var(--vscode-panel-border);
 }
 
@@ -55,8 +55,9 @@
 /* Main Layout */
 .settings-layout {
   display: flex;
-  gap: 20px;
+  gap: 8px;
   min-height: 60vh;
+  align-items: flex-start;
 }
 
 /* Sidebar Navigation */
@@ -68,6 +69,8 @@
   flex-shrink: 0;
   background: var(--vscode-sideBar-background);
   border: 1px solid var(--vscode-panel-border);
+  border-radius: 6px;
+  padding: 8px;
   border-radius: 6px;
   padding: 8px;
   height: fit-content;
@@ -123,33 +126,144 @@
 
 /* Main Content Area */
 .settings-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  min-width: 0; /* Prevents flex item from overflowing */
+  flex: 1 1 auto !important; /* Force flex grow */
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+  min-width: 0 !important; /* Prevents flex item from overflowing */
+  width: 100% !important; /* Force full width */
+  height: 100% !important; /* Force full height */
+  align-items: stretch !important; /* Stretch to fill */
+  justify-content: flex-start !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+  box-sizing: border-box !important; /* Include borders in size */
 }
 
-/* Tab Content */
+/* FINAL TAB CONTROL */
 .tab-content {
-  display: none;
-  animation: fadeIn 0.2s ease-in;
+  display: none !important;
+  visibility: hidden !important;
+  position: absolute !important;
+  left: -10000px !important;
+  top: -10000px !important;
+  width: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  opacity: 0 !important;
+  z-index: -999 !important;
+}
+
+/* FORCE SPECIFIC TABS TO BE HIDDEN */
+#connection-tab:not(.active),
+#behavior-tab:not(.active),
+#tools-tab:not(.active),
+#modes-tab:not(.active),
+#logging-tab:not(.active),
+#advanced-tab:not(.active) {
+  display: none !important;
+  visibility: hidden !important;
+  position: absolute !important;
+  left: -10000px !important;
+  top: -10000px !important;
+  width: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  opacity: 0 !important;
+  z-index: -999 !important;
 }
 
 .tab-content.active {
-  display: block;
+  display: flex !important; /* Changed from block to flex */
+  flex-direction: column !important;
+  flex: 1 1 auto !important; /* Force flex grow */
+  visibility: visible !important;
+  position: static !important;
+  left: auto !important;
+  top: auto !important;
+  width: 100% !important; /* Force full width */
+  height: auto !important;
+  min-height: 100% !important; /* Ensure minimum height */
+  overflow: visible !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  opacity: 1 !important;
+  z-index: auto !important;
+  box-sizing: border-box !important; /* Include borders in size */
+}
+/* Clean settings sections */
+.settings-section {
+  margin: 0 !important;
+  padding: 8px 12px !important;
+  border-bottom: 1px solid var(--vscode-widget-border);
 }
 
+.settings-section:last-child {
+  border-bottom: none;
+}
+
+.settings-section h3 {
+  margin: 0 0 12px 0 !important;
+  padding: 0 !important;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--vscode-settings-headerForeground);
+}
+
+/* Force immediate positioning at top */
+#modes-tab.active,
+#logging-tab.active,
+#advanced-tab.active {
+  display: block !important;
+  position: relative !important;
+  top: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: var(--vscode-editor-background) !important;
+  /* Try to override any flex or grid positioning */
+  align-self: flex-start !important;
+  justify-self: flex-start !important;
+}
+
+#modes-tab .settings-section,
+#logging-tab .settings-section,
+#advanced-tab .settings-section {
+  margin: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding: 20px !important;
+  position: relative !important;
+  top: 0 !important;
+  transform: none !important;
+}
+
+#modes-tab h2,
+#logging-tab h2,
+#advanced-tab h2 {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* Removed fadeIn animation completely */
+/* 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+*/
 
 .settings-section {
   background: var(--vscode-sideBar-background);
   border: 1px solid var(--vscode-panel-border);
   border-radius: 6px;
   padding: 20px;
+  margin: 0;
 }
 
 .settings-section h2 {
