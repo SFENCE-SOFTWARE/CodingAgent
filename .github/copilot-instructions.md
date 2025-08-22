@@ -118,7 +118,7 @@ export class MyFileTool extends ChangeAwareBaseTool {
 - Frontend tracks streaming state via `streamingMessages Map`
 - Use `StreamingUpdate` interface for all streaming communications
 
-### Tool Execution Loop
+## Tool Execution Loop
 **Important:** Tool calls are handled recursively - AI can make multiple tool calls in sequence:
 ```typescript
 // In chatService.ts - this pattern is essential for multi-step operations
@@ -128,6 +128,32 @@ while (normalizedToolCalls.length > 0 && iterationCount < maxIterations) {
   // Check if more tool calls are needed and continue loop
 }
 ```
+
+### Iteration Control System (NEW)
+**Critical:** Advanced iteration control with user confirmation dialogs:
+- **Configurable threshold** - Users can set iteration limit (1-100) in Settings GUI
+- **Interactive dialogs** - Replace hard limits with user-choice dialogs
+- **Batch-based approval** - Ask once per threshold batch, not every iteration
+- **System notices** - Notify when corrections are applied or iterations continue
+- **Correction overlay** - Modal correction dialog overlays chat input area
+
+```typescript
+// Configuration setting
+"codingagent.iterationThreshold": {
+  "type": "number",
+  "default": 10,
+  "minimum": 1,
+  "maximum": 100,
+  "description": "Number of tool iterations before asking user for continuation"
+}
+```
+
+**Key Features:**
+- `allowedIterations` tracks current threshold dynamically
+- `getIterationThreshold()` reads user setting from VS Code configuration
+- `continueIterations()` adds another batch of iterations based on current threshold
+- Interactive dialog shows iteration count and offers Continue/Stop options
+- System notices inform user when corrections are applied or iterations continue
 
 ## Development Workflows
 
@@ -153,6 +179,50 @@ Files written to `.codingagent/logs/openai-raw-json.log` with full request/respo
 ```javascript
 // In media/chat.js - all vscode.postMessage calls
 vscode.postMessage({ type: 'sendMessage', message: content });
+```
+
+## Advanced Features (NEW)
+
+### Tool Call Correction System
+**Interactive Correction Workflow:**
+- **Correction Dialog** - Modal overlay that appears over chat input during corrections
+- **Last Tool Call Correction** - Users can correct the most recent AI tool call
+- **System Notices** - Automatic notifications when corrections are applied
+- **Seamless Integration** - Corrections integrate with streaming and iteration systems
+
+```typescript
+// Backend correction state management
+private pendingCorrection: string | null = null;
+private isWaitingForCorrection: boolean = false;
+
+// Frontend correction dialog
+function showCorrectionDialog() {
+  // Modal overlay replaces input area
+  // User provides correction text
+  // Sends correction to backend
+}
+```
+
+### Progressive Tool Iteration
+**Smart Iteration Management:**
+- **Dynamic Thresholds** - User-configurable iteration limits via Settings GUI
+- **Batch Processing** - Ask for continuation once per batch, not per iteration
+- **Visual Progress** - Clear indication of iteration count and progress
+- **User Control** - Continue/Stop options with clear consequences
+
+**Implementation Pattern:**
+```typescript
+// Dynamic threshold reading
+private getIterationThreshold(): number {
+  const config = vscode.workspace.getConfiguration('codingagent');
+  return config.get('iterationThreshold', 10);
+}
+
+// Batch-based continuation
+continueIterations(): void {
+  const threshold = this.getIterationThreshold();
+  this.allowedIterations += threshold; // Add another batch
+}
 ```
 
 ## Critical Code Patterns
@@ -208,6 +278,29 @@ export class ReadFileTool implements BaseTool {
 - Tool calls (collapsed by default, expandable)
 - Debug info (if available)
 
+### Chat UI Enhancements (NEW)
+**Modern Chat Interface:**
+- **Icon-only buttons** - Clean interface with tooltips for accessibility
+- **Always-visible controls** - Buttons positioned below input, never hidden
+- **Correction overlay** - Modal dialog overlays input area during corrections
+- **System notices** - Integrated notices for corrections and iteration events
+- **Interactive dialogs** - Modal dialogs for iteration control and user choices
+
+**Button Layout:**
+```html
+<!-- Icon-only buttons with specific order -->
+<button id="sendBtn" title="Send Message">📤</button>
+<button id="interruptBtn" title="Interrupt">⏹️</button>
+<button id="correctBtn" title="Correct Last Tool Call">✏️</button>
+<button id="clearBtn" title="Clear Chat">🗑️</button>
+```
+
+**CSS Architecture:**
+- Responsive design with flexbox layouts
+- Icon-only buttons with hover states
+- Modal overlays with backdrop blur
+- Consistent spacing and typography
+
 ### File Structure Logic
 - `src/` - TypeScript source following VS Code patterns
 - `src/tools/` - Individual tool implementations following ChangeAwareBaseTool interface
@@ -215,8 +308,14 @@ export class ReadFileTool implements BaseTool {
 - `src/changeCodeLensProvider.ts` - Code lens integration for Accept/Reject
 - `src/inlineChangeDecorationService.ts` - Visual change indicators
 - `src/backupManager.ts` - File backup and restoration system
+- `src/settingsPanel.ts` - Comprehensive settings management with tabbed interface
+- `src/chatService.ts` - Enhanced with iteration control and correction systems
 - `tests/` - Comprehensive test suite (56+ tests) including change tracking scenarios
 - `media/` - WebView assets (HTML/CSS/JS, not bundled)
+  - `media/chat.js` - Enhanced chat UI with correction dialogs and iteration control
+  - `media/chat.css` - Modern responsive design with modal overlays
+  - `media/settings.js` - Settings panel frontend logic with live validation
+  - `media/settings.css` - Settings panel styling with tabbed navigation
 - `out/` - Compiled JavaScript (gitignored)
 - Configuration in `package.json` contributes section defines UI elements
 
@@ -246,6 +345,37 @@ Uses **OpenAI-compatible API** (`/v1/chat/completions`) format for maximum compa
 - **Configuration API** for reactive settings
 - **Command registration** with categories for Command Palette
 - **Status bar items** for quick access to current state
+
+### Settings Panel (NEW)
+**Comprehensive Settings Management:**
+- **Tabbed interface** - Connection, Modes, Behavior, Tools, Logging, Advanced sections
+- **Live validation** - Real-time configuration validation and feedback
+- **Modal editors** - Rich modal dialogs for complex configuration editing
+- **Export/Import** - Configuration backup and restore functionality
+
+**Key Settings:**
+- `codingagent.iterationThreshold` - Configurable tool iteration limit (1-100)
+- `codingagent.tools.autoApproveCommands` - Terminal command whitelist
+- `codingagent.logging.logMode` - Raw JSON communication logging
+- `codingagent.enableStreaming` - Streaming response control
+- `codingagent.showThinking` - Model reasoning display
+
+**Settings Panel Architecture:**
+```typescript
+// Settings panel with tabbed navigation
+class SettingsPanel {
+  private _sendConfiguration() {
+    // Sends all current configuration to frontend
+    const config = vscode.workspace.getConfiguration('codingagent');
+    // Include all new settings like iterationThreshold
+  }
+  
+  private _updateConfiguration(configUpdate: any) {
+    // Updates VS Code configuration with user changes
+    // Validates and applies configuration updates
+  }
+}
+```
 
 ### External Dependencies
 - **No bundling** - uses Node.js built-ins (`fs`, `path`, `child_process`)
