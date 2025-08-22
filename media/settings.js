@@ -16,6 +16,7 @@
     currentModel: document.getElementById('currentModel'),
     showThinking: document.getElementById('showThinking'),
     enableStreaming: document.getElementById('enableStreaming'),
+    iterationThreshold: document.getElementById('iterationThreshold'),
     loggingEnabled: document.getElementById('loggingEnabled'),
     logFilePath: document.getElementById('logFilePath'),
     logVerbosity: document.getElementById('logVerbosity'),
@@ -193,6 +194,7 @@
     elements.currentModel.value = config.currentModel || '';
     elements.showThinking.checked = config.showThinking || false;
     elements.enableStreaming.checked = config.enableStreaming !== false; // Default to true
+    elements.iterationThreshold.value = config.iterationThreshold || 10;
     
     // Logging settings
     elements.loggingEnabled.checked = config.logging?.enabled || false;
@@ -404,6 +406,7 @@
       'currentModel': elements.currentModel.value,
       'showThinking': elements.showThinking.checked,
       'enableStreaming': elements.enableStreaming.checked,
+      'iterationThreshold': parseInt(elements.iterationThreshold.value) || 10,
       'logging.enabled': elements.loggingEnabled.checked,
       'logging.filePath': elements.logFilePath.value,
       'logging.verbosity': elements.logVerbosity.value,

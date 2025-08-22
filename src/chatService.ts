@@ -27,6 +27,7 @@ export class ChatService {
   private isWaitingForCorrection: boolean = false;
   private isWaitingForIterationContinue: boolean = false;
   private shouldContinueIterations: boolean = false;
+  private allowedIterations: number = 10; // How many iterations are currently allowed
 
   constructor(toolsService?: ToolsService) {
     this.openai = new OpenAIService();
@@ -115,6 +116,8 @@ export class ChatService {
   continueIterations(): void {
     this.shouldContinueIterations = true;
     this.isWaitingForIterationContinue = false;
+    const threshold = this.getIterationThreshold();
+    this.allowedIterations += threshold; // Allow more iterations based on current threshold
   }
 
   stopIterations(): void {
@@ -126,6 +129,11 @@ export class ChatService {
     this.isInterrupted = false;
   }
 
+  private getIterationThreshold(): number {
+    const config = vscode.workspace.getConfiguration('codingagent');
+    return config.get('iterationThreshold', 10);
+  }
+
   getLoggingService(): LoggingService {
     return this.logging;
   }
@@ -133,6 +141,11 @@ export class ChatService {
   async processMessage(content: string, callback?: (update: ChatUpdate) => void): Promise<ChatMessage[]> {
     // Reset interrupt flag at the start of new message processing
     this.resetInterrupt();
+    
+    // Reset allowed iterations for new message
+    const threshold = this.getIterationThreshold();
+    this.allowedIterations = threshold;
+    this.shouldContinueIterations = false;
     
     // This assumes user message is already added via addUserMessage
     const currentMode = this.openai.getCurrentMode();
@@ -611,7 +624,7 @@ export class ChatService {
 
     while (normalizedToolCalls.length > 0) {
       // Check for iteration limit and ask user for continuation
-      if (iterationCount >= iterationWarningThreshold && !this.shouldContinueIterations) {
+      if (iterationCount >= this.allowedIterations) {
         this.isWaitingForIterationContinue = true;
         
         // Notify UI about iteration limit reached

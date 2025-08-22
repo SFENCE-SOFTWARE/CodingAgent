@@ -539,6 +539,12 @@ export class SettingsPanel {
                   </label>
                   <small class="form-hint">Display the model's reasoning before the final answer</small>
                 </div>
+                
+                <div class="form-group">
+                  <label for="iterationThreshold">Tool Iteration Threshold:</label>
+                  <input type="number" id="iterationThreshold" min="1" max="100" step="1" />
+                  <small class="form-hint">Number of tool iterations before asking for user confirmation (1-100)</small>
+                </div>
               </section>
 
               <section class="settings-section">

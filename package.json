@@ -187,6 +187,13 @@
             "type": "boolean",
             "default": true,
             "description": "Enable streaming responses from the AI model"
+          },
+          "codingagent.iterationThreshold": {
+            "type": "number",
+            "default": 10,
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Number of tool iterations before asking user for continuation"
           }
         }
       },
