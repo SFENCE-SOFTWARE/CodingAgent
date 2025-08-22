@@ -112,7 +112,7 @@ The extension uses a **mode-based architecture** where each mode has specific to
 - `memory_retrieve_data` - Retrieve content by character offset and length
 - `memory_delete` - Delete memory entries by key
 - `memory_search` - Advanced search with pattern matching, filters, and sorting
-- `memory_list` - List memory entries with metadata overview and pagination
+- `memory_list` - List memory entries with enhanced metadata overview including line counts, sizes, and content statistics
 - `memory_export` - Export memory entries to files
 
 ### Change Tracking System

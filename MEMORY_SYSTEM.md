@@ -102,14 +102,58 @@ Search memory entries by patterns in keys, values, or metadata. Returns metadata
 - Efficient for exploring memory without loading large content
 
 ### `memory_list`
-List all memory keys.
+List memory entries with enhanced metadata overview including line counts, sizes, and content statistics.
 
 **Parameters:**
 - `type` (optional): Memory type to list keys from
+- `show_details` (optional): Whether to show detailed metadata for each entry (default: false)
+- `offset` (optional): Number of entries to skip for pagination (default: 0)
+- `limit` (optional): Maximum number of entries to return (default: 50, max: 1000)
+
+**Enhanced Features:**
+- **Content Statistics**: Shows line counts, character counts, and formatted file sizes
+- **Rich Metadata Display**: Shows dataType, category, tags, priority, description, and more
+- **Smart Compact View**: Includes size info `[5L, 1.2 KB]` and key metadata in one line
+- **Detailed JSON View**: Complete metadata with content statistics for detailed analysis
+- **Pagination Support**: Handle large memory sets with offset/limit parameters
+- **Type-based Summaries**: Shows totals by memory type with aggregate statistics
+
+**Compact View Example:**
+```
+Found 3 memory entries across all available memory types (temporary: 3 entries, 120 lines, 2.5 KB):
+- user-config [15L, 1.2 KB] {json} (config) !high #user #settings "User preferences"
+- api-data [1L, 245 B] {text} (data) #api #endpoints
+- code-snippet [8L, 180 B] {code} (development) #javascript #function
+```
+
+**Detailed View Example:**
+```json
+[
+  {
+    "key": "user-config",
+    "type": "temporary",
+    "created": "2025-08-22T20:15:30.123Z",
+    "content": {
+      "length": 1250,
+      "lines": 15,
+      "size": "1.2 KB",
+      "valueType": "object"
+    },
+    "dataType": "json",
+    "category": "config",
+    "priority": "high",
+    "tags": ["user", "settings"],
+    "description": "User preferences"
+  }
+]
+```
 
 **Behavior:**
-- If `type` is specified: Lists keys only from that memory type
-- If `type` is omitted: Lists keys from all available memory types
+- If `type` is specified: Lists entries only from that memory type
+- If `type` is omitted: Lists entries from all available memory types
+- Enhanced summaries show total entries, lines, and sizes per memory type
+- Compact view includes essential info in readable single-line format
+- Detailed view provides complete metadata with content statistics
 
 ## Key Management
 

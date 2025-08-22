@@ -2,6 +2,10 @@
 
 A powerful AI coding assistant extension for Visual Studio Code that integrates with OpenAI-compatible backends to provide GitHub Copilot Chat-like functionality with advanced tool capabilities.
 
+## Introduction
+
+This extension was created with the assistance of Claude Sonnet 4 via GitHub Copilot Chat (free premium account) and tested with a locally hosted `gpt-oss:20b` model. I asked Claude Sonnet 4 to develop it because I could not find any LLM coding agent that supports native tool calls via JSON, meaning none were able to work with `gpt-oss:20b` in a truly useful way.
+
 ## Features
 
 🤖 **AI-Powered Assistance**: Chat with AI models through OpenAI-compatible backends for coding help, questions, and architecture guidance
