@@ -1,15 +1,15 @@
-// src/tools/searchPattern.ts
+// src/tools/searchInProject.ts
 
 import * as fs from 'fs';
 import * as path from 'path';
 import { BaseTool, ToolDefinition, ToolResult, ToolInfo } from '../types';
 
-export class SearchPatternTool implements BaseTool {
+export class SearchInProjectTool implements BaseTool {
   getToolInfo(): ToolInfo {
     return {
-      name: 'search_pattern',
-      displayName: 'Search Pattern',
-      description: 'Search for a pattern in all files in the current workspace',
+      name: 'search_in_project',
+      displayName: 'Search in Project',
+      description: 'Search for a pattern in all files in the active VS Code project',
       category: 'search'
     };
   }
@@ -18,8 +18,8 @@ export class SearchPatternTool implements BaseTool {
     return {
       type: 'function',
       function: {
-        name: 'search_pattern',
-        description: 'Search for a pattern in all files in the current workspace',
+        name: 'search_in_project',
+        description: 'Search for a pattern in all files in the active VS Code project',
         parameters: {
           type: 'object',
           properties: {

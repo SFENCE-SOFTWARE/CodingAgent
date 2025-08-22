@@ -215,7 +215,7 @@
                   "patch_file",
                   "modify_lines",
                   "rename_file",
-                  "search_pattern",
+                  "search_in_project",
                   "search_in_path"
                 ],
                 "fallbackMessage": "I'm ready to help with your coding tasks. What would you like me to do?",
@@ -232,7 +232,7 @@
                   "read_webpage_as_html",
                   "read_webpage_as_markdown",
                   "read_pdf",
-                  "search_pattern",
+                  "search_in_project",
                   "search_in_path"
                 ],
                 "fallbackMessage": "I'm here to answer your questions. What would you like to know?",
@@ -249,7 +249,7 @@
                   "read_webpage_as_html",
                   "read_webpage_as_markdown",
                   "read_pdf",
-                  "search_pattern",
+                  "search_in_project",
                   "search_in_path"
                 ],
                 "fallbackMessage": "I'm ready to help with architecture and design decisions. What system are you working on?",

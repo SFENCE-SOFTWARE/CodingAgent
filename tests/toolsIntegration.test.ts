@@ -23,7 +23,7 @@ suite('Tools Integration Tests', () => {
             'create_folder',
             'rename_file',
             'patch_file',
-            'search_pattern',
+            'search_in_project',
             'search_in_path',
             'get_file_size',
             'execute_terminal',
@@ -134,8 +134,8 @@ suite('Tools Integration Tests', () => {
                     args = { path: 'test', old_text: 'old', new_text: 'new' };
                 } else if (info.name === 'modify_lines') {
                     args = { path: 'test', operation: 'insert', line_number: 1, content: 'test' };
-                } else if (info.name === 'search_pattern') {
-                    args = { pattern: 'test' };  // SearchPatternTool doesn't need path
+                } else if (info.name === 'search_in_project') {
+                    args = { pattern: 'test' };  // SearchInProjectTool doesn't need path
                 } else if (info.name === 'search_in_path') {
                     args = { pattern: 'test', path: '/tmp' };
                 } else if (info.name === 'read_pdf') {

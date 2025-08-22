@@ -14,7 +14,7 @@ import { CreateFolderTool } from './tools/createFolder';
 import { PatchFileTool } from './tools/patchFile';
 import { ModifyLinesTool } from './tools/modifyLines';
 import { RenameFileTool } from './tools/renameFile';
-import { SearchPatternTool } from './tools/searchPattern';
+import { SearchInProjectTool } from './tools/searchInProject';
 import { SearchInPathTool } from './tools/searchInPath';
 import { ReadWebpageAsHTMLTool } from './tools/readWebpageAsHTML';
 import { ReadWebpageAsMarkdownTool } from './tools/readWebpageAsMarkdown';
@@ -75,7 +75,7 @@ export class ToolsService {
       new PatchFileTool(this.changeTrackingService),
       new ModifyLinesTool(this.changeTrackingService),
       new RenameFileTool(),
-      new SearchPatternTool(),
+      new SearchInProjectTool(),
       new SearchInPathTool(),
       new ReadWebpageAsHTMLTool(),
       new ReadWebpageAsMarkdownTool(),

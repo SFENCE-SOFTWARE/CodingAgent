@@ -69,7 +69,7 @@ The extension uses a **mode-based architecture** where each mode has specific to
 // Configuration in package.json defines agent capabilities
 "Coder": {
   "allowedTools": ["read_file", "write_file", "list_files", "get_file_size", "execute_terminal", 
-                   "create_folder", "patch_file", "rename_file", "search_pattern"],
+                   "create_folder", "patch_file", "rename_file", "search_in_project"],
   "systemMessage": "You are an expert programming assistant...",
   "temperature": 0.1
 }
@@ -83,7 +83,7 @@ The extension uses a **mode-based architecture** where each mode has specific to
 - `list_files` - Directory listing with recursive option  
 - `get_file_size` - Get file size in lines and bytes
 - `execute_terminal` - Run terminal commands with timeout
-- `search_pattern` - Search across workspace files (available in all modes)
+- `search_in_project` - Search across VS Code project files (available in all modes)
 - `create_folder` - Create directories with recursive option (Coder mode)
 - `rename_file` - Rename/move files and folders (Coder mode)
 - `read_webpage` - Fetch and read webpage content (Ask/Architect modes)
