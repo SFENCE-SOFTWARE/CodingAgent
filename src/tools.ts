@@ -3,6 +3,7 @@
 import * as vscode from 'vscode';
 import { BaseTool, ToolDefinition, ToolResult, ToolInfo } from './types';
 import { ChangeTrackingService } from './changeTrackingService';
+import { MemoryService } from './memoryService';
 
 // Import all tool classes
 import { ListFilesTool } from './tools/listFiles';
@@ -19,16 +20,23 @@ import { SearchInPathTool } from './tools/searchInPath';
 import { ReadWebpageAsHTMLTool } from './tools/readWebpageAsHTML';
 import { ReadWebpageAsMarkdownTool } from './tools/readWebpageAsMarkdown';
 import { ReadPdfTool } from './tools/readPdf';
+import { MemoryStoreTool } from './tools/memoryStore';
+import { MemoryRetrieveTool } from './tools/memoryRetrieve';
+import { MemoryDeleteTool } from './tools/memoryDelete';
+import { MemorySearchTool } from './tools/memorySearch';
+import { MemoryListTool } from './tools/memoryList';
 
 export class ToolsService {
   private workspaceRoot: string;
   private tools: Map<string, BaseTool> = new Map();
   private changeTrackingService: ChangeTrackingService;
+  private memoryService: MemoryService;
   private changeNotificationCallback?: (changeId: string) => void;
 
   constructor() {
     this.workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
     this.changeTrackingService = new ChangeTrackingService(this.workspaceRoot);
+    this.memoryService = new MemoryService(this.workspaceRoot);
     this.initializeTools();
   }
 
@@ -79,7 +87,12 @@ export class ToolsService {
       new SearchInPathTool(),
       new ReadWebpageAsHTMLTool(),
       new ReadWebpageAsMarkdownTool(),
-      new ReadPdfTool()
+      new ReadPdfTool(),
+      new MemoryStoreTool(this.memoryService),
+      new MemoryRetrieveTool(this.memoryService),
+      new MemoryDeleteTool(this.memoryService),
+      new MemorySearchTool(this.memoryService),
+      new MemoryListTool(this.memoryService)
     ];
 
     // Add each tool to the registry

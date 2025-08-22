@@ -148,6 +148,7 @@ export class SettingsPanel {
         showThinking: config.get('showThinking'),
         enableStreaming: config.get('enableStreaming'),
         iterationThreshold: config.get('iterationThreshold'),
+        enableProjectMemory: config.get('memory.enableProjectMemory'),
         modes: config.get('modes'),
         tools: {
           readFileMaxLines: config.get('tools.readFileMaxLines'),
@@ -545,6 +546,15 @@ export class SettingsPanel {
                   <label for="iterationThreshold">Tool Iteration Threshold:</label>
                   <input type="number" id="iterationThreshold" min="1" max="100" step="1" />
                   <small class="form-hint">Number of tool iterations before asking for user confirmation (1-100)</small>
+                </div>
+
+                <div class="form-group">
+                  <label class="checkbox-container">
+                    <input type="checkbox" id="enableProjectMemory" />
+                    <span class="checkbox-checkmark"></span>
+                    <span class="checkbox-label">Enable Project Memory</span>
+                  </label>
+                  <small class="form-hint">Allow storing persistent memory in project (.codingagent/memory/)</small>
                 </div>
               </section>
 

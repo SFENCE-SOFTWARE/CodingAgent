@@ -17,6 +17,7 @@
     showThinking: document.getElementById('showThinking'),
     enableStreaming: document.getElementById('enableStreaming'),
     iterationThreshold: document.getElementById('iterationThreshold'),
+    enableProjectMemory: document.getElementById('enableProjectMemory'),
     loggingEnabled: document.getElementById('loggingEnabled'),
     logFilePath: document.getElementById('logFilePath'),
     logVerbosity: document.getElementById('logVerbosity'),
@@ -195,6 +196,7 @@
     elements.showThinking.checked = config.showThinking || false;
     elements.enableStreaming.checked = config.enableStreaming !== false; // Default to true
     elements.iterationThreshold.value = config.iterationThreshold || 10;
+    elements.enableProjectMemory.checked = config.enableProjectMemory || false;
     
     // Logging settings
     elements.loggingEnabled.checked = config.logging?.enabled || false;
@@ -407,6 +409,7 @@
       'showThinking': elements.showThinking.checked,
       'enableStreaming': elements.enableStreaming.checked,
       'iterationThreshold': parseInt(elements.iterationThreshold.value) || 10,
+      'memory.enableProjectMemory': elements.enableProjectMemory.checked,
       'logging.enabled': elements.loggingEnabled.checked,
       'logging.filePath': elements.logFilePath.value,
       'logging.verbosity': elements.logVerbosity.value,

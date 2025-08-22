@@ -194,6 +194,11 @@
             "minimum": 1,
             "maximum": 100,
             "description": "Number of tool iterations before asking user for continuation"
+          },
+          "codingagent.memory.enableProjectMemory": {
+            "type": "boolean",
+            "default": false,
+            "description": "Enable persistent project memory storage (stored in .codingagent/memory/)"
           }
         }
       },
@@ -216,7 +221,12 @@
                   "modify_lines",
                   "rename_file",
                   "search_in_project",
-                  "search_in_path"
+                  "search_in_path",
+                  "memory_store",
+                  "memory_retrieve",
+                  "memory_delete",
+                  "memory_search",
+                  "memory_list"
                 ],
                 "fallbackMessage": "I'm ready to help with your coding tasks. What would you like me to do?",
                 "temperature": 0.1,
@@ -233,7 +243,12 @@
                   "read_webpage_as_markdown",
                   "read_pdf",
                   "search_in_project",
-                  "search_in_path"
+                  "search_in_path",
+                  "memory_store",
+                  "memory_retrieve",
+                  "memory_delete",
+                  "memory_search",
+                  "memory_list"
                 ],
                 "fallbackMessage": "I'm here to answer your questions. What would you like to know?",
                 "temperature": 0.3,
@@ -250,7 +265,12 @@
                   "read_webpage_as_markdown",
                   "read_pdf",
                   "search_in_project",
-                  "search_in_path"
+                  "search_in_path",
+                  "memory_store",
+                  "memory_retrieve",
+                  "memory_delete",
+                  "memory_search",
+                  "memory_list"
                 ],
                 "fallbackMessage": "I'm ready to help with architecture and design decisions. What system are you working on?",
                 "temperature": 0.2,
