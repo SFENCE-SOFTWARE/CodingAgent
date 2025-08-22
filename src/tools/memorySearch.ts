@@ -16,7 +16,7 @@ export class MemorySearchTool implements BaseTool {
     return {
       name: 'memory_search',
       displayName: 'Memory Search',
-      description: `Search memory entries by key or value patterns. Available memory types: ${availableTypes.join(', ')}. If type is not specified, searches all available types.`,
+      description: `Search memory entries by key or value patterns. Returns metadata and pattern match locations, not full content. Use memory_retrieve to get full content. Available memory types: ${availableTypes.join(', ')}. If type is not specified, searches all available types.`,
       category: 'search'
     };
   }
@@ -28,7 +28,7 @@ export class MemorySearchTool implements BaseTool {
       type: 'function',
       function: {
         name: 'memory_search',
-        description: `Advanced search in memory entries with metadata filtering and sorting. If type is not specified, searches all available memory types. Available types: ${availableTypes.join(', ')}`,
+        description: `Advanced search in memory entries with metadata filtering and sorting. Returns entry information and pattern match locations, not full content values. Use memory_retrieve to get full content. If type is not specified, searches all available memory types. Available types: ${availableTypes.join(', ')}`,
         parameters: {
           type: 'object',
           properties: {
@@ -104,6 +104,12 @@ export class MemorySearchTool implements BaseTool {
               default: 50,
               minimum: 1,
               maximum: 1000
+            },
+            offset: {
+              type: 'number',
+              description: 'Number of results to skip (default: 0). Use for pagination.',
+              minimum: 0,
+              default: 0
             }
           },
           required: []
@@ -129,7 +135,8 @@ export class MemorySearchTool implements BaseTool {
         sort_order = 'desc',
         case_sensitive = false, 
         is_regex = false, 
-        max_results = 50 
+        max_results = 50,
+        offset = 0
       } = args;
 
       // Validate memory type if provided
@@ -177,12 +184,19 @@ export class MemorySearchTool implements BaseTool {
         sortOrder: sort_order,
         caseSensitive: case_sensitive,
         isRegex: is_regex,
-        maxResults: max_results
+        maxResults: 10000  // Get all results first to calculate total count
       };
 
-      const results = await this.memoryService.search(searchOptions);
+      const allResults = await this.memoryService.search(searchOptions);
+      
+      // Apply pagination manually since memoryService doesn't support offset
+      const totalCount = allResults.length;
+      const startIndex = Math.min(offset, totalCount);
+      const endIndex = Math.min(startIndex + max_results, totalCount);
+      const results = allResults.slice(startIndex, endIndex);
+      const hasMore = endIndex < totalCount;
 
-      if (results.length === 0) {
+      if (totalCount === 0) {
         const searchLocation = type ? `in ${type} memory` : 'in any available memory type';
         return {
           success: true,
@@ -193,11 +207,44 @@ export class MemorySearchTool implements BaseTool {
       const formattedResults = results.map(entry => {
         const result: any = {
           key: entry.key,
-          value: entry.value,
           type: entry.type,
           timestamp: entry.timestamp,
-          created: new Date(entry.timestamp).toISOString()
+          created: new Date(entry.timestamp).toISOString(),
+          valueLength: entry.value ? entry.value.length : 0,
+          valuePreview: entry.value ? entry.value.substring(0, 100) + (entry.value.length > 100 ? '...' : '') : null
         };
+
+        // Add pattern match information
+        if (value_pattern && entry.value) {
+          const pattern = is_regex ? new RegExp(value_pattern, case_sensitive ? 'g' : 'gi') : value_pattern;
+          const searchValue = case_sensitive ? entry.value : entry.value.toLowerCase();
+          const searchPattern = case_sensitive ? value_pattern : value_pattern.toLowerCase();
+          
+          if (is_regex && pattern instanceof RegExp) {
+            const matches = [...entry.value.matchAll(pattern)];
+            if (matches.length > 0) {
+              result.patternMatches = matches.map(match => ({
+                position: match.index || 0,
+                text: match[0],
+                context: entry.value.substring(Math.max(0, (match.index || 0) - 20), (match.index || 0) + match[0].length + 20)
+              }));
+            }
+          } else {
+            const positions: number[] = [];
+            let index = searchValue.indexOf(searchPattern);
+            while (index !== -1 && positions.length < 5) { // Limit to 5 matches
+              positions.push(index);
+              index = searchValue.indexOf(searchPattern, index + 1);
+            }
+            if (positions.length > 0) {
+              result.patternMatches = positions.map(pos => ({
+                position: pos,
+                text: entry.value.substring(pos, pos + value_pattern.length),
+                context: entry.value.substring(Math.max(0, pos - 20), pos + value_pattern.length + 20)
+              }));
+            }
+          }
+        }
 
         // Include rich metadata if available
         if (entry.metadata) {
@@ -212,8 +259,14 @@ export class MemorySearchTool implements BaseTool {
           if (metadata.accessCount) result.accessCount = metadata.accessCount;
           if (metadata.relatedKeys) result.relatedKeys = metadata.relatedKeys;
           
-          // Include full metadata for LLM reference
-          result.fullMetadata = metadata;
+          // Include essential metadata for LLM reference (without full content)
+          result.metadata = {
+            dataType: metadata.dataType,
+            category: metadata.category,
+            tags: metadata.tags,
+            priority: metadata.priority,
+            description: metadata.description
+          };
         }
 
         return result;
@@ -227,12 +280,14 @@ export class MemorySearchTool implements BaseTool {
       if (tags?.length) searchSummary.push(`tags: ${tags.join(', ')}`);
       if (priority) searchSummary.push(`priority: ${priority}`);
 
-      const truncated = results.length === max_results ? ' (results may be truncated)' : '';
+      const paginationInfo = totalCount > max_results 
+        ? ` (showing ${startIndex + 1}-${endIndex} of ${totalCount}${hasMore ? ', use offset=' + endIndex + ' for next page' : ''})`
+        : '';
       const summaryText = searchSummary.length > 0 ? ` (${searchSummary.join(', ')})` : '';
       
       return {
         success: true,
-        content: `Found ${results.length} memory entries${summaryText}${truncated}:\n${JSON.stringify(formattedResults, null, 2)}`
+        content: `Found ${totalCount} memory entries${summaryText}${paginationInfo}. Use memory_retrieve with specific keys to get full content:\n${JSON.stringify(formattedResults, null, 2)}`
       };
 
     } catch (error) {

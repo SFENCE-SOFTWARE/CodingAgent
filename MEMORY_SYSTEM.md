@@ -43,15 +43,20 @@ Store a value in memory with a unique key.
 ```
 
 ### `memory_retrieve`
-Retrieve a value from memory by key.
+Retrieve a value from memory by key with optional partial reading support.
 
 **Parameters:**
 - `key` (required): Key of the memory entry to retrieve
 - `type` (optional): Specific memory type to search in
+- `offset` (optional): Character offset to start reading from (0-based)
+- `length` (optional): Maximum number of characters to read from offset
+- `metadata_only` (optional): If true, returns only metadata without value content
 
 **Behavior:**
 - If `type` is specified: Searches only in that memory type
 - If `type` is omitted: Searches across all available memory types
+- Partial reading: Use `offset` and `length` to read large values in chunks
+- Metadata-only: Get entry information without content for efficiency
 
 ### `memory_delete`
 Delete a memory entry by key.
@@ -65,18 +70,36 @@ Delete a memory entry by key.
 - If `type` is omitted: Searches and deletes from all available memory types
 
 ### `memory_search`
-Search memory entries by key or value patterns.
+Search memory entries by patterns in keys, values, or metadata. Returns metadata and pattern match information, not full content.
 
 **Parameters:**
 - `key_pattern` (optional): Pattern to search in memory keys
 - `value_pattern` (optional): Pattern to search in memory values
-- `type` (optional): Memory type to search in
-- `case_sensitive` (optional): Case-sensitive search (default: false)
-- `is_regex` (optional): Use regex patterns (default: false)
+- `metadata_pattern` (optional): Pattern to search in metadata
+- `type` (optional): Specific memory type to search in
+- `data_type` (optional): Filter by data type classification
+- `category` (optional): Filter by category
+- `tags` (optional): Filter by tags (array)
+- `priority` (optional): Filter by priority level
+- `from_date`/`to_date` (optional): Date range filters (ISO 8601)
+- `sort_by` (optional): Sort field (timestamp, lastModified, accessCount, etc.)
+- `sort_order` (optional): Sort order (asc/desc)
+- `case_sensitive` (optional): Case sensitive search (default: false)
+- `is_regex` (optional): Use regular expressions (default: false)
 - `max_results` (optional): Maximum results to return (default: 50)
+- `offset` (optional): Results to skip for pagination (default: 0)
 
-**Requirements:**
-- At least one of `key_pattern` or `value_pattern` must be provided
+**Returns:**
+- Entry metadata (key, type, timestamps, dataType, category, etc.)
+- Value length and preview (first 100 characters)
+- Pattern match positions and context (when value_pattern is used)
+- Does NOT return full content - use `memory_retrieve` for that
+
+**Behavior:**
+- If `type` is specified: Searches only in that memory type
+- If `type` is omitted: Searches across all available memory types
+- Pattern matches include position, matched text, and surrounding context
+- Efficient for exploring memory without loading large content
 
 ### `memory_list`
 List all memory keys.

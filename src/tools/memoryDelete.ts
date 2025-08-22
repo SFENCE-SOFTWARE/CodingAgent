@@ -72,6 +72,7 @@ export class MemoryDeleteTool implements BaseTool {
 
       if (!deleted) {
         const searchLocation = type ? `in ${type} memory` : 'in any available memory type';
+        console.log(`[MemoryDelete] Failed to delete key '${key}' ${searchLocation} - entry not found`);
         return { 
           success: false, 
           content: '',
@@ -80,6 +81,7 @@ export class MemoryDeleteTool implements BaseTool {
       }
 
       const deleteLocation = type ? `from ${type} memory` : 'from memory';
+      console.log(`[MemoryDelete] Successfully deleted key '${key}' ${deleteLocation}`);
       return {
         success: true,
         content: `Successfully deleted memory entry with key '${key}' ${deleteLocation}`

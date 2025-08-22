@@ -108,6 +108,12 @@ Nové filtry:
 - `data_type`, `category`, `tags`, `priority`
 - `from_date`, `to_date`, `metadata_pattern`
 - `sort_by`, `sort_order`
+Rozšířený výstup:
+- Metadata a informace o vzorech, ne plný obsah
+- Pozice a kontext nalezených vzorů
+- Náhled hodnoty (prvních 100 znaků)
+- Délka hodnoty pro odhad velikosti
+- Efektivní průzkum paměti bez načítání velkých dat
 
 ### memory_list
 Nové možnosti:
@@ -119,6 +125,8 @@ Rozšířený výstup:
 - Všechna dostupná metadata
 - Statistiky přístupů
 - Informace o expiraci
+- Podpora částečného čtení (offset, length)
+- Metadata-only režim pro efektivní prohlížení
 
 ## Technické detaily
 

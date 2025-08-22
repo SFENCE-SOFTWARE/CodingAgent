@@ -16,7 +16,7 @@ export class MemoryListTool implements BaseTool {
     return {
       name: 'memory_list',
       displayName: 'Memory List',
-      description: `List all memory keys. Available memory types: ${availableTypes.join(', ')}. If type is not specified, lists keys from all available types.`,
+      description: `List memory entries with metadata overview and pagination support. Available memory types: ${availableTypes.join(', ')}. If type is not specified, lists all available types. Use offset/limit for large memory sets.`,
       category: 'other'
     };
   }
@@ -28,7 +28,7 @@ export class MemoryListTool implements BaseTool {
       type: 'function',
       function: {
         name: 'memory_list',
-        description: `List memory entries with metadata overview. If type is not specified, lists all available types. Available types: ${availableTypes.join(', ')}`,
+        description: `List memory entries with metadata overview and pagination support. If type is not specified, lists all available types. Available types: ${availableTypes.join(', ')}`,
         parameters: {
           type: 'object',
           properties: {
@@ -41,6 +41,19 @@ export class MemoryListTool implements BaseTool {
               type: 'boolean',
               description: 'Whether to show detailed metadata for each entry (default: false)',
               default: false
+            },
+            offset: {
+              type: 'number',
+              description: 'Number of entries to skip (default: 0). Use for pagination.',
+              minimum: 0,
+              default: 0
+            },
+            limit: {
+              type: 'number',
+              description: 'Maximum number of entries to return (default: 50, max: 1000). Use for pagination.',
+              minimum: 1,
+              maximum: 1000,
+              default: 50
             }
           },
           required: []
@@ -51,7 +64,29 @@ export class MemoryListTool implements BaseTool {
 
   async execute(args: any, workspaceRoot: string): Promise<ToolResult> {
     try {
-      const { type, show_details = false } = args;
+      const { 
+        type, 
+        show_details = false, 
+        offset = 0, 
+        limit = 50 
+      } = args;
+
+      // Validate parameters
+      if (offset < 0) {
+        return { 
+          success: false, 
+          content: '',
+          error: 'Offset must be non-negative' 
+        };
+      }
+
+      if (limit < 1 || limit > 1000) {
+        return { 
+          success: false, 
+          content: '',
+          error: 'Limit must be between 1 and 1000' 
+        };
+      }
 
       // Validate memory type if provided
       if (type) {
@@ -65,11 +100,12 @@ export class MemoryListTool implements BaseTool {
         }
       }
 
-      // Use search to get all entries with metadata
-      const searchOptions = { type: type as MemoryType, maxResults: 1000 };
-      const entries = await this.memoryService.search(searchOptions);
+      // Use search to get all entries with metadata (no limit to get total count first)
+      const searchOptions = { type: type as MemoryType, maxResults: 10000 };
+      const allEntries = await this.memoryService.search(searchOptions);
+      const totalCount = allEntries.length;
 
-      if (entries.length === 0) {
+      if (totalCount === 0) {
         const location = type ? `in ${type} memory` : 'in any available memory type';
         return {
           success: true,
@@ -77,7 +113,16 @@ export class MemoryListTool implements BaseTool {
         };
       }
 
+      // Apply pagination
+      const startIndex = offset;
+      const endIndex = Math.min(startIndex + limit, totalCount);
+      const entries = allEntries.slice(startIndex, endIndex);
+      const hasMore = endIndex < totalCount;
+
       const location = type ? `in ${type} memory` : 'across all available memory types';
+      const paginationInfo = totalCount > limit 
+        ? ` (showing ${startIndex + 1}-${endIndex} of ${totalCount}${hasMore ? ', use offset=' + endIndex + ' for next page' : ''})`
+        : '';
 
       if (show_details) {
         // Show detailed view with metadata
@@ -105,7 +150,7 @@ export class MemoryListTool implements BaseTool {
 
         return {
           success: true,
-          content: `Found ${entries.length} memory entries ${location}:\n${JSON.stringify(detailed, null, 2)}`
+          content: `Found ${totalCount} memory entries ${location}${paginationInfo}:\n${JSON.stringify(detailed, null, 2)}`
         };
       } else {
         // Show compact overview
@@ -121,7 +166,7 @@ export class MemoryListTool implements BaseTool {
         }).join('\n');
 
         // Group by type summary
-        const typeGroups = entries.reduce((acc, entry) => {
+        const typeGroups = allEntries.reduce((acc, entry) => {
           const t = entry.type;
           if (!acc[t]) acc[t] = 0;
           acc[t]++;
@@ -134,7 +179,7 @@ export class MemoryListTool implements BaseTool {
 
         return {
           success: true,
-          content: `Found ${entries.length} memory entries ${location} (${typeSummary}):\n${overview}`
+          content: `Found ${totalCount} memory entries ${location} (${typeSummary})${paginationInfo}:\n${overview}`
         };
       }
 

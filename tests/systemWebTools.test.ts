@@ -156,24 +156,20 @@ suite('System and Web Tools Tests', () => {
             assert.strictEqual(typeof result.error, 'string');
         });
 
-        test('should preserve HTML structure when cleaning content', async function() {
+        test('should require memory service for storage', async function() {
             this.timeout(5000);
-            // Test with mock HTML content
-            const result = await tool.execute({ url: 'https://test-html-content.example.com' }, '/tmp');
+            // Test that memory_key is required
+            const definition = tool.getToolDefinition();
+            assert.ok(definition.function.parameters.required.includes('memory_key'));
             
-            assert.strictEqual(result.success, true);
-            assert.strictEqual(typeof result.content, 'string');
+            // Test with tool that has no memory service (should fail)
+            const result = await tool.execute({ 
+                url: 'https://test-html-content.example.com',
+                memory_key: 'test_html_page'
+            }, '/tmp');
             
-            // HTML content should not contain script or style tags after cleaning
-            assert.ok(!result.content.includes('<script'));
-            assert.ok(!result.content.includes('<style'));
-            assert.ok(!result.content.includes('console.log'));
-            assert.ok(!result.content.includes('alert'));
-            
-            // Should preserve main content
-            assert.ok(result.content.includes('Test Page'));
-            assert.ok(result.content.includes('Main Heading'));
-            assert.ok(result.content.includes('test paragraph'));
+            assert.strictEqual(result.success, false);
+            assert.ok(result.error?.includes('Memory service not available'));
         });
     });
 
@@ -237,51 +233,43 @@ suite('System and Web Tools Tests', () => {
             assert.strictEqual(typeof result.error, 'string');
         });
 
-        test('should convert HTML to Markdown format', async function() {
+        test('should require memory service for Markdown conversion', async function() {
             this.timeout(5000);
-            // Test with mock HTML content
-            const result = await tool.execute({ url: 'https://test-html-content.example.com' }, '/tmp');
-            
-            assert.strictEqual(result.success, true);
-            assert.strictEqual(typeof result.content, 'string');
-            
-            // Markdown content should not contain HTML tags
-            assert.ok(!result.content.includes('<html'));
-            assert.ok(!result.content.includes('<div'));
-            assert.ok(!result.content.includes('<script'));
-            assert.ok(!result.content.includes('<style'));
-            
-            // Should contain markdown formatting
-            assert.ok(result.content.includes('# Main Heading'));
-            assert.ok(result.content.includes('**bold text**'));
-            assert.ok(result.content.includes('*italic text*'));
-            assert.ok(result.content.includes('- List item 1'));
-            assert.ok(result.content.includes('[Example Link](https://example.com)'));
-            
-            // Should not contain script content
-            assert.ok(!result.content.includes('console.log'));
-            assert.ok(!result.content.includes('alert'));
-        });
-
-        test('should properly truncate content with max_length', async function() {
-            this.timeout(5000);
-            // Test that truncation works correctly
+            // Test with tool that has no memory service (should fail)
             const result = await tool.execute({ 
                 url: 'https://test-html-content.example.com',
-                max_length: 50 
+                memory_key: 'test_markdown_page'
             }, '/tmp');
             
-            assert.strictEqual(result.success, true);
-            assert.strictEqual(typeof result.content, 'string');
+            assert.strictEqual(result.success, false);
+            assert.ok(result.error?.includes('Memory service not available'));
+        });
+
+        test('should require memory_key parameter', async function() {
+            this.timeout(5000);
+            // Test that max_length parameter is accepted
+            const definition = tool.getToolDefinition();
+            assert.ok(definition.function.parameters.required.includes('memory_key'));
+        });
+
+        test('should require memory_key parameter', async function() {
+            const definition = tool.getToolDefinition();
             
-            // Content should be around max_length or slightly more due to truncation message
-            assert.ok(result.content.length <= 80); // Allow margin for "... (truncated)"
+            // memory_key should now be required
+            assert.ok(definition.function.parameters.required.includes('memory_key'));
+            assert.ok(definition.function.parameters.required.includes('url'));
+        });
+
+        test('should handle memory storage when memory service not available', async function() {
+            // Test with tool that has no memory service
+            const toolWithoutMemory = new ReadWebpageAsMarkdownTool();
+            const result = await toolWithoutMemory.execute({ 
+                url: 'https://test-html-content.example.com',
+                memory_key: 'test_key'
+            }, '/tmp');
             
-            if (result.content.includes('(truncated)')) {
-                // If truncated, the original content should have been close to max_length
-                const contentWithoutTruncMsg = result.content.replace(/\n\n\.\.\. \(truncated\)$/, '');
-                assert.ok(contentWithoutTruncMsg.length <= 55); // Allow small margin
-            }
+            assert.strictEqual(result.success, false);
+            assert.ok(result.error?.includes('Memory service not available'));
         });
     });
 

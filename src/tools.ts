@@ -25,6 +25,7 @@ import { MemoryRetrieveTool } from './tools/memoryRetrieve';
 import { MemoryDeleteTool } from './tools/memoryDelete';
 import { MemorySearchTool } from './tools/memorySearch';
 import { MemoryListTool } from './tools/memoryList';
+import { MemoryExportTool } from './tools/memoryExport';
 
 export class ToolsService {
   private workspaceRoot: string;
@@ -85,14 +86,15 @@ export class ToolsService {
       new RenameFileTool(),
       new SearchInProjectTool(),
       new SearchInPathTool(),
-      new ReadWebpageAsHTMLTool(),
-      new ReadWebpageAsMarkdownTool(),
+      new ReadWebpageAsHTMLTool(this.memoryService),
+      new ReadWebpageAsMarkdownTool(this.memoryService),
       new ReadPdfTool(),
       new MemoryStoreTool(this.memoryService),
       new MemoryRetrieveTool(this.memoryService),
       new MemoryDeleteTool(this.memoryService),
       new MemorySearchTool(this.memoryService),
-      new MemoryListTool(this.memoryService)
+      new MemoryListTool(this.memoryService),
+      new MemoryExportTool(this.memoryService)
     ];
 
     // Add each tool to the registry

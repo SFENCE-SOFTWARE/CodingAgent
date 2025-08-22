@@ -125,9 +125,12 @@ export class MemoryService {
    * Store a value in memory
    */
   public async store(key: string, value: any, type: MemoryType = MemoryType.TEMPORARY, metadata?: MemoryMetadata): Promise<void> {
+    console.log(`[MemoryService] Attempting to store key '${key}' in ${type} memory, value length: ${typeof value === 'string' ? value.length : JSON.stringify(value).length} chars`);
+    
     // Check for duplicate keys across all memory types
     const existingEntry = await this.retrieve(key);
     if (existingEntry) {
+      console.log(`[MemoryService] Key '${key}' already exists in ${existingEntry.type} memory - throwing error`);
       throw new Error(`Memory key '${key}' already exists in ${existingEntry.type} memory`);
     }
 
@@ -169,8 +172,10 @@ export class MemoryService {
 
     if (type === MemoryType.TEMPORARY) {
       this.temporaryMemory.set(key, entry);
+      console.log(`[MemoryService] Successfully stored key '${key}' in temporary memory`);
     } else {
       await this.storeProjectMemory(key, entry);
+      console.log(`[MemoryService] Successfully stored key '${key}' in project memory`);
     }
   }
 
@@ -178,6 +183,8 @@ export class MemoryService {
    * Retrieve a value from memory
    */
   async retrieve(key: string, type?: MemoryType): Promise<MemoryEntry | null> {
+    console.log(`[MemoryService] Attempting to retrieve key '${key}'${type ? ` from ${type} memory` : ' from all memory types'}`);
+    
     // If type is specified, search only in that type
     if (type) {
       if (!this.isMemoryTypeAvailable(type)) {
@@ -186,6 +193,9 @@ export class MemoryService {
       const entry = await this.retrieveFromType(key, type);
       if (entry) {
         await this.updateAccessMetadata(entry, type);
+        console.log(`[MemoryService] Successfully retrieved key '${key}' from ${type} memory, value length: ${typeof entry.value === 'string' ? entry.value.length : JSON.stringify(entry.value).length} chars`);
+      } else {
+        console.log(`[MemoryService] Key '${key}' not found in ${type} memory`);
       }
       return entry;
     }
@@ -195,10 +205,12 @@ export class MemoryService {
       const entry = await this.retrieveFromType(key, memoryType);
       if (entry) {
         await this.updateAccessMetadata(entry, memoryType);
+        console.log(`[MemoryService] Successfully retrieved key '${key}' from ${memoryType} memory, value length: ${typeof entry.value === 'string' ? entry.value.length : JSON.stringify(entry.value).length} chars`);
         return entry;
       }
     }
 
+    console.log(`[MemoryService] Key '${key}' not found in any available memory type`);
     return null;
   }
 
@@ -206,22 +218,38 @@ export class MemoryService {
    * Delete a value from memory
    */
   async delete(key: string, type?: MemoryType): Promise<boolean> {
+    console.log(`[MemoryService] Attempting to delete key '${key}'${type ? ` from ${type} memory` : ' from all memory types'}`);
+    
     let deleted = false;
 
     // If type is specified, delete only from that type
     if (type) {
       if (!this.isMemoryTypeAvailable(type)) {
+        console.log(`[MemoryService] Memory type '${type}' is not available - delete failed for key '${key}'`);
         return false;
       }
-      return await this.deleteFromType(key, type);
+      const result = await this.deleteFromType(key, type);
+      if (result) {
+        console.log(`[MemoryService] Successfully deleted key '${key}' from ${type} memory`);
+      } else {
+        console.log(`[MemoryService] Key '${key}' not found in ${type} memory - delete failed`);
+      }
+      return result;
     }
 
     // Delete from all available memory types
     for (const memoryType of this.getAvailableMemoryTypes()) {
       const result = await this.deleteFromType(key, memoryType);
       if (result) {
+        console.log(`[MemoryService] Successfully deleted key '${key}' from ${memoryType} memory`);
         deleted = true;
       }
+    }
+
+    if (!deleted) {
+      console.log(`[MemoryService] Key '${key}' not found in any available memory type - delete failed`);
+    } else {
+      console.log(`[MemoryService] Successfully deleted key '${key}' from memory`);
     }
 
     return deleted;
