@@ -283,6 +283,18 @@
     // Hide dialog
     correctionDialog.style.display = 'none';
   }
+
+  function showCorrectionAppliedNotice(correctionText) {
+    // Create a system notice message
+    const noticeMessage = {
+      id: `correction-notice-${Date.now()}`,
+      role: 'system',
+      content: `🔄 **Correction Applied**: ${correctionText}`,
+      timestamp: Date.now()
+    };
+    
+    addMessage(noticeMessage);
+  }
   
   function addMessage(message) {
     const messageElement = createMessageElement(message);
@@ -1071,6 +1083,11 @@
         if (correctionDialog.style.display === 'none') {
           requestCorrection();
         }
+        break;
+
+      case 'correctionApplied':
+        // Show notice that correction has been applied
+        showCorrectionAppliedNotice(message.correctionText);
         break;
 
       // Terminal approval handlers

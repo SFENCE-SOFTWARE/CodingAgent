@@ -658,6 +658,15 @@ export class ChatService {
             content: `Error: User correction: ${this.pendingCorrection}`
           };
 
+          // Notify UI that correction has been applied
+          if (this.streamingCallback) {
+            this.streamingCallback({
+              type: 'correction_applied',
+              messageId: 'system',
+              correctionText: this.pendingCorrection
+            });
+          }
+
           toolMessages.push(correctionMessage);
           
           // Clear the pending correction after using it
