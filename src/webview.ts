@@ -61,7 +61,7 @@ export function getWebviewContent(
           <div class="welcome-message">
             <div class="welcome-icon">🤖</div>
             <h3>Welcome to CodingAgent!</h3>
-            <p>I'm your AI coding assistant powered by Ollama. I can help you with:</p>
+            <p>I'm your AI coding assistant. I can help you with:</p>
             <ul>
               <li>📝 Reading and writing code files</li>
               <li>🔍 Exploring project structure</li>

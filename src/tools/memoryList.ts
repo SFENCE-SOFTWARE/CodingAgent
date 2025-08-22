@@ -3,6 +3,38 @@
 import { BaseTool, ToolInfo, ToolDefinition, ToolResult } from '../types';
 import { MemoryService, MemoryType } from '../memoryService';
 
+/**
+ * Calculate content statistics for memory entry
+ */
+function getContentStats(value: any): { length: number; lines: number; type: string } {
+  let stringValue: string;
+  let type: string;
+  
+  if (typeof value === 'string') {
+    stringValue = value;
+    type = 'string';
+  } else {
+    stringValue = JSON.stringify(value, null, 2);
+    type = typeof value;
+  }
+  
+  const length = stringValue.length;
+  const lines = stringValue.split(/\r\n|\r|\n/).length;
+  
+  return { length, lines, type };
+}
+
+/**
+ * Format size in human-readable format
+ */
+function formatSize(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
 export class MemoryListTool implements BaseTool {
   private memoryService: MemoryService;
 
@@ -16,7 +48,7 @@ export class MemoryListTool implements BaseTool {
     return {
       name: 'memory_list',
       displayName: 'Memory List',
-      description: `List memory entries with metadata overview and pagination support. Use memory_export to save listed entries to files. Available memory types: ${availableTypes.join(', ')}. If type is not specified, lists all available types. Use offset/limit for large memory sets.`,
+      description: `List memory entries with enhanced metadata overview including line counts, sizes, and content statistics. Use memory_export to save listed entries to files. Available memory types: ${availableTypes.join(', ')}. If type is not specified, lists all available types. Use offset/limit for large memory sets.`,
       category: 'other'
     };
   }
@@ -28,7 +60,7 @@ export class MemoryListTool implements BaseTool {
       type: 'function',
       function: {
         name: 'memory_list',
-        description: `List memory entries with metadata overview and pagination support. If type is not specified, lists all available types. Available types: ${availableTypes.join(', ')}`,
+        description: `List memory entries with enhanced metadata overview including line counts, sizes, and content statistics. If type is not specified, lists all available types. Available types: ${availableTypes.join(', ')}`,
         parameters: {
           type: 'object',
           properties: {
@@ -125,24 +157,40 @@ export class MemoryListTool implements BaseTool {
         : '';
 
       if (show_details) {
-        // Show detailed view with metadata
+        // Show detailed view with enhanced metadata
         const detailed = entries.map(entry => {
+          const contentStats = getContentStats(entry.value);
+          
           const result: any = {
             key: entry.key,
             type: entry.type,
             created: new Date(entry.timestamp).toISOString(),
-            valueLength: typeof entry.value === 'string' ? entry.value.length : JSON.stringify(entry.value).length
+            content: {
+              length: contentStats.length,
+              lines: contentStats.lines,
+              size: formatSize(contentStats.length),
+              valueType: contentStats.type
+            }
           };
 
           if (entry.metadata) {
             const metadata = entry.metadata;
             if (metadata.dataType) result.dataType = metadata.dataType;
             if (metadata.category) result.category = metadata.category;
-            if (metadata.tags) result.tags = metadata.tags;
-            if (metadata.priority) result.priority = metadata.priority;
+            if (metadata.tags && metadata.tags.length > 0) result.tags = metadata.tags;
+            if (metadata.priority && metadata.priority !== 'medium') result.priority = metadata.priority;
             if (metadata.description) result.description = metadata.description;
+            if (metadata.context) result.context = metadata.context;
+            if (metadata.source) result.source = metadata.source;
+            if (metadata.format) result.format = metadata.format;
+            if (metadata.complexity) result.complexity = metadata.complexity;
+            if (metadata.version) result.version = metadata.version;
             if (metadata.accessCount) result.accessCount = metadata.accessCount;
             if (metadata.lastAccessed) result.lastAccessed = new Date(metadata.lastAccessed).toISOString();
+            if (metadata.lastModified) result.lastModified = new Date(metadata.lastModified).toISOString();
+            if (metadata.expiresAt) result.expiresAt = new Date(metadata.expiresAt).toISOString();
+            if (metadata.sensitive) result.sensitive = metadata.sensitive;
+            if (metadata.relatedKeys && metadata.relatedKeys.length > 0) result.relatedKeys = metadata.relatedKeys;
           }
 
           return result;
@@ -153,29 +201,45 @@ export class MemoryListTool implements BaseTool {
           content: `Found ${totalCount} memory entries ${location}${paginationInfo}:\n${JSON.stringify(detailed, null, 2)}`
         };
       } else {
-        // Show compact overview
+        // Show enhanced compact overview with line counts
         const overview = entries.map(entry => {
+          const contentStats = getContentStats(entry.value);
           const parts = [entry.key];
-          if (entry.metadata?.dataType) parts.push(`[${entry.metadata.dataType}]`);
+          
+          // Add content info
+          parts.push(`[${contentStats.lines}L, ${formatSize(contentStats.length)}]`);
+          
+          // Add metadata info
+          if (entry.metadata?.dataType) parts.push(`{${entry.metadata.dataType}}`);
           if (entry.metadata?.category) parts.push(`(${entry.metadata.category})`);
           if (entry.metadata?.priority && entry.metadata.priority !== 'medium') {
-            parts.push(`{${entry.metadata.priority}}`);
+            parts.push(`!${entry.metadata.priority}`);
           }
           if (entry.metadata?.tags?.length) parts.push(`#${entry.metadata.tags.join(' #')}`);
+          if (entry.metadata?.description) {
+            const desc = entry.metadata.description.length > 50 
+              ? entry.metadata.description.substring(0, 47) + '...' 
+              : entry.metadata.description;
+            parts.push(`"${desc}"`);
+          }
+          
           return `- ${parts.join(' ')}`;
         }).join('\n');
 
-        // Group by type summary
+        // Enhanced summary with content statistics
         const typeGroups = allEntries.reduce((acc, entry) => {
           const t = entry.type;
-          if (!acc[t]) acc[t] = 0;
-          acc[t]++;
+          if (!acc[t]) acc[t] = { count: 0, totalLines: 0, totalSize: 0 };
+          acc[t].count++;
+          const stats = getContentStats(entry.value);
+          acc[t].totalLines += stats.lines;
+          acc[t].totalSize += stats.length;
           return acc;
-        }, {} as Record<string, number>);
+        }, {} as Record<string, { count: number; totalLines: number; totalSize: number }>);
 
         const typeSummary = Object.entries(typeGroups)
-          .map(([t, count]) => `${t}: ${count}`)
-          .join(', ');
+          .map(([t, stats]) => `${t}: ${stats.count} entries, ${stats.totalLines} lines, ${formatSize(stats.totalSize)}`)
+          .join('; ');
 
         return {
           success: true,
