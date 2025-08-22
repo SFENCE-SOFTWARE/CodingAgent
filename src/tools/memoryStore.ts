@@ -16,7 +16,7 @@ export class MemoryStoreTool implements BaseTool {
     return {
       name: 'memory_store',
       displayName: 'Memory Store',
-      description: `Store a value in memory with a unique key. Available memory types: ${availableTypes.join(', ')}`,
+      description: `Store a value in memory with a unique key. Stored data can later be retrieved with memory_retrieve_by_lines or memory_retrieve_data, or saved to files using memory_export. Available memory types: ${availableTypes.join(', ')}`,
       category: 'other'
     };
   }

@@ -21,7 +21,8 @@ import { ReadWebpageAsHTMLTool } from './tools/readWebpageAsHTML';
 import { ReadWebpageAsMarkdownTool } from './tools/readWebpageAsMarkdown';
 import { ReadPdfTool } from './tools/readPdf';
 import { MemoryStoreTool } from './tools/memoryStore';
-import { MemoryRetrieveTool } from './tools/memoryRetrieve';
+import { MemoryRetrieveByLinesTool } from './tools/memoryRetrieveByLines';
+import { MemoryRetrieveDataTool } from './tools/memoryRetrieveData';
 import { MemoryDeleteTool } from './tools/memoryDelete';
 import { MemorySearchTool } from './tools/memorySearch';
 import { MemoryListTool } from './tools/memoryList';
@@ -90,7 +91,8 @@ export class ToolsService {
       new ReadWebpageAsMarkdownTool(this.memoryService),
       new ReadPdfTool(),
       new MemoryStoreTool(this.memoryService),
-      new MemoryRetrieveTool(this.memoryService),
+      new MemoryRetrieveByLinesTool(this.memoryService),
+      new MemoryRetrieveDataTool(this.memoryService),
       new MemoryDeleteTool(this.memoryService),
       new MemorySearchTool(this.memoryService),
       new MemoryListTool(this.memoryService),

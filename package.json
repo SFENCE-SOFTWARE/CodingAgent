@@ -223,10 +223,12 @@
                   "search_in_project",
                   "search_in_path",
                   "memory_store",
-                  "memory_retrieve",
+                  "memory_retrieve_by_lines",
+                  "memory_retrieve_data",
                   "memory_delete",
                   "memory_search",
-                  "memory_list"
+                  "memory_list",
+                  "memory_export"
                 ],
                 "fallbackMessage": "I'm ready to help with your coding tasks. What would you like me to do?",
                 "temperature": 0.1,
@@ -245,10 +247,12 @@
                   "search_in_project",
                   "search_in_path",
                   "memory_store",
-                  "memory_retrieve",
+                  "memory_retrieve_by_lines",
+                  "memory_retrieve_data",
                   "memory_delete",
                   "memory_search",
-                  "memory_list"
+                  "memory_list",
+                  "memory_export"
                 ],
                 "fallbackMessage": "I'm here to answer your questions. What would you like to know?",
                 "temperature": 0.3,
@@ -267,10 +271,12 @@
                   "search_in_project",
                   "search_in_path",
                   "memory_store",
-                  "memory_retrieve",
+                  "memory_retrieve_by_lines",
+                  "memory_retrieve_data",
                   "memory_delete",
                   "memory_search",
-                  "memory_list"
+                  "memory_list",
+                  "memory_export"
                 ],
                 "fallbackMessage": "I'm ready to help with architecture and design decisions. What system are you working on?",
                 "temperature": 0.2,
@@ -332,6 +338,38 @@
             "type": "string",
             "default": "",
             "description": "Comma-separated list of terminal commands that are automatically approved without user confirmation (e.g. 'ls,pwd,git status'). Use with caution.",
+            "scope": "window"
+          },
+          "codingagent.memory.maxLines": {
+            "type": "number",
+            "default": 100,
+            "minimum": 10,
+            "maximum": 1000,
+            "description": "Maximum number of lines that memory_retrieve can read in one operation",
+            "scope": "window"
+          },
+          "codingagent.memory.maxChars": {
+            "type": "number",
+            "default": 10000,
+            "minimum": 1000,
+            "maximum": 50000,
+            "description": "Maximum number of characters that memory_retrieve can read in one operation",
+            "scope": "window"
+          },
+          "codingagent.memory.autoSafetyLimit": {
+            "type": "number",
+            "default": 5000,
+            "minimum": 1000,
+            "maximum": 10000,
+            "description": "Auto-applied safety limit for large values without explicit length (in characters)",
+            "scope": "window"
+          },
+          "codingagent.memory.largeValueThreshold": {
+            "type": "number",
+            "default": 10000,
+            "minimum": 5000,
+            "maximum": 50000,
+            "description": "Threshold above which values are considered 'large' and safety limits apply (in characters)",
             "scope": "window"
           }
         }

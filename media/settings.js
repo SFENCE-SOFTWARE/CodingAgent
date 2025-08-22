@@ -25,6 +25,10 @@
     logModeFilePath: document.getElementById('logModeFilePath'),
     readFileMaxLines: document.getElementById('readFileMaxLines'),
     autoApproveCommands: document.getElementById('autoApproveCommands'),
+    memoryMaxLines: document.getElementById('memoryMaxLines'),
+    memoryMaxChars: document.getElementById('memoryMaxChars'),
+    memoryAutoSafetyLimit: document.getElementById('memoryAutoSafetyLimit'),
+    memoryLargeValueThreshold: document.getElementById('memoryLargeValueThreshold'),
     toolsGrid: document.getElementById('tools-grid'),
     modesList: document.getElementById('modesList'),
     resetBtn: document.getElementById('resetBtn'),
@@ -208,6 +212,12 @@
     // Tools settings
     elements.readFileMaxLines.value = config.tools?.readFileMaxLines || 1000;
     elements.autoApproveCommands.value = config.tools?.autoApproveCommands || '';
+    
+    // Memory settings
+    elements.memoryMaxLines.value = config.memory?.maxLines || 1000;
+    elements.memoryMaxChars.value = config.memory?.maxChars || 50000;
+    elements.memoryAutoSafetyLimit.value = config.memory?.autoSafetyLimit || 5000;
+    elements.memoryLargeValueThreshold.value = config.memory?.largeValueThreshold || 10000;
     
     // Update modes dropdown
     updateModeDropdown(config.modes || {});
@@ -416,7 +426,11 @@
       'logging.logMode': elements.logMode.checked,
       'logging.logModeFilePath': elements.logModeFilePath.value,
       'tools.readFileMaxLines': parseInt(elements.readFileMaxLines.value) || 1000,
-      'tools.autoApproveCommands': elements.autoApproveCommands.value
+      'tools.autoApproveCommands': elements.autoApproveCommands.value,
+      'memory.maxLines': parseInt(elements.memoryMaxLines.value) || 1000,
+      'memory.maxChars': parseInt(elements.memoryMaxChars.value) || 50000,
+      'memory.autoSafetyLimit': parseInt(elements.memoryAutoSafetyLimit.value) || 5000,
+      'memory.largeValueThreshold': parseInt(elements.memoryLargeValueThreshold.value) || 10000
     };
     
     showSaveStatus('Saving...', 'pending');

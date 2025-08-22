@@ -16,7 +16,7 @@ export class MemorySearchTool implements BaseTool {
     return {
       name: 'memory_search',
       displayName: 'Memory Search',
-      description: `Search memory entries by key or value patterns. Returns metadata and pattern match locations, not full content. Use memory_retrieve to get full content. Available memory types: ${availableTypes.join(', ')}. If type is not specified, searches all available types.`,
+      description: `Search memory entries by key or value patterns. Returns metadata and pattern match locations, not full content. Use memory_retrieve_by_lines or memory_retrieve_data to get full content or memory_export to save found entries to files. Available memory types: ${availableTypes.join(', ')}. If type is not specified, searches all available types.`,
       category: 'search'
     };
   }
@@ -28,7 +28,7 @@ export class MemorySearchTool implements BaseTool {
       type: 'function',
       function: {
         name: 'memory_search',
-        description: `Advanced search in memory entries with metadata filtering and sorting. Returns entry information and pattern match locations, not full content values. Use memory_retrieve to get full content. If type is not specified, searches all available memory types. Available types: ${availableTypes.join(', ')}`,
+        description: `Advanced search in memory entries with metadata filtering and sorting. Returns entry information and pattern match locations, not full content values. Use memory_retrieve_by_lines or memory_retrieve_data to get full content or memory_export to save found entries to files. If type is not specified, searches all available memory types. Available types: ${availableTypes.join(', ')}`,
         parameters: {
           type: 'object',
           properties: {

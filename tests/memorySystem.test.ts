@@ -6,7 +6,8 @@ import * as fs from 'fs';
 import * as os from 'os';
 import { MemoryService, MemoryType, MemorySearchOptions } from '../src/memoryService';
 import { MemoryStoreTool } from '../src/tools/memoryStore';
-import { MemoryRetrieveTool } from '../src/tools/memoryRetrieve';
+import { MemoryRetrieveByLinesTool } from '../src/tools/memoryRetrieveByLines';
+import { MemoryRetrieveDataTool } from '../src/tools/memoryRetrieveData';
 import { MemoryDeleteTool } from '../src/tools/memoryDelete';
 import { MemorySearchTool } from '../src/tools/memorySearch';
 import { MemoryListTool } from '../src/tools/memoryList';
@@ -15,7 +16,8 @@ suite('Memory System Tests', () => {
   let tempDir: string;
   let memoryService: MemoryService;
   let memoryStoreTool: MemoryStoreTool;
-  let memoryRetrieveTool: MemoryRetrieveTool;
+  let memoryRetrieveByLinesTool: MemoryRetrieveByLinesTool;
+  let memoryRetrieveDataTool: MemoryRetrieveDataTool;
   let memoryDeleteTool: MemoryDeleteTool;
   let memorySearchTool: MemorySearchTool;
   let memoryListTool: MemoryListTool;
@@ -31,7 +33,8 @@ suite('Memory System Tests', () => {
     
     // Create tool instances
     memoryStoreTool = new MemoryStoreTool(memoryService);
-    memoryRetrieveTool = new MemoryRetrieveTool(memoryService);
+    memoryRetrieveByLinesTool = new MemoryRetrieveByLinesTool(memoryService);
+    memoryRetrieveDataTool = new MemoryRetrieveDataTool(memoryService);
     memoryDeleteTool = new MemoryDeleteTool(memoryService);
     memorySearchTool = new MemorySearchTool(memoryService);
     memoryListTool = new MemoryListTool(memoryService);
@@ -139,7 +142,7 @@ suite('Memory System Tests', () => {
     test('MemoryRetrieveTool should retrieve memory entry', async () => {
       await memoryService.store('retrieve-key', 'retrieve-value', MemoryType.TEMPORARY);
       
-      const result = await memoryRetrieveTool.execute({
+      const result = await memoryRetrieveDataTool.execute({
         key: 'retrieve-key'
       }, tempDir);
       
@@ -213,7 +216,7 @@ suite('Memory System Tests', () => {
       assert.ok(!listResultAfter.content.includes('project-delete-key'));
       
       // Verify it's not retrievable
-      const retrieveResult = await memoryRetrieveTool.execute({
+      const retrieveResult = await memoryRetrieveDataTool.execute({
         key: 'project-delete-key'
       }, tempDir);
       
@@ -367,7 +370,7 @@ suite('Memory System Tests', () => {
       await memoryService.store('large-content', largeValue, MemoryType.TEMPORARY);
       
       // Test full content retrieval
-      const fullResult = await memoryRetrieveTool.execute({
+      const fullResult = await memoryRetrieveDataTool.execute({
         key: 'large-content'
       }, tempDir);
       
@@ -376,7 +379,7 @@ suite('Memory System Tests', () => {
       assert.ok(!fullResult.content.includes('isPartial'));
       
       // Test partial reading from beginning
-      const partialResult1 = await memoryRetrieveTool.execute({
+      const partialResult1 = await memoryRetrieveDataTool.execute({
         key: 'large-content',
         offset: 0,
         length: 50
@@ -388,7 +391,7 @@ suite('Memory System Tests', () => {
       assert.ok(partialResult1.content.includes('nextOffset'));
       
       // Test partial reading from middle
-      const partialResult2 = await memoryRetrieveTool.execute({
+      const partialResult2 = await memoryRetrieveDataTool.execute({
         key: 'large-content',
         offset: 50,
         length: 30
@@ -398,7 +401,7 @@ suite('Memory System Tests', () => {
       assert.ok(partialResult2.content.includes('Showing characters 51-80'));
       
       // Test reading to end
-      const endResult = await memoryRetrieveTool.execute({
+      const endResult = await memoryRetrieveDataTool.execute({
         key: 'large-content',
         offset: largeValue.length - 20
       }, tempDir);
@@ -413,7 +416,7 @@ suite('Memory System Tests', () => {
       const testValue = 'Some test content that is moderately long for metadata testing and should not appear in full when metadata_only is true.';
       await memoryService.store('metadata-test', testValue, MemoryType.TEMPORARY);
       
-      const metadataResult = await memoryRetrieveTool.execute({
+      const metadataResult = await memoryRetrieveDataTool.execute({
         key: 'metadata-test',
         metadata_only: true
       }, tempDir);
@@ -430,7 +433,7 @@ suite('Memory System Tests', () => {
       await memoryService.store('validation-test', 'test content', MemoryType.TEMPORARY);
       
       // Test negative offset
-      const negativeOffset = await memoryRetrieveTool.execute({
+      const negativeOffset = await memoryRetrieveDataTool.execute({
         key: 'validation-test',
         offset: -1
       }, tempDir);
@@ -439,7 +442,7 @@ suite('Memory System Tests', () => {
       assert.ok(negativeOffset.error?.includes('Offset must be non-negative'));
       
       // Test invalid length
-      const invalidLength = await memoryRetrieveTool.execute({
+      const invalidLength = await memoryRetrieveDataTool.execute({
         key: 'validation-test',
         length: 0
       }, tempDir);
@@ -448,7 +451,7 @@ suite('Memory System Tests', () => {
       assert.ok(invalidLength.error?.includes('Length must be between 1 and 100000'));
       
       // Test too large length
-      const tooLargeLength = await memoryRetrieveTool.execute({
+      const tooLargeLength = await memoryRetrieveDataTool.execute({
         key: 'validation-test',
         length: 100001
       }, tempDir);
@@ -541,7 +544,7 @@ suite('Memory System Tests', () => {
     test('should provide valid tool info for all memory tools', () => {
       const tools = [
         memoryStoreTool,
-        memoryRetrieveTool,
+        memoryRetrieveDataTool,
         memoryDeleteTool,
         memorySearchTool,
         memoryListTool
@@ -559,7 +562,7 @@ suite('Memory System Tests', () => {
     test('should provide valid tool definitions for all memory tools', () => {
       const tools = [
         memoryStoreTool,
-        memoryRetrieveTool,
+        memoryRetrieveDataTool,
         memoryDeleteTool,
         memorySearchTool,
         memoryListTool

@@ -16,7 +16,7 @@ export class MemoryListTool implements BaseTool {
     return {
       name: 'memory_list',
       displayName: 'Memory List',
-      description: `List memory entries with metadata overview and pagination support. Available memory types: ${availableTypes.join(', ')}. If type is not specified, lists all available types. Use offset/limit for large memory sets.`,
+      description: `List memory entries with metadata overview and pagination support. Use memory_export to save listed entries to files. Available memory types: ${availableTypes.join(', ')}. If type is not specified, lists all available types. Use offset/limit for large memory sets.`,
       category: 'other'
     };
   }

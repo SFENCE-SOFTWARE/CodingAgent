@@ -1,9 +1,10 @@
-// src/tools/memoryRetrieve.ts
+// src/tools/memoryRetrieveData.ts
 
+import * as vscode from 'vscode';
 import { BaseTool, ToolInfo, ToolDefinition, ToolResult } from '../types';
 import { MemoryService, MemoryType } from '../memoryService';
 
-export class MemoryRetrieveTool implements BaseTool {
+export class MemoryRetrieveDataTool implements BaseTool {
   private memoryService: MemoryService;
 
   constructor(memoryService: MemoryService) {
@@ -14,21 +15,23 @@ export class MemoryRetrieveTool implements BaseTool {
     const availableTypes = this.memoryService.getAvailableMemoryTypes();
     
     return {
-      name: 'memory_retrieve',
-      displayName: 'Memory Retrieve',
-      description: `Retrieve a value from memory by key with optional partial reading. Available memory types: ${availableTypes.join(', ')}. If type is not specified, searches all available types. SAFETY: Values >10KB are auto-limited to 5KB unless explicit length is specified. Use metadata_only=true to inspect large values first.`,
+      name: 'memory_retrieve_data',
+      displayName: 'Memory Retrieve Data',
+      description: `Retrieve raw memory data by character offset and length. Use for precise data extraction from memory content. To save retrieved content to a file, use memory_export. Available memory types: ${availableTypes.join(', ')}. If type is not specified, searches all available types. SAFETY: Auto-limits applied for large values.`,
       category: 'other'
     };
   }
 
   getToolDefinition(): ToolDefinition {
     const availableTypes = this.memoryService.getAvailableMemoryTypes();
+    const config = vscode.workspace.getConfiguration('codingagent.memory');
+    const maxChars = config.get('maxChars', 50000);
 
     return {
       type: 'function',
       function: {
-        name: 'memory_retrieve',
-        description: `Retrieve a value from memory by key with optional partial reading for large values. If type is not specified, searches all available memory types. Available types: ${availableTypes.join(', ')}. SAFETY: Values >10KB auto-limited to 5KB unless explicit length specified. Use metadata_only=true for large values inspection.`,
+        name: 'memory_retrieve_data',
+        description: `Retrieve raw memory data by character offset and length. Maximum ${maxChars} characters per operation. Use for precise data extraction and binary/raw content access. To save retrieved data to files, use memory_export. Available memory types: ${availableTypes.join(', ')}.`,
         parameters: {
           type: 'object',
           properties: {
@@ -43,13 +46,13 @@ export class MemoryRetrieveTool implements BaseTool {
             },
             offset: {
               type: 'number',
-              description: 'Character offset to start reading from (default: 0). Use for partial reading of large values.',
+              description: 'Character offset to start reading from (default: 0)',
               minimum: 0,
               default: 0
             },
             length: {
               type: 'number',
-              description: 'Maximum number of characters to read (default: unlimited). Use for partial reading of large values.',
+              description: 'Maximum number of characters to read (default: auto-limited based on settings)',
               minimum: 1,
               maximum: 100000
             },
@@ -71,7 +74,7 @@ export class MemoryRetrieveTool implements BaseTool {
         key, 
         type, 
         offset = 0, 
-        length, 
+        length,
         metadata_only = false 
       } = args;
 
@@ -126,35 +129,52 @@ export class MemoryRetrieveTool implements BaseTool {
         created: new Date(entry.timestamp).toISOString()
       };
 
-      // Process value with partial reading
+      // Process value with character-based reading
       const originalValue = typeof entry.value === 'string' ? entry.value : JSON.stringify(entry.value);
       const totalLength = originalValue.length;
 
-      // Auto-apply safety limits for large values (>10KB without explicit length)
-      const LARGE_VALUE_THRESHOLD = 10000;
-      const AUTO_SAFETY_LIMIT = 5000;
-      const MAX_SAFE_LENGTH = 50000;
-
-      let effectiveOffset = offset;
-      let effectiveLength = length;
-
-      if (!metadata_only && totalLength > LARGE_VALUE_THRESHOLD) {
-        if (effectiveLength === undefined) {
-          // Auto-apply safety limit for large values
-          effectiveLength = AUTO_SAFETY_LIMIT;
-          console.log(`[MemoryRetrieve] Auto-applying safety limit (${AUTO_SAFETY_LIMIT} chars) for large value (${totalLength} chars) with key '${key}'`);
-        } else if (effectiveLength > MAX_SAFE_LENGTH) {
-          // Cap extremely large requests
-          effectiveLength = MAX_SAFE_LENGTH;
-          console.log(`[MemoryRetrieve] Capping large length request from ${length} to ${MAX_SAFE_LENGTH} chars for key '${key}'`);
-        }
-      }
+      // Get configuration
+      const config = vscode.workspace.getConfiguration('codingagent.memory');
+      const maxChars = config.get('maxChars', 50000);
+      const autoSafetyLimit = config.get('autoSafetyLimit', true);
+      const largeValueThreshold = config.get('largeValueThreshold', 10000);
 
       if (metadata_only) {
+        const allLines = originalValue.split('\n');
         result.valueLength = totalLength;
+        result.lineCount = allLines.length;
         result.valuePreview = totalLength > 100 ? originalValue.substring(0, 100) + '...' : originalValue;
-        console.log(`[MemoryRetrieve] Metadata-only retrieval for key '${key}', length: ${totalLength} chars`);
+        console.log(`[MemoryRetrieveData] Metadata-only retrieval for key '${key}', length: ${totalLength} chars, lines: ${allLines.length}`);
       } else {
+        // Character-based reading with auto-safety limits
+        let effectiveOffset = offset;
+        let effectiveLength = length;
+
+        // Auto-apply safety limits for large values
+        const AUTO_SAFETY_LIMIT = 5000;
+        const MAX_SAFE_LENGTH = Math.min(maxChars, 100000);
+
+        if (autoSafetyLimit && totalLength > largeValueThreshold) {
+          if (effectiveLength === undefined) {
+            // Auto-apply safety limit for large values
+            effectiveLength = AUTO_SAFETY_LIMIT;
+            console.log(`[MemoryRetrieveData] Auto-applying safety limit (${AUTO_SAFETY_LIMIT} chars) for large value (${totalLength} chars) with key '${key}'`);
+          } else if (effectiveLength > MAX_SAFE_LENGTH) {
+            // Cap extremely large requests
+            effectiveLength = MAX_SAFE_LENGTH;
+            console.log(`[MemoryRetrieveData] Capping large length request from ${length} to ${MAX_SAFE_LENGTH} chars for key '${key}'`);
+          }
+        }
+
+        // Apply character limits from settings
+        let isLimitedBySettings = false;
+        if (effectiveLength === undefined || effectiveLength > maxChars) {
+          if (effectiveLength !== undefined && effectiveLength > maxChars) {
+            isLimitedBySettings = true;
+          }
+          effectiveLength = Math.min(effectiveLength || totalLength, maxChars);
+        }
+
         // Apply offset and length
         const startIndex = Math.min(effectiveOffset, totalLength);
         const endIndex = effectiveLength !== undefined 
@@ -166,19 +186,24 @@ export class MemoryRetrieveTool implements BaseTool {
         
         result.value = partialValue;
         result.valueLength = totalLength;
+        result.readRange = `${startIndex}-${endIndex - 1}`;
         
-        console.log(`[MemoryRetrieve] Retrieved ${partialValue.length} chars (${startIndex}-${endIndex}) from total ${totalLength} chars for key '${key}'`);
+        let readInfo = `Showing characters ${startIndex + 1}-${endIndex} of ${totalLength}`;
+        if (isLimitedBySettings) {
+          readInfo += ` (limited by maxChars setting: ${maxChars})`;
+        }
         
         if (isPartial) {
           result.isPartial = true;
-          result.readRange = `${startIndex}-${endIndex - 1}`;
-          result.readInfo = `Showing characters ${startIndex + 1}-${endIndex} of ${totalLength}`;
-          
-          if (endIndex < totalLength) {
-            result.nextOffset = endIndex;
-            result.remainingLength = totalLength - endIndex;
-          }
+          result.readInfo = readInfo;
         }
+        
+        if (endIndex < totalLength) {
+          result.nextOffset = endIndex;
+          result.remainingLength = totalLength - endIndex;
+        }
+
+        console.log(`[MemoryRetrieveData] Character-based retrieval for key '${key}': chars ${startIndex}-${endIndex} from total ${totalLength}`);
       }
 
       // Include rich metadata if available
@@ -209,12 +234,12 @@ export class MemoryRetrieveTool implements BaseTool {
 
       return {
         success: true,
-        content: `Retrieved memory entry${readingInfo}:\n${JSON.stringify(result, null, 2)}`
+        content: `Retrieved memory data${readingInfo}:\n${JSON.stringify(result, null, 2)}`
       };
 
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      return { success: false, content: '', error: `Failed to retrieve memory: ${errorMsg}` };
+      return { success: false, content: '', error: `Failed to retrieve memory data: ${errorMsg}` };
     }
   }
 }

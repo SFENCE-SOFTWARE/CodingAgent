@@ -154,6 +154,12 @@ export class SettingsPanel {
           readFileMaxLines: config.get('tools.readFileMaxLines'),
           autoApproveCommands: config.get('tools.autoApproveCommands')
         },
+        memory: {
+          maxLines: config.get('memory.maxLines'),
+          maxChars: config.get('memory.maxChars'),
+          autoSafetyLimit: config.get('memory.autoSafetyLimit'),
+          largeValueThreshold: config.get('memory.largeValueThreshold')
+        },
         logging: {
           enabled: config.get('logging.enabled'),
           filePath: config.get('logging.filePath'),
@@ -216,6 +222,10 @@ export class SettingsPanel {
         await config.update('logging.logModeFilePath', undefined, vscode.ConfigurationTarget.Global);
         await config.update('tools.readFileMaxLines', undefined, vscode.ConfigurationTarget.Global);
         await config.update('tools.autoApproveCommands', undefined, vscode.ConfigurationTarget.Global);
+        await config.update('memory.maxLines', undefined, vscode.ConfigurationTarget.Global);
+        await config.update('memory.maxChars', undefined, vscode.ConfigurationTarget.Global);
+        await config.update('memory.autoSafetyLimit', undefined, vscode.ConfigurationTarget.Global);
+        await config.update('memory.largeValueThreshold', undefined, vscode.ConfigurationTarget.Global);
 
         this._sendConfiguration();
         
@@ -590,6 +600,35 @@ export class SettingsPanel {
                   <label for="readFileMaxLines">Read File Max Lines:</label>
                   <input type="number" id="readFileMaxLines" min="10" max="10000" step="10" />
                   <small class="form-hint">Maximum number of lines read_file tool can read in one operation (10-10000)</small>
+                </div>
+              </section>
+
+              <section class="settings-section">
+                <h2>🧠 Memory Configuration</h2>
+                <p class="section-description">Configure memory retrieval limits and behavior</p>
+                
+                <div class="form-group">
+                  <label for="memoryMaxLines">Memory Max Lines:</label>
+                  <input type="number" id="memoryMaxLines" min="10" max="1000" step="10" value="100" />
+                  <small class="form-hint">Maximum number of lines memory_retrieve can read in one operation (10-1000)</small>
+                </div>
+                
+                <div class="form-group">
+                  <label for="memoryMaxChars">Memory Max Characters:</label>
+                  <input type="number" id="memoryMaxChars" min="1000" max="50000" step="1000" value="10000" />
+                  <small class="form-hint">Maximum number of characters memory_retrieve can read in one operation (1000-50000)</small>
+                </div>
+                
+                <div class="form-group">
+                  <label for="memoryAutoSafetyLimit">Auto Safety Limit:</label>
+                  <input type="number" id="memoryAutoSafetyLimit" min="1000" max="10000" step="500" value="5000" />
+                  <small class="form-hint">Auto-applied safety limit for large values without explicit length (1000-10000 chars)</small>
+                </div>
+                
+                <div class="form-group">
+                  <label for="memoryLargeValueThreshold">Large Value Threshold:</label>
+                  <input type="number" id="memoryLargeValueThreshold" min="5000" max="50000" step="1000" value="10000" />
+                  <small class="form-hint">Threshold above which values are considered "large" and safety limits apply (5000-50000 chars)</small>
                 </div>
               </section>
 

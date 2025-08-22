@@ -17,7 +17,7 @@ export class MemoryExportTool implements BaseTool {
     return {
       name: 'memory_export',
       displayName: 'Export Memory to File',
-      description: `Export memory entries to files with optional format conversion. Available memory types: ${availableTypes}. Supports single entries, multiple entries, or entire memory sections.`,
+      description: `Save/export memory entries to files. Use when user wants to save memory content to a file, create backups, or persist memory data. COMMON TRIGGERS: "save to file", "export memory", "create file from memory", "backup memory". Available memory types: ${availableTypes}. Supports single entries, multiple entries, or entire memory sections.`,
       category: 'other'
     };
   }
@@ -28,7 +28,7 @@ export class MemoryExportTool implements BaseTool {
       type: 'function',
       function: {
         name: 'memory_export',
-        description: `Export memory entries to files with optional format conversion and metadata. Available memory types: ${availableTypes}. Can export single entries, multiple entries, or filtered sets.`,
+        description: `Save/export memory entries to files. Use when user wants to save memory content to a file, backup memory data, or create persistent copies. COMMON USE CASES: 1) User asks to save/export a memory entry to file, 2) User wants to backup memory data, 3) User requests to create a file from memory content, 4) User wants permanent storage of memory information. Available memory types: ${availableTypes}. Can export single entries, multiple entries by pattern, or filtered sets with various output formats.`,
         parameters: {
           type: 'object',
           properties: {
