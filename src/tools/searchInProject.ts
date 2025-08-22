@@ -3,7 +3,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { BaseTool, ToolDefinition, ToolResult, ToolInfo } from '../types';
-import { SearchUtils, SearchOptions } from './searchUtils';
+import { SearchUtils, SearchOptions } from '../searchUtils';
 
 export class SearchInProjectTool implements BaseTool {
   getToolInfo(): ToolInfo {

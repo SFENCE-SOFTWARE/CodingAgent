@@ -7,7 +7,73 @@ import { ReadWebpageAsHTMLTool } from '../src/tools/readWebpageAsHTML';
 import { ReadWebpageAsMarkdownTool } from '../src/tools/readWebpageAsMarkdown';
 import { SearchInProjectTool } from '../src/tools/searchInProject';
 
+// Mock HTML content for testing
+const MOCK_HTML_CONTENT = `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Page</title>
+    <style>body { font-family: Arial; }</style>
+    <script>console.log('test');</script>
+</head>
+<body>
+    <h1>Main Heading</h1>
+    <p>This is a test paragraph with <strong>bold text</strong> and <em>italic text</em>.</p>
+    <ul>
+        <li>List item 1</li>
+        <li>List item 2</li>
+    </ul>
+    <a href="https://example.com">Example Link</a>
+    <script>alert('should be removed');</script>
+</body>
+</html>
+`;
+
+// Mock fetch for testing
+const originalFetch = global.fetch;
+
+function mockFetch(url: string): Promise<Response> {
+    // Mock successful response for test URLs
+    if (url.includes('test-html-content') || url.includes('httpbin.org/html')) {
+        return Promise.resolve({
+            ok: true,
+            status: 200,
+            statusText: 'OK',
+            text: () => Promise.resolve(MOCK_HTML_CONTENT),
+            headers: new Headers({ 'content-type': 'text/html' })
+        } as Response);
+    }
+    
+    // Mock error responses for invalid URLs
+    if (url === 'invalid-url' || url === 'not-a-url-at-all') {
+        return Promise.reject(new TypeError('Failed to fetch'));
+    }
+    
+    // Mock 404 for non-existent domains
+    if (url.includes('this-domain-definitely-does-not-exist')) {
+        return Promise.resolve({
+            ok: false,
+            status: 404,
+            statusText: 'Not Found',
+            text: () => Promise.resolve(''),
+            headers: new Headers()
+        } as Response);
+    }
+    
+    // Fallback to original fetch for any other URLs
+    return originalFetch(url);
+}
+
 suite('System and Web Tools Tests', () => {
+    // Setup and teardown for fetch mocking
+    setup(() => {
+        global.fetch = mockFetch as any;
+    });
+
+    teardown(() => {
+        global.fetch = originalFetch;
+    });
+
     suite('ExecuteTerminalTool', () => {
         let tool: ExecuteTerminalTool;
 
@@ -57,20 +123,20 @@ suite('System and Web Tools Tests', () => {
             assert.ok(definition.function.parameters.required?.includes('url'));
         });
 
-        test('should handle invalid URL gracefully', async () => {
+        test('should handle invalid URL gracefully', async function() {
             const result = await tool.execute({ url: 'invalid-url' }, '/tmp');
             assert.strictEqual(result.success, false);
             assert.strictEqual(typeof result.error, 'string');
             assert.ok(result.error!.length > 0);
         });
 
-        test('should handle malformed URL gracefully', async () => {
+        test('should handle malformed URL gracefully', async function() {
             const result = await tool.execute({ url: 'not-a-url-at-all' }, '/tmp');
             assert.strictEqual(result.success, false);
             assert.strictEqual(typeof result.error, 'string');
         });
 
-        test('should handle non-existent domain gracefully', async () => {
+        test('should handle non-existent domain gracefully', async function() {
             const result = await tool.execute({ 
                 url: 'https://this-domain-definitely-does-not-exist-12345.com' 
             }, '/tmp');
@@ -79,7 +145,7 @@ suite('System and Web Tools Tests', () => {
             assert.strictEqual(typeof result.error, 'string');
         });
 
-        test('should handle max_length parameter', async () => {
+        test('should handle max_length parameter', async function() {
             // Use an invalid URL but test that the parameter is accepted
             const result = await tool.execute({ 
                 url: 'invalid-url',
@@ -90,20 +156,24 @@ suite('System and Web Tools Tests', () => {
             assert.strictEqual(typeof result.error, 'string');
         });
 
-        test.skip('should preserve HTML structure when cleaning content', async () => {
-            // Test with mock HTML content simulation
-            // Since we can't rely on external URLs in tests, we test the error handling
-            const result = await tool.execute({ url: 'https://httpbin.org/html' }, '/tmp');
+        test('should preserve HTML structure when cleaning content', async function() {
+            this.timeout(5000);
+            // Test with mock HTML content
+            const result = await tool.execute({ url: 'https://test-html-content.example.com' }, '/tmp');
             
-            // Either succeeds with HTML content or fails gracefully
-            if (result.success) {
-                assert.strictEqual(typeof result.content, 'string');
-                // HTML content should not contain script or style tags after cleaning
-                assert.ok(!result.content.includes('<script'));
-                assert.ok(!result.content.includes('<style'));
-            } else {
-                assert.strictEqual(typeof result.error, 'string');
-            }
+            assert.strictEqual(result.success, true);
+            assert.strictEqual(typeof result.content, 'string');
+            
+            // HTML content should not contain script or style tags after cleaning
+            assert.ok(!result.content.includes('<script'));
+            assert.ok(!result.content.includes('<style'));
+            assert.ok(!result.content.includes('console.log'));
+            assert.ok(!result.content.includes('alert'));
+            
+            // Should preserve main content
+            assert.ok(result.content.includes('Test Page'));
+            assert.ok(result.content.includes('Main Heading'));
+            assert.ok(result.content.includes('test paragraph'));
         });
     });
 
@@ -134,20 +204,20 @@ suite('System and Web Tools Tests', () => {
             assert.ok(definition.function.parameters.required?.includes('url'));
         });
 
-        test('should handle invalid URL gracefully', async () => {
+        test('should handle invalid URL gracefully', async function() {
             const result = await tool.execute({ url: 'invalid-url' }, '/tmp');
             assert.strictEqual(result.success, false);
             assert.strictEqual(typeof result.error, 'string');
             assert.ok(result.error!.length > 0);
         });
 
-        test('should handle malformed URL gracefully', async () => {
+        test('should handle malformed URL gracefully', async function() {
             const result = await tool.execute({ url: 'not-a-url-at-all' }, '/tmp');
             assert.strictEqual(result.success, false);
             assert.strictEqual(typeof result.error, 'string');
         });
 
-        test('should handle non-existent domain gracefully', async () => {
+        test('should handle non-existent domain gracefully', async function() {
             const result = await tool.execute({ 
                 url: 'https://this-domain-definitely-does-not-exist-12345.com' 
             }, '/tmp');
@@ -156,7 +226,7 @@ suite('System and Web Tools Tests', () => {
             assert.strictEqual(typeof result.error, 'string');
         });
 
-        test('should handle max_length parameter', async () => {
+        test('should handle max_length parameter', async function() {
             // Use an invalid URL but test that the parameter is accepted
             const result = await tool.execute({ 
                 url: 'invalid-url',
@@ -167,45 +237,50 @@ suite('System and Web Tools Tests', () => {
             assert.strictEqual(typeof result.error, 'string');
         });
 
-        test.skip('should convert HTML to Markdown format', async () => {
-            // Test with mock HTML content simulation
-            // Since we can't rely on external URLs in tests, we test the error handling
-            const result = await tool.execute({ url: 'https://httpbin.org/html' }, '/tmp');
+        test('should convert HTML to Markdown format', async function() {
+            this.timeout(5000);
+            // Test with mock HTML content
+            const result = await tool.execute({ url: 'https://test-html-content.example.com' }, '/tmp');
             
-            // Either succeeds with Markdown content or fails gracefully
-            if (result.success) {
-                assert.strictEqual(typeof result.content, 'string');
-                // Markdown content should not contain HTML tags
-                assert.ok(!result.content.includes('<html'));
-                assert.ok(!result.content.includes('<div'));
-                assert.ok(!result.content.includes('<script'));
-                assert.ok(!result.content.includes('<style'));
-                // Should contain markdown formatting
-                // Note: This test may vary based on the actual content returned
-            } else {
-                assert.strictEqual(typeof result.error, 'string');
-            }
+            assert.strictEqual(result.success, true);
+            assert.strictEqual(typeof result.content, 'string');
+            
+            // Markdown content should not contain HTML tags
+            assert.ok(!result.content.includes('<html'));
+            assert.ok(!result.content.includes('<div'));
+            assert.ok(!result.content.includes('<script'));
+            assert.ok(!result.content.includes('<style'));
+            
+            // Should contain markdown formatting
+            assert.ok(result.content.includes('# Main Heading'));
+            assert.ok(result.content.includes('**bold text**'));
+            assert.ok(result.content.includes('*italic text*'));
+            assert.ok(result.content.includes('- List item 1'));
+            assert.ok(result.content.includes('[Example Link](https://example.com)'));
+            
+            // Should not contain script content
+            assert.ok(!result.content.includes('console.log'));
+            assert.ok(!result.content.includes('alert'));
         });
 
-        test.skip('should properly truncate content with max_length', async () => {
+        test('should properly truncate content with max_length', async function() {
+            this.timeout(5000);
             // Test that truncation works correctly
             const result = await tool.execute({ 
-                url: 'https://httpbin.org/html',
+                url: 'https://test-html-content.example.com',
                 max_length: 50 
             }, '/tmp');
             
-            if (result.success) {
-                assert.strictEqual(typeof result.content, 'string');
-                // Allow some margin for truncation message - content should be around max_length
-                assert.ok(result.content.length <= 70); // Allow margin for "... (truncated)"
-                if (result.content.includes('(truncated)')) {
-                    // If truncated, the original content should have been close to max_length
-                    const contentWithoutTruncMsg = result.content.replace(/\n\n\.\.\. \(truncated\)$/, '');
-                    assert.ok(contentWithoutTruncMsg.length <= 55); // Allow small margin
-                }
-            } else {
-                // Network error is acceptable in tests
-                assert.strictEqual(typeof result.error, 'string');
+            assert.strictEqual(result.success, true);
+            assert.strictEqual(typeof result.content, 'string');
+            
+            // Content should be around max_length or slightly more due to truncation message
+            assert.ok(result.content.length <= 80); // Allow margin for "... (truncated)"
+            
+            if (result.content.includes('(truncated)')) {
+                // If truncated, the original content should have been close to max_length
+                const contentWithoutTruncMsg = result.content.replace(/\n\n\.\.\. \(truncated\)$/, '');
+                assert.ok(contentWithoutTruncMsg.length <= 55); // Allow small margin
             }
         });
     });

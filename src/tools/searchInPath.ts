@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { BaseTool, ToolDefinition, ToolResult, ToolInfo } from '../types';
-import { SearchUtils, SearchOptions } from './searchUtils';
+import { SearchUtils, SearchOptions } from '../searchUtils';
 
 export class SearchInPathTool implements BaseTool {
   getToolInfo(): ToolInfo {
