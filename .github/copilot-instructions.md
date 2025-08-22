@@ -1,4 +1,24 @@
-# CodingAgent### Terminal Execution Security
+# CodingAgent Extension - AI Coding Guide
+
+This is a comprehensive VS Code extension that provides GitHub Copilot Chat-like functionality using any OpenAI-compatible LLM backend. The extension features advanced tool-based AI interactions, sophisticated memory system, intelligent change tracking, and robust security controls.
+
+## Architecture Overview
+This VS Code extension provides GitHub Copilot Chat-like functionality using any OpenAI-compatible LLM backend (Ollama, OpenAI, Azure OpenAI, llama.cpp, vLLM, LocalAI, etc.). The extension follows a multi-service architecture with streaming support, tool-based AI interactions, intelligent change tracking, memory system, and advanced security controls.
+
+**Core Services:**
+- `ChatService` - Main orchestrator for AI conversations and tool execution loops
+- `OpenAIService` - HTTP client for OpenAI-compatible APIs with streaming support
+- `ToolsService` - Comprehensive tool registry with 20+ tools for file system, terminal, web, and memory operations
+- `MemoryService` - Persistent and temporary memory system for context retention
+- `ChatViewProvider` - WebView container following VS Code's patterns
+- `ChangeTrackingService` - Advanced file change tracking with intelligent merging and accept/reject functionality
+- `LoggingService` - Singleton with raw JSON communication logging
+- `SettingsPanel` - Comprehensive settings management with tabbed interface
+
+## Terminal Security System (NEW)
+**CRITICAL**: All terminal commands now require explicit user approval before execution:
+
+### Terminal Execution Security
 - **User approval required** for all terminal commands
 - **Auto-approval whitelist** - Commands in user's whitelist execute immediately
 - **Complex command parsing** - Handles &&, ||, |, ;, & operators correctly
@@ -7,21 +27,7 @@
 - **Workspace root only** - Commands always execute in workspace root directory
 - **No directory changes** - Prevents LLM from changing terminal's working directory
 - **Timeout mechanism** for approval requests (5 minutes)
-- **Detailed logging** for debugging and security auditExtension - AI Coding Guide
-
-## Architecture Overview
-This is a VS Code extension that provides GitHub Copilot Chat-like functionality using any LLM that provides OpenAI-compatible API (such as Ollama, OpenAI, Azure OpenAI, local LLM servers, etc.). The extension follows a multi-service architecture with streaming support and tool-based AI interactions.
-
-**Core Services:**
-- `ChatService` - Main orchestrator for AI conversations and tool execution loops
-- `OpenAIService` - HTTP client for OpenAI-compatible APIs with streaming support
-- `ToolsService` - File system and terminal operations registry for AI agents with security controls
-- `ChatViewProvider` - WebView container following VS Code's patterns
-- `ChangeTrackingService` - Advanced file change tracking with accept/reject functionality
-- `LoggingService` - Singleton with raw JSON communication logging
-
-## Terminal Security System (NEW)
-**IMPORTANT**: All terminal commands now require explicit user approval before execution:
+- **Detailed logging** for debugging and security audit
 
 ### Security Considerations
 - **Always validate** tool parameters
@@ -68,26 +74,46 @@ The extension uses a **mode-based architecture** where each mode has specific to
 ```typescript
 // Configuration in package.json defines agent capabilities
 "Coder": {
-  "allowedTools": ["read_file", "write_file", "list_files", "get_file_size", "execute_terminal", 
-                   "create_folder", "patch_file", "rename_file", "search_in_project"],
+  "allowedTools": ["read_file", "write_file", "modify_lines", "list_files", "get_file_size", 
+                   "execute_terminal", "create_folder", "patch_file", "rename_file", 
+                   "search_in_project", "search_in_path", "memory_store", "memory_retrieve_by_lines",
+                   "memory_retrieve_data", "memory_delete", "memory_search", "memory_list", "memory_export"],
   "systemMessage": "You are an expert programming assistant...",
   "temperature": 0.1
 }
 ```
 
-**Available Tools:**
-- `read_file` - Read file content with line range support
-- `write_file` - Write or append to files
-- `modify_lines` - Universal line modification: insert, delete, or replace lines with operation parameter
-- `patch_file` - Apply text diffs without full file rewrites
-- `list_files` - Directory listing with recursive option  
+**Available Tools (20+ tools):**
+**File Operations:**
+- `read_file` - Read file content with line range support and character limits
+- `write_file` - Write or append to files (integrates with change tracking)
+- `modify_lines` - Universal line modification: insert, delete, or replace lines with multiple targeting options
+- `patch_file` - Apply text diffs without full file rewrites (integrates with change tracking)
+- `list_files` - Directory listing with recursive option and filtering
 - `get_file_size` - Get file size in lines and bytes
-- `execute_terminal` - Run terminal commands with timeout
-- `search_in_project` - Search across VS Code project files (available in all modes)
 - `create_folder` - Create directories with recursive option (Coder mode)
 - `rename_file` - Rename/move files and folders (Coder mode)
-- `read_webpage` - Fetch and read webpage content (Ask/Architect modes)
+
+**Search & Discovery:**
+- `search_in_project` - Search across VS Code project files (available in all modes)
+- `search_in_path` - Search within specific paths and directories
+
+**Terminal Operations:**
+- `execute_terminal` - Run terminal commands with user approval system and timeout
+
+**Web & Content:**
+- `read_webpage_as_html` - Fetch raw HTML content from webpages (Ask/Architect modes)
+- `read_webpage_as_markdown` - Fetch and convert webpage content to markdown (Ask/Architect modes)
 - `read_pdf` - Extract text from PDF files (Ask/Architect modes)
+
+**Memory System (7 tools):**
+- `memory_store` - Store data with metadata (categories, tags, priority, etc.)
+- `memory_retrieve_by_lines` - Retrieve content by line ranges with character limits
+- `memory_retrieve_data` - Retrieve content by character offset and length
+- `memory_delete` - Delete memory entries by key
+- `memory_search` - Advanced search with pattern matching, filters, and sorting
+- `memory_list` - List memory entries with metadata overview and pagination
+- `memory_export` - Export memory entries to files
 
 ### Change Tracking System
 **Critical:** All file modification tools integrate with advanced change tracking:
@@ -95,9 +121,10 @@ The extension uses a **mode-based architecture** where each mode has specific to
 - **ChangeAwareBaseTool** - Base class that all file tools inherit from
 - **Smart Merging** - Adjacent/overlapping changes merge automatically, distant changes remain separate
 - **Accept/Reject** - Users can selectively accept or reject individual changes
-- **Visual Indicators** - Inline decorations and code lens show pending changes
+- **Visual Indicators** - Inline decorations and code lens show pending changes only
 - **Backup System** - Automatic backups enable safe rollback of rejected changes
 - **Persistence** - Changes survive VS Code restarts
+- **Real-time Updates** - Changes appear immediately in editor with visual feedback
 
 ```typescript
 // File tools automatically track changes via ChangeAwareBaseTool
@@ -111,14 +138,35 @@ export class MyFileTool extends ChangeAwareBaseTool {
 }
 ```
 
-### Streaming Architecture
-**Critical:** The extension implements streaming responses with tool call interleaving:
-- `processStreamingMessage()` handles incremental content updates
-- Tool calls can interrupt streaming but responses continue seamlessly
-- Frontend tracks streaming state via `streamingMessages Map`
-- Use `StreamingUpdate` interface for all streaming communications
+### Memory System (NEW)
+**Critical:** Advanced persistent memory system with metadata and search capabilities:
+- **Two Memory Types**: Temporary (RAM-only) and Project (file-based persistence)
+- **Metadata Support**: Categories, tags, priority, descriptions, access tracking
+- **Search Capabilities**: Pattern matching, filters, pagination, sorting
+- **Safety Limits**: Configurable character/line limits with auto-safety for large values
+- **Export/Import**: Memory entries can be exported to files for backup and sharing
 
-## Tool Execution Loop
+**Memory Tools:**
+- `memory_store` - Store values with rich metadata (categories, tags, priority, etc.)
+- `memory_retrieve_by_lines` - Retrieve by line ranges for large content
+- `memory_retrieve_data` - Retrieve by character offset/length for precision
+- `memory_search` - Advanced search with filters, patterns, and metadata
+- `memory_list` - List entries with metadata overview and pagination
+- `memory_delete` - Delete entries by key
+- `memory_export` - Export entries to files
+
+**Configuration:**
+```json
+{
+  "codingagent.memory.enableProjectMemory": false,  // Must be enabled for persistent storage
+  "codingagent.memory.maxLines": 100,               // Max lines per retrieve operation
+  "codingagent.memory.maxChars": 10000,             // Max characters per retrieve operation
+  "codingagent.memory.autoSafetyLimit": 5000,       // Auto-applied safety limit
+  "codingagent.memory.largeValueThreshold": 10000   // Threshold for "large" values
+}
+```
+
+### Tool Execution Loop
 **Important:** Tool calls are handled recursively - AI can make multiple tool calls in sequence:
 ```typescript
 // In chatService.ts - this pattern is essential for multi-step operations
@@ -128,6 +176,75 @@ while (normalizedToolCalls.length > 0 && iterationCount < maxIterations) {
   // Check if more tool calls are needed and continue loop
 }
 ```
+
+### Streaming Architecture
+**Critical:** The extension implements streaming responses with tool call interleaving:
+- `processStreamingMessage()` handles incremental content updates
+- Tool calls can interrupt streaming but responses continue seamlessly
+- Frontend tracks streaming state via `streamingMessages Map`
+- Use `StreamingUpdate` interface for all streaming communications
+
+### Iteration Control System (NEW)
+**Critical:** Advanced iteration control with user confirmation dialogs:
+- **Configurable threshold** - Users can set iteration limit (1-100) in Settings GUI
+- **Interactive dialogs** - Replace hard limits with user-choice dialogs
+- **Batch-based approval** - Ask once per threshold batch, not every iteration
+- **System notices** - Notify when corrections are applied or iterations continue
+- **Correction overlay** - Modal correction dialog overlays chat input area
+
+```typescript
+// Configuration setting
+"codingagent.iterationThreshold": {
+  "type": "number",
+  "default": 10,
+  "minimum": 1,
+  "maximum": 100,
+  "description": "Number of tool iterations before asking user for continuation"
+}
+```
+
+**Key Features:**
+- `allowedIterations` tracks current threshold dynamically
+- `getIterationThreshold()` reads user setting from VS Code configuration
+- `continueIterations()` adds another batch of iterations based on current threshold
+- Interactive dialog shows iteration count and offers Continue/Stop options
+- System notices inform user when corrections are applied or iterations continue
+
+## Version History & Updates
+
+### Current Version: 0.0.3 (2025-08-17)
+**Key Changes:**
+- **Tool Consolidation**: Merged `insert_lines`, `delete_lines`, and `replace_lines` into unified `modify_lines` tool
+- **Memory System**: Added comprehensive memory system with 7 memory tools and metadata support
+- **Terminal Security**: Implemented user approval system for all terminal commands with auto-approve whitelist
+- **Change Tracking**: Enhanced with intelligent merging and real-time visual feedback
+- **Settings Panel**: Added comprehensive tabbed settings interface
+
+### Previous Versions:
+- **0.0.2**: Advanced change tracking system, new file manipulation tools
+- **0.0.1**: Initial release with basic AI chat functionality and core tools
+
+### Package Status:
+- Current VSIX: `codding-agent-0.0.1.vsix` (117.67 KB)
+- Repository: `https://github.com/SFENCE-SOFTWARE/VSCode/CodingAgent.git`
+- Extension ID: `codding-agent`
+- Display Name: `CodingAgent`
+
+### Tool Execution Loop
+**Important:** Tool calls are handled recursively - AI can make multiple tool calls in sequence:
+```typescript
+// In chatService.ts - this pattern is essential for multi-step operations
+while (normalizedToolCalls.length > 0 && iterationCount < maxIterations) {
+  // Execute tools and get results
+  const followUpResponse = await this.openai.sendChat(followUpRequest);
+  // Check if more tool calls are needed and continue loop
+}
+```
+**Critical:** The extension implements streaming responses with tool call interleaving:
+- `processStreamingMessage()` handles incremental content updates
+- Tool calls can interrupt streaming but responses continue seamlessly
+- Frontend tracks streaming state via `streamingMessages Map`
+- Use `StreamingUpdate` interface for all streaming communications
 
 ### Iteration Control System (NEW)
 **Critical:** Advanced iteration control with user confirmation dialogs:
@@ -391,3 +508,46 @@ class SettingsPanel {
 5. **Test with watch mode** - `npm run watch` + F5 for rapid iteration
 
 **Key files to understand first:** `chatService.ts` (orchestration), `types.ts` (interfaces), `package.json` (configuration schema).
+
+## Latest Features Summary (2025-08-22)
+
+### 🔐 Security Enhancement: Terminal Approval System
+- **All terminal commands require explicit user approval** before execution
+- **Auto-approval whitelist** for safe commands like `ls`, `pwd`, `git status`
+- **Complex command parsing** handles &&, ||, |, ;, & operators correctly
+- **5-minute timeout** for approval requests with graceful error handling
+- **Modal approval dialog** shows command details and working directory
+
+### 🧠 Memory System Integration
+- **7 comprehensive memory tools** with metadata support (categories, tags, priority)
+- **Two storage types**: Temporary (RAM) and Project (persistent file-based)
+- **Advanced search capabilities** with pattern matching and filtering
+- **Export functionality** to save memory content to files
+- **Configurable safety limits** for large content handling
+
+### 📝 Enhanced Change Tracking
+- **Real-time visual feedback** for all file modifications
+- **Smart change merging**: Adjacent changes combine, distant changes stay separate
+- **Accept/Reject individual changes** with clean UI (no clutter after resolution)
+- **Automatic backup system** enables safe rollback of rejected changes
+- **Persistence across sessions** - changes survive VS Code restarts
+
+### 🔧 Unified Tool System
+- **`modify_lines` tool** consolidates insert/delete/replace line operations
+- **20+ tools available** across file, search, terminal, web, and memory operations
+- **Change-aware tools** automatically integrate with tracking system
+- **Mode-based tool access** - different agent modes have different tool permissions
+
+### ⚙️ Advanced Settings Management
+- **Tabbed settings interface** with Connection, Modes, Behavior, Tools, Logging sections
+- **Live validation** and real-time configuration updates
+- **Iteration threshold control** (1-100) for managing AI tool execution loops
+- **Auto-approve command whitelist** for terminal security
+- **Memory system configuration** with safety limits
+
+### 🎨 Modern UI Enhancements
+- **Icon-only buttons** with tooltips for clean interface
+- **Modal correction dialogs** for interactive AI guidance adjustment
+- **Iteration control dialogs** for managing long AI tool execution sequences
+- **System notices** for user feedback on corrections and iterations
+- **Responsive design** with consistent VS Code styling
