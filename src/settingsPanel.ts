@@ -147,6 +147,7 @@ export class SettingsPanel {
         currentModel: config.get('currentModel'),
         showThinking: config.get('showThinking'),
         enableStreaming: config.get('enableStreaming'),
+        iterationThreshold: config.get('iterationThreshold'),
         modes: config.get('modes'),
         tools: {
           readFileMaxLines: config.get('tools.readFileMaxLines'),
