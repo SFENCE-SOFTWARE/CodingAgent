@@ -25,6 +25,8 @@ export class ChatService {
   private isInterrupted: boolean = false;
   private pendingCorrection: string | null = null;
   private isWaitingForCorrection: boolean = false;
+  private isWaitingForIterationContinue: boolean = false;
+  private shouldContinueIterations: boolean = false;
 
   constructor(toolsService?: ToolsService) {
     this.openai = new OpenAIService();
@@ -108,6 +110,16 @@ export class ChatService {
   cancelCorrection(): void {
     this.isWaitingForCorrection = false;
     this.pendingCorrection = null;
+  }
+
+  continueIterations(): void {
+    this.shouldContinueIterations = true;
+    this.isWaitingForIterationContinue = false;
+  }
+
+  stopIterations(): void {
+    this.shouldContinueIterations = false;
+    this.isWaitingForIterationContinue = false;
   }
 
   private resetInterrupt(): void {
@@ -595,9 +607,52 @@ export class ChatService {
 
     let currentMessage = assistantMessage;
     let iterationCount = 0;
-    const maxIterations = 10; // Prevent infinite loops
+    const iterationWarningThreshold = 10; // Show warning after 10 iterations
 
-    while (normalizedToolCalls.length > 0 && iterationCount < maxIterations) {
+    while (normalizedToolCalls.length > 0) {
+      // Check for iteration limit and ask user for continuation
+      if (iterationCount >= iterationWarningThreshold && !this.shouldContinueIterations) {
+        this.isWaitingForIterationContinue = true;
+        
+        // Notify UI about iteration limit reached
+        if (this.streamingCallback) {
+          this.streamingCallback({
+            type: 'iteration_limit_reached',
+            messageId: existingMessageId || this.generateId(),
+            iterationCount: iterationCount
+          });
+        }
+        
+        // Wait for user decision
+        while (this.isWaitingForIterationContinue) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        // If user decided to stop, break the loop
+        if (!this.shouldContinueIterations) {
+          const stopMessage: ChatMessage = {
+            id: this.generateId(),
+            role: 'notice',
+            content: `Tool call process stopped by user after ${iterationCount} iterations.`,
+            timestamp: Date.now()
+          };
+
+          this.messages.push(stopMessage);
+          results.push(stopMessage);
+          
+          if (callback) {
+            callback({
+              type: 'message_ready',
+              message: stopMessage
+            });
+            stopMessage.isAlreadyDisplayed = true;
+          }
+          break;
+        }
+        
+        // Reset flag for next potential threshold
+        this.shouldContinueIterations = false;
+      }
       // Signal tool calls start on first iteration
       if (iterationCount === 0 && this.streamingCallback) {
         this.streamingCallback({
@@ -1006,27 +1061,6 @@ export class ChatService {
           // Mark as displayed to prevent duplication in final message loop
           finalChatMessage.isAlreadyDisplayed = true;
         }
-      }
-    } else if (iterationCount >= maxIterations) {
-      // Handle case where we hit the iteration limit
-      const timeoutMessage: ChatMessage = {
-        id: this.generateId(),
-        role: 'error',
-        content: `Tool call process stopped after ${maxIterations} iterations to prevent infinite loops.`,
-        timestamp: Date.now()
-      };
-
-      this.messages.push(timeoutMessage);
-      results.push(timeoutMessage);
-      
-      // Timeout messages are not streamed, so always send via callback
-      if (callback) {
-        callback({
-          type: 'message_ready',
-          message: timeoutMessage
-        });
-        // Mark as displayed to prevent duplication in final message loop
-        timeoutMessage.isAlreadyDisplayed = true;
       }
     }
 

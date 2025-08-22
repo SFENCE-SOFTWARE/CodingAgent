@@ -147,6 +147,23 @@ export function getWebviewContent(
             </div>
           </div>
         </div>
+
+        <!-- Iteration Limit Dialog -->
+        <div class="iteration-dialog" id="iterationDialog" style="display: none;">
+          <div class="iteration-dialog-content">
+            <div class="iteration-dialog-header">
+              <h3>⏰ Long Running Process</h3>
+            </div>
+            <div class="iteration-dialog-body">
+              <p>The AI has been working on this task for a while (<span id="iterationCountDisplay">10</span> iterations).</p>
+              <p>Would you like to continue or stop the process?</p>
+            </div>
+            <div class="iteration-dialog-footer">
+              <button id="stopIterationsBtn" class="iteration-stop-btn">Stop Process</button>
+              <button id="continueIterationsBtn" class="iteration-continue-btn">Continue Working</button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <script src="${scriptUri}"></script>

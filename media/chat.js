@@ -20,6 +20,12 @@
   const cancelCorrectionBtn = document.getElementById('cancelCorrectionBtn');
   const submitCorrectionBtn = document.getElementById('submitCorrectionBtn');
   
+  // Iteration dialog elements
+  const iterationDialog = document.getElementById('iterationDialog');
+  const iterationCountDisplay = document.getElementById('iterationCountDisplay');
+  const stopIterationsBtn = document.getElementById('stopIterationsBtn');
+  const continueIterationsBtn = document.getElementById('continueIterationsBtn');
+  
   // Change tracking elements
   const changeTrackingPanel = document.getElementById('changeTrackingPanel');
   const changePanelContent = document.getElementById('changePanelContent');
@@ -84,6 +90,10 @@
         submitCorrection();
       }
     });
+    
+    // Iteration dialog events
+    stopIterationsBtn.addEventListener('click', stopIterations);
+    continueIterationsBtn.addEventListener('click', continueIterations);
     
     // Auto-resize textarea
     messageInput.addEventListener('input', autoResizeTextarea);
@@ -294,6 +304,25 @@
     };
     
     addMessage(noticeMessage);
+  }
+
+  function showIterationLimitDialog(iterationCount) {
+    iterationCountDisplay.textContent = iterationCount;
+    iterationDialog.style.display = 'flex';
+  }
+
+  function continueIterations() {
+    iterationDialog.style.display = 'none';
+    vscode.postMessage({
+      type: 'continueIterations'
+    });
+  }
+
+  function stopIterations() {
+    iterationDialog.style.display = 'none';
+    vscode.postMessage({
+      type: 'stopIterations'
+    });
   }
   
   function addMessage(message) {
@@ -1088,6 +1117,11 @@
       case 'correctionApplied':
         // Show notice that correction has been applied
         showCorrectionAppliedNotice(message.correctionText);
+        break;
+
+      case 'iterationLimitReached':
+        // Show iteration limit dialog
+        showIterationLimitDialog(message.iterationCount);
         break;
 
       // Terminal approval handlers

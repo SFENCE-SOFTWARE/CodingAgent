@@ -122,6 +122,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         });
         break;
 
+      case 'iteration_limit_reached':
+        this.sendMessage({
+          type: 'iterationLimitReached',
+          iterationCount: update.iterationCount
+        });
+        break;
+
       case 'end':
         this.sendMessage({
           type: 'streamingEnd',
@@ -182,6 +189,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
           case 'cancelCorrection':
             this.chatService.cancelCorrection();
+            break;
+
+          case 'continueIterations':
+            this.chatService.continueIterations();
+            break;
+
+          case 'stopIterations':
+            this.chatService.stopIterations();
             break;
 
           case 'setMode':

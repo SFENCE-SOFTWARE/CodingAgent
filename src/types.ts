@@ -143,7 +143,7 @@ export interface BaseTool {
 }
 
 export interface StreamingUpdate {
-  type: 'start' | 'content' | 'thinking' | 'tool_calls' | 'end' | 'error' | 'change_tracking' | 'tool_calls_start' | 'tool_calls_end' | 'correction_request' | 'correction_applied';
+  type: 'start' | 'content' | 'thinking' | 'tool_calls' | 'end' | 'error' | 'change_tracking' | 'tool_calls_start' | 'tool_calls_end' | 'correction_request' | 'correction_applied' | 'iteration_limit_reached';
   messageId: string;
   content?: string;
   thinking?: string;
@@ -153,6 +153,7 @@ export interface StreamingUpdate {
   isComplete?: boolean;
   changeIds?: string[]; // For change tracking updates
   correctionText?: string; // For correction applied updates
+  iterationCount?: number; // For iteration limit reached
 }
 
 export interface MessageUpdate {
