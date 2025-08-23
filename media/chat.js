@@ -613,6 +613,10 @@
     const messages = messagesContainer.querySelectorAll('.message');
     messages.forEach(msg => msg.remove());
     
+    // Remove any existing welcome messages first
+    const existingWelcome = messagesContainer.querySelectorAll('.welcome-message');
+    existingWelcome.forEach(welcome => welcome.remove());
+    
     // Show welcome message again
     const welcomeDiv = document.createElement('div');
     welcomeDiv.className = 'welcome-message';
