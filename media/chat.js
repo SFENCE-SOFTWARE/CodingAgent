@@ -13,6 +13,7 @@
   const modelSelect = document.getElementById('modelSelect');
   const settingsBtn = document.getElementById('settingsBtn');
   const clearBtn = document.getElementById('clearBtn');
+  const copyAllBtn = document.getElementById('copyAllBtn');
   
   // Correction dialog elements
   const correctionDialog = document.getElementById('correctionDialog');
@@ -158,6 +159,15 @@
       });
     } else {
       console.error('clearBtn element not found!');
+    }
+    
+    // Copy all conversation button
+    if (copyAllBtn) {
+      copyAllBtn.addEventListener('click', () => {
+        copyAllConversationAsMarkdown();
+      });
+    } else {
+      console.error('copyAllBtn element not found!');
     }
     
     // Change tracking events
@@ -396,6 +406,9 @@
     messageDiv.className = `message ${message.role}`;
     messageDiv.setAttribute('data-message-id', message.id);
     
+    // Store original markdown content for copy functionality
+    messageDiv.setAttribute('data-original-content', message.content);
+    
     // Message header
     const headerDiv = document.createElement('div');
     headerDiv.className = 'message-header';
@@ -419,9 +432,26 @@
     timestampSpan.className = 'message-timestamp';
     timestampSpan.textContent = formatTimestamp(message.timestamp);
     
+    // Message actions (copy buttons)
+    const actionsDiv = document.createElement('div');
+    actionsDiv.className = 'message-actions';
+    
+    // Copy message button
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'message-action-btn copy-message';
+    copyBtn.innerHTML = '📋';
+    copyBtn.title = 'Copy message as markdown';
+    copyBtn.onclick = (e) => {
+      e.stopPropagation();
+      copyMessageAsMarkdown(message.id);
+    };
+    
+    actionsDiv.appendChild(copyBtn);
+    
     headerDiv.appendChild(avatarDiv);
     headerDiv.appendChild(roleSpan);
     headerDiv.appendChild(timestampSpan);
+    headerDiv.appendChild(actionsDiv);
     
     // Message content
     const contentDiv = document.createElement('div');
@@ -589,15 +619,82 @@
   }
   
   function formatMessageContent(content) {
+    // Store original markdown content for copy functionality
+    const originalMarkdown = content;
+    
+    // Convert markdown tables to HTML
+    content = content.replace(/\|(.+)\|(?:\r?\n|\r)\|[-:\|]+\|(?:\r?\n|\r)((?:\|.+\|\r?\n?)*)/g, (match, header, rows) => {
+      const headerCells = header.split('|').map(cell => cell.trim()).filter(cell => cell);
+      const rowData = rows.trim().split('\n').map(row => 
+        row.split('|').map(cell => cell.trim()).filter(cell => cell)
+      );
+      
+      let tableHtml = '<table class="markdown-table"><thead><tr>';
+      headerCells.forEach(cell => {
+        tableHtml += `<th>${cell}</th>`;
+      });
+      tableHtml += '</tr></thead><tbody>';
+      
+      rowData.forEach(row => {
+        tableHtml += '<tr>';
+        row.forEach(cell => {
+          tableHtml += `<td>${cell}</td>`;
+        });
+        tableHtml += '</tr>';
+      });
+      
+      tableHtml += '</tbody></table>';
+      return tableHtml;
+    });
+    
     // Convert markdown-style code blocks to HTML
-    content = content.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
+    content = content.replace(/```(\w+)?\n?([\s\S]*?)```/g, (match, lang, code) => {
       return `<pre><code class="language-${lang || 'text'}">${escapeHtml(code.trim())}</code></pre>`;
     });
     
     // Convert inline code
-    content = content.replace(/`([^`]+)`/g, '<code>$1</code>');
+    content = content.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
     
-    // Convert line breaks
+    // Convert bold text **text** and __text__
+    content = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    content = content.replace(/__(.*?)__/g, '<strong>$1</strong>');
+    
+    // Convert italic text *text* and _text_
+    content = content.replace(/(?<!\*)\*([^\*\n]+)\*(?!\*)/g, '<em>$1</em>');
+    content = content.replace(/(?<!_)_([^_\n]+)_(?!_)/g, '<em>$1</em>');
+    
+    // Convert strikethrough ~~text~~
+    content = content.replace(/~~(.*?)~~/g, '<del>$1</del>');
+    
+    // Convert headers
+    content = content.replace(/^### (.*$)/gm, '<h3>$1</h3>');
+    content = content.replace(/^## (.*$)/gm, '<h2>$1</h2>');
+    content = content.replace(/^# (.*$)/gm, '<h1>$1</h1>');
+    
+    // Convert unordered lists
+    content = content.replace(/^\* (.+)$/gm, '<li>$1</li>');
+    content = content.replace(/^- (.+)$/gm, '<li>$1</li>');
+    content = content.replace(/^(\+ .+)$/gm, '<li>$1</li>');
+    
+    // Wrap consecutive list items in <ul>
+    content = content.replace(/(<li>.*<\/li>(?:\s*<li>.*<\/li>)*)/g, '<ul>$1</ul>');
+    
+    // Convert ordered lists
+    content = content.replace(/^\d+\. (.+)$/gm, '<li class="ordered">$1</li>');
+    content = content.replace(/(<li class="ordered">.*<\/li>(?:\s*<li class="ordered">.*<\/li>)*)/g, '<ol>$1</ol>');
+    content = content.replace(/class="ordered"/g, ''); // Remove the temporary class
+    
+    // Convert links [text](url)
+    content = content.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+    
+    // Convert blockquotes
+    content = content.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
+    
+    // Convert horizontal rules
+    content = content.replace(/^---$/gm, '<hr>');
+    content = content.replace(/^___$/gm, '<hr>');
+    
+    // Convert line breaks (but preserve existing HTML)
     content = content.replace(/\n/g, '<br>');
     
     return content;
@@ -873,6 +970,9 @@
   function finishStreamingMessage(messageId, isComplete) {
     const streamingData = streamingMessages.get(messageId);
     if (!streamingData) return;
+    
+    // Store original markdown content for copy functionality
+    streamingData.element.setAttribute('data-original-content', streamingData.accumulatedContent);
     
     // Remove streaming cursor
     streamingData.contentDiv.innerHTML = formatMessageContent(streamingData.accumulatedContent);
@@ -1473,6 +1573,94 @@
     return Math.random().toString(36).substring(2, 15);
   }
   
+  // Copy functionality
+  function copyMessageAsMarkdown(messageId) {
+    const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+    if (!messageElement) return;
+    
+    const originalContent = messageElement.getAttribute('data-original-content');
+    if (originalContent) {
+      copyToClipboard(originalContent);
+      showCopyNotification('Message copied as markdown!');
+    }
+  }
+  
+  function copyAllConversationAsMarkdown() {
+    const messages = document.querySelectorAll('.message:not(.system)');
+    const conversationMarkdown = [];
+    
+    messages.forEach(messageEl => {
+      const role = messageEl.classList.contains('user') ? 'User' : 'Assistant';
+      const timestamp = messageEl.querySelector('.message-timestamp').textContent;
+      const originalContent = messageEl.getAttribute('data-original-content');
+      
+      if (originalContent) {
+        conversationMarkdown.push(`## ${role} (${timestamp})\n\n${originalContent}\n`);
+      }
+    });
+    
+    const fullMarkdown = `# CodingAgent Conversation\n\n${conversationMarkdown.join('\n---\n\n')}`;
+    copyToClipboard(fullMarkdown);
+    showCopyNotification('Full conversation copied as markdown!');
+  }
+  
+  function copyToClipboard(text) {
+    // Use the VS Code API if available, otherwise fall back to navigator.clipboard
+    if (typeof vscode !== 'undefined') {
+      vscode.postMessage({
+        type: 'copyToClipboard',
+        text: text
+      });
+    } else if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).catch(err => {
+        console.error('Failed to copy to clipboard:', err);
+        fallbackCopyToClipboard(text);
+      });
+    } else {
+      fallbackCopyToClipboard(text);
+    }
+  }
+  
+  function fallbackCopyToClipboard(text) {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-9999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+      document.execCommand('copy');
+    } catch (err) {
+      console.error('Fallback copy failed:', err);
+    }
+    
+    document.body.removeChild(textArea);
+  }
+  
+  function showCopyNotification(message) {
+    const notification = document.createElement('div');
+    notification.className = 'copy-notification';
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    // Animate in
+    requestAnimationFrame(() => {
+      notification.classList.add('show');
+    });
+    
+    // Remove after 2 seconds
+    setTimeout(() => {
+      notification.classList.remove('show');
+      setTimeout(() => {
+        if (notification.parentNode) {
+          document.body.removeChild(notification);
+        }
+      }, 300);
+    }, 2000);
+  }
+  
   // Make functions global for onclick handlers
   window.requestChangeDiff = requestChangeDiff;
   window.acceptChange = acceptChange;
@@ -1483,6 +1671,8 @@
   window.rejectAllChanges = rejectAllChanges;
   window.approveTerminalCommand = approveTerminalCommand;
   window.rejectTerminalCommand = rejectTerminalCommand;
+  window.copyMessageAsMarkdown = copyMessageAsMarkdown;
+  window.copyAllConversationAsMarkdown = copyAllConversationAsMarkdown;
   
   // Debug: confirm functions are available
   console.log('Global functions assigned:', {

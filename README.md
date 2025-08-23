@@ -35,9 +35,11 @@ This extension was created with the assistance of Claude Sonnet 4 via GitHub C
 
 🎨 **Modern UI**: 
 - GitHub Copilot Chat-inspired interface
+- **Enhanced markdown rendering** with full typography support
+- **Copy functionality** for messages and conversations
 - Model thinking/reasoning display
 - Expandable debug information
-- Real-time markdown rendering
+- Real-time markdown rendering with tables, lists, and code blocks
 
 ⚙️ **Flexible Configuration**:
 - Configurable backend host and port
@@ -100,6 +102,29 @@ This extension was created with the assistance of Claude Sonnet 4 via GitHub C
 **🏗️ Architect Mode**: Best for system design
 - Available tools: read_file, list_files, read_webpage, read_pdf
 - Use for: Architecture review, system design, technical documentation
+
+### Chat Interface Features
+
+**Enhanced Markdown Support**:
+- **Typography**: Bold, italic, strikethrough text formatting
+- **Headers**: H1-H6 with visual hierarchy and borders
+- **Lists**: Unordered and ordered lists with proper indentation
+- **Tables**: Full table support with borders, headers, and hover effects
+- **Code**: Syntax-highlighted code blocks and styled inline code
+- **Blockquotes**: Styled quotes with left border and background
+- **Links**: Clickable external links
+- **Horizontal Rules**: Visual separators
+
+**Copy Functionality**:
+- **📋 Copy Message**: Hover over any message to copy as pure markdown
+- **📋 Copy All**: Export entire conversation as structured markdown document
+- **Smart Clipboard**: Uses VS Code clipboard API with browser fallback
+- **Visual Feedback**: Toast notifications for successful copy operations
+
+**Interactive Elements**:
+- **Collapsible Sections**: Model thinking, tool calls, and debug info
+- **Change Tracking**: Visual diff display with accept/reject buttons
+- **Terminal Approval**: Interactive command approval dialogs
 
 ### Example Conversations
 

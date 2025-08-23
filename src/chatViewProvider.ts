@@ -273,6 +273,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           case 'getPendingTerminalCommands':
             await this.handleGetPendingTerminalCommands();
             break;
+
+          case 'copyToClipboard':
+            await this.handleCopyToClipboard(message.text);
+            break;
         }
       } catch (error) {
         console.error('Error handling webview message:', error);
@@ -747,6 +751,16 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         type: 'pendingChanges',  // Changed from 'updateChanges' to match frontend handler
         changes: changes
       });
+    }
+  }
+
+  private async handleCopyToClipboard(text: string) {
+    try {
+      await vscode.env.clipboard.writeText(text);
+      vscode.window.showInformationMessage('Copied to clipboard!');
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error);
+      vscode.window.showErrorMessage('Failed to copy to clipboard');
     }
   }
 }

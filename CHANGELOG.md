@@ -2,6 +2,29 @@
 
 All notable changes to the "CodingAgent" extension will be documented in this file.
 
+## [0.0.5] - 2025-08-23
+
+### Added
+- **Enhanced Markdown Support**: Dramatically improved markdown rendering in chat messages
+  - **Typography**: Bold (**text**), italic (*text*), strikethrough (~~text~~) support
+  - **Headers**: Proper H1-H6 rendering with visual hierarchy
+  - **Lists**: Both unordered (*, -, +) and ordered (1., 2., 3.) lists
+  - **Tables**: Full markdown table support with borders, headers, and hover effects
+  - **Blockquotes**: Styled blockquotes with left border and background
+  - **Links**: Clickable external links with proper styling
+  - **Horizontal rules**: Visual separators with --- or ___
+  - **Enhanced code**: Better inline code styling with background
+- **Copy Functionality**: Advanced copy-to-clipboard features
+  - **Copy Message**: Individual message copy as pure markdown (📋 button on hover)
+  - **Copy All Conversation**: Export entire conversation as structured markdown
+  - **Smart clipboard**: Uses VS Code clipboard API with fallback support
+  - **Visual feedback**: Toast notifications for copy operations
+- **Improved UI/UX**:
+  - **Message actions**: Hover-activated action buttons on messages
+  - **Better visual hierarchy**: Enhanced typography and spacing
+  - **Table styling**: Professional table appearance with alternating rows
+  - **Responsive design**: Better layout for different content types
+
 ## [0.0.4] - 2025-08-23
 
 ### Added

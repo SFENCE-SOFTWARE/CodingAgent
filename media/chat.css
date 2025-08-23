@@ -3,6 +3,8 @@
 .icon-edit:before { content: "✏"; }
 .icon-stop:before { content: "⏹"; }
 .icon-loading:before { content: "⟳"; }
+.icon-copy:before { content: "📋"; }
+.icon-copy-all:before { content: "📋"; }
 
 /* Icon base styles */
 .icon-send, .icon-edit, .icon-stop, .icon-loading {
@@ -99,6 +101,25 @@
   height: 16px;
 }
 
+/* Copy All Button */
+.copy-all-btn {
+  background-color: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  border: none;
+  border-radius: 2px;
+  padding: 6px 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  height: 28px;
+}
+
+.copy-all-btn:hover {
+  background-color: var(--vscode-button-hoverBackground);
+}
+
 /* Messages Container */
 .messages-container {
   flex: 1;
@@ -154,6 +175,38 @@
   align-items: center;
   gap: 8px;
   margin-bottom: 4px;
+  position: relative;
+}
+
+.message-actions {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.message:hover .message-actions {
+  opacity: 1;
+}
+
+.message-action-btn {
+  background: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  border: none;
+  border-radius: 3px;
+  padding: 4px 6px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 20px;
+}
+
+.message-action-btn:hover {
+  background: var(--vscode-button-secondaryHoverBackground);
 }
 
 .message-avatar {
@@ -1518,4 +1571,157 @@
 
 .iteration-continue-btn:hover {
   background-color: var(--vscode-button-hoverBackground);
+}
+
+/* Enhanced Markdown Styles */
+.message-content h1,
+.message-content h2,
+.message-content h3,
+.message-content h4,
+.message-content h5,
+.message-content h6 {
+  margin: 16px 0 8px 0;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.message-content h1 {
+  font-size: 1.5em;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  padding-bottom: 8px;
+}
+
+.message-content h2 {
+  font-size: 1.3em;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  padding-bottom: 6px;
+}
+
+.message-content h3 {
+  font-size: 1.2em;
+}
+
+.message-content h4 {
+  font-size: 1.1em;
+}
+
+.message-content strong {
+  font-weight: 700;
+  color: var(--vscode-editor-foreground);
+}
+
+.message-content em {
+  font-style: italic;
+  color: var(--vscode-editor-foreground);
+}
+
+.message-content del {
+  text-decoration: line-through;
+  color: var(--vscode-descriptionForeground);
+}
+
+.message-content ul,
+.message-content ol {
+  margin: 8px 0;
+  padding-left: 24px;
+}
+
+.message-content li {
+  margin: 4px 0;
+  line-height: 1.4;
+}
+
+.message-content ul li {
+  list-style-type: disc;
+}
+
+.message-content ol li {
+  list-style-type: decimal;
+}
+
+.message-content blockquote {
+  margin: 12px 0;
+  padding: 8px 16px;
+  border-left: 4px solid var(--vscode-textBlockQuote-border);
+  background: var(--vscode-textBlockQuote-background);
+  color: var(--vscode-textBlockQuote-foreground);
+  border-radius: 0 4px 4px 0;
+}
+
+.message-content hr {
+  margin: 16px 0;
+  border: none;
+  border-top: 1px solid var(--vscode-panel-border);
+}
+
+.message-content a {
+  color: var(--vscode-textLink-foreground);
+  text-decoration: none;
+}
+
+.message-content a:hover {
+  text-decoration: underline;
+  color: var(--vscode-textLink-activeForeground);
+}
+
+.message-content .inline-code {
+  background: var(--vscode-textCodeBlock-background);
+  color: var(--vscode-editor-foreground);
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: var(--vscode-editor-font-family);
+  font-size: 0.9em;
+}
+
+.message-content .markdown-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 0.9em;
+  border: 1px solid var(--vscode-panel-border);
+}
+
+.message-content .markdown-table th,
+.message-content .markdown-table td {
+  border: 1px solid var(--vscode-panel-border);
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.message-content .markdown-table th {
+  background: var(--vscode-editor-background);
+  font-weight: 600;
+  color: var(--vscode-editor-foreground);
+}
+
+.message-content .markdown-table tr:nth-child(even) {
+  background: var(--vscode-list-hoverBackground);
+}
+
+.message-content .markdown-table tr:hover {
+  background: var(--vscode-list-activeSelectionBackground);
+}
+
+/* Copy Notification */
+.copy-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: var(--vscode-notifications-background);
+  color: var(--vscode-notifications-foreground);
+  border: 1px solid var(--vscode-notifications-border);
+  border-radius: 6px;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 10000;
+  opacity: 0;
+  transform: translateX(100%);
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.copy-notification.show {
+  opacity: 1;
+  transform: translateX(0);
 }

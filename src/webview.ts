@@ -47,6 +47,9 @@ export function getWebviewContent(
             <span class="header-title">CodingAgent</span>
           </div>
           <div class="header-right">
+            <button id="copyAllBtn" class="copy-all-btn" title="Copy all conversation as markdown">
+              <span class="icon-copy-all"></span> Copy All
+            </button>
             <button id="settingsBtn" class="header-btn" title="Open Settings">
               <img src="${settingsIconUri}" alt="Settings" width="16" height="16">
             </button>
