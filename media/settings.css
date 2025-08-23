@@ -103,6 +103,37 @@
   transition: all 0.2s;
 }
 
+/* Connection Status Styles */
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.status-indicator {
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.status-indicator.success {
+  background: var(--vscode-testing-iconPassed);
+  color: var(--vscode-editor-background);
+}
+
+.status-indicator.error {
+  background: var(--vscode-testing-iconFailed);
+  color: var(--vscode-editor-background);
+}
+
+.status-indicator.pending {
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+}
+}
+
 .tab-button:hover {
   background: var(--vscode-list-hoverBackground);
 }

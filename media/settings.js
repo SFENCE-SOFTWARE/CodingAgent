@@ -12,6 +12,7 @@
   const elements = {
     host: document.getElementById('host'),
     port: document.getElementById('port'),
+    apiKey: document.getElementById('apiKey'),
     currentMode: document.getElementById('currentMode'),
     currentModel: document.getElementById('currentModel'),
     showThinking: document.getElementById('showThinking'),
@@ -195,6 +196,7 @@
     // Basic settings
     elements.host.value = config.host || '';
     elements.port.value = config.port || '';
+    elements.apiKey.value = config.apiKey || '';
     elements.currentMode.value = config.currentMode || '';
     elements.currentModel.value = config.currentModel || '';
     elements.showThinking.checked = config.showThinking || false;
@@ -414,6 +416,7 @@
     const config = {
       'openai.host': elements.host.value,
       'openai.port': parseInt(elements.port.value) || 11434,
+      'openai.apiKey': elements.apiKey.value,
       'currentMode': elements.currentMode.value,
       'currentModel': elements.currentModel.value,
       'showThinking': elements.showThinking.checked,
@@ -539,8 +542,21 @@
       case 'logModeFileSelected':
         elements.logModeFilePath.value = message.filePath;
         break;
+        
+      case 'connectionTestResult':
+        updateConnectionStatus(message.success, message.message);
+        break;
     }
   });
+
+  // Update connection status display
+  function updateConnectionStatus(success, message) {
+    const status = elements.connectionStatus;
+    if (!status) return;
+    
+    status.textContent = message;
+    status.className = success ? 'status-indicator success' : 'status-indicator error';
+  }
 
   // Tab Management
   function switchTab(tabName) {
@@ -601,7 +617,8 @@
     vscode.postMessage({
       type: 'testConnection',
       host: elements.host.value || 'localhost',
-      port: parseInt(elements.port.value) || 11434
+      port: parseInt(elements.port.value) || 11434,
+      apiKey: elements.apiKey.value || ''
     });
   }
 

@@ -98,6 +98,9 @@ export class SettingsPanel {
           case 'selectLogModeFile':
             this._selectLogModeFile();
             break;
+          case 'testConnection':
+            this._testConnection(message.host, message.port, message.apiKey);
+            break;
           case 'showMessage':
             vscode.window.showInformationMessage(message.message);
             break;
@@ -143,6 +146,7 @@ export class SettingsPanel {
       config: {
         host: config.get('openai.host'),
         port: config.get('openai.port'),
+        apiKey: config.get('openai.apiKey'),
         currentMode: config.get('currentMode'),
         currentModel: config.get('currentModel'),
         showThinking: config.get('showThinking'),
@@ -210,6 +214,7 @@ export class SettingsPanel {
         // Reset all settings to their defaults
         await config.update('openai.host', undefined, vscode.ConfigurationTarget.Global);
         await config.update('openai.port', undefined, vscode.ConfigurationTarget.Global);
+        await config.update('openai.apiKey', undefined, vscode.ConfigurationTarget.Global);
         await config.update('currentMode', undefined, vscode.ConfigurationTarget.Global);
         await config.update('currentModel', undefined, vscode.ConfigurationTarget.Global);
         await config.update('showThinking', undefined, vscode.ConfigurationTarget.Global);
@@ -423,6 +428,46 @@ export class SettingsPanel {
     }
   }
 
+  private async _testConnection(host: string, port: number, apiKey: string) {
+    try {
+      const baseUrl = `http://${host}:${port}`;
+      
+      // Test connection by trying to fetch models
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+
+      // Use API key if provided, otherwise use dummy authorization for local models
+      if (apiKey && apiKey.trim() !== '') {
+        headers['Authorization'] = `Bearer ${apiKey}`;
+      } else {
+        headers['Authorization'] = 'Bearer dummy';
+      }
+
+      const response = await fetch(`${baseUrl}/api/tags`, {
+        method: 'GET',
+        headers
+      });
+
+      if (response.ok) {
+        const models = await response.json();
+        this._panel.webview.postMessage({
+          type: 'connectionTestResult',
+          success: true,
+          message: `✅ Connected successfully! Found ${models.models?.length || 0} models.`
+        });
+      } else {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+    } catch (error) {
+      this._panel.webview.postMessage({
+        type: 'connectionTestResult',
+        success: false,
+        message: `❌ Connection failed: ${error instanceof Error ? error.message : String(error)}`
+      });
+    }
+  }
+
   private _getHtmlForWebview(webview: vscode.Webview): string {
     const styleUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this._extensionUri, 'media', 'settings.css')
@@ -521,6 +566,12 @@ export class SettingsPanel {
                   <label for="port">Port:</label>
                   <input type="number" id="port" placeholder="11434" min="1" max="65535" />
                   <small class="form-hint">Port number for API connection</small>
+                </div>
+                
+                <div class="form-group">
+                  <label for="apiKey">API Key:</label>
+                  <input type="password" id="apiKey" placeholder="Leave empty for local models without authentication" />
+                  <small class="form-hint">OpenAI API key (optional for local models like Ollama)</small>
                 </div>
                 
                 <div class="connection-status">

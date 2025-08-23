@@ -1,6 +1,15 @@
 # CodingAgent Extension - AI Coding Guide
 
-This is a comprehensive VS Code extension that provides GitHub Copilot Chat-like functionality using any OpenAI-compatible LLM backend. The extension features advanced tool-based AI interactions, sophisticated memory system, intelligent change tracking, and robust security controls.
+This is a comprehensive VS Code extension that provides GitHub Copilot Chat-like functionality using any OpenAI-compatible LLM backend. The extension features advanced t### Version History & Updates
+
+### Current Version: 0.0.3 (2025-08-23)
+**Key Changes:**
+- **API Key Support**: Added optional API key configuration for authenticated OpenAI-compatible servers
+- **Tool Consolidation**: Merged `insert_lines`, `delete_lines`, and `replace_lines` into unified `modify_lines` tool
+- **Memory System**: Added comprehensive memory system with 7 memory tools and metadata support
+- **Terminal Security**: Implemented user approval system for all terminal commands with auto-approve whitelist
+- **Change Tracking**: Enhanced with intelligent merging and real-time visual feedback
+- **Settings Panel**: Added comprehensive tabbed settings interface AI interactions, sophisticated memory system, intelligent change tracking, and robust security controls.
 
 ## Architecture Overview
 This VS Code extension provides GitHub Copilot Chat-like functionality using any OpenAI-compatible LLM backend (Ollama, OpenAI, Azure OpenAI, llama.cpp, vLLM, LocalAI, etc.). The extension follows a multi-service architecture with streaming support, tool-based AI interactions, intelligent change tracking, memory system, and advanced security controls.
@@ -509,7 +518,13 @@ class SettingsPanel {
 
 **Key files to understand first:** `chatService.ts` (orchestration), `types.ts` (interfaces), `package.json` (configuration schema).
 
-## Latest Features Summary (2025-08-22)
+## Latest Features Summary (2025-08-23)
+
+### 🔐 API Key Support
+- **Optional API key configuration** for authenticated OpenAI-compatible servers
+- **Backward compatibility** - local models continue to work without API keys
+- **Secure password field** in Settings GUI for API key input
+- **Automatic header management** - uses API key when provided, dummy auth for local models
 
 ### 🔐 Security Enhancement: Terminal Approval System
 - **All terminal commands require explicit user approval** before execution

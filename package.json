@@ -158,6 +158,11 @@
             "type": "number",
             "default": 11434,
             "description": "OpenAI API server port"
+          },
+          "codingagent.openai.apiKey": {
+            "type": "string",
+            "default": "",
+            "description": "OpenAI API key (leave empty for local models without authentication)"
           }
         }
       },

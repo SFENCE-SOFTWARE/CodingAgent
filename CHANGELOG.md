@@ -2,6 +2,17 @@
 
 All notable changes to the "CodingAgent" extension will be documented in this file.
 
+## [0.0.4] - 2025-08-23
+
+### Added
+- **API Key Support**: Added optional API key configuration for authenticated OpenAI-compatible servers
+  - New `codingagent.openai.apiKey` setting for API authentication
+  - Password field in Settings GUI for secure API key input
+  - Automatic header management - uses API key when provided, dummy auth for local models
+  - Backward compatibility maintained - local models continue to work without API keys
+  - Updated connection testing with API key support
+  - Enhanced documentation with API key configuration instructions
+
 ## [0.0.3] - 2025-08-17
 
 ### Changed

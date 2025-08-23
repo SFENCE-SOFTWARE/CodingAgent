@@ -5,6 +5,7 @@ import { ModelList, OpenAIChatRequest, OpenAIChatResponse, OpenAIStreamChunk, To
 
 export class OpenAIService {
   private baseApiUrl: string = 'http://localhost:11434';
+  private apiKey: string = '';
 
   constructor() {
     this.updateConfiguration();
@@ -14,16 +15,36 @@ export class OpenAIService {
     const config = vscode.workspace.getConfiguration('codingagent');
     const host = config.get<string>('openai.host', 'localhost');
     const port = config.get<number>('openai.port', 11434);
+    const apiKey = config.get<string>('openai.apiKey', '');
     this.baseApiUrl = `http://${host}:${port}`;
+    this.apiKey = apiKey;
   }
 
   getBaseUrl(): string {
     return this.baseApiUrl;
   }
 
+  getApiKey(): string {
+    return this.apiKey;
+  }
+
   async getModels(): Promise<ModelList> {
     try {
-      const response = await fetch(`${this.baseApiUrl}/api/tags`);
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+
+      // Use API key if provided, otherwise use dummy authorization for local models
+      if (this.apiKey && this.apiKey.trim() !== '') {
+        headers['Authorization'] = `Bearer ${this.apiKey}`;
+      } else {
+        headers['Authorization'] = 'Bearer dummy';
+      }
+
+      const response = await fetch(`${this.baseApiUrl}/api/tags`, {
+        method: 'GET',
+        headers
+      });
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
@@ -35,12 +56,20 @@ export class OpenAIService {
 
   async sendChat(request: OpenAIChatRequest, abortSignal?: AbortSignal): Promise<OpenAIChatResponse> {
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+
+      // Use API key if provided, otherwise use dummy authorization for local models
+      if (this.apiKey && this.apiKey.trim() !== '') {
+        headers['Authorization'] = `Bearer ${this.apiKey}`;
+      } else {
+        headers['Authorization'] = 'Bearer dummy';
+      }
+
       const response = await fetch(`${this.baseApiUrl}/v1/chat/completions`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer dummy' // OpenAI API compatible - auth not required for local models
-        },
+        headers,
         body: JSON.stringify(request),
         signal: abortSignal
       });
@@ -63,12 +92,20 @@ export class OpenAIService {
     try {
       const streamRequest = { ...request, stream: true };
       
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+
+      // Use API key if provided, otherwise use dummy authorization for local models
+      if (this.apiKey && this.apiKey.trim() !== '') {
+        headers['Authorization'] = `Bearer ${this.apiKey}`;
+      } else {
+        headers['Authorization'] = 'Bearer dummy';
+      }
+      
       const response = await fetch(`${this.baseApiUrl}/v1/chat/completions`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer dummy'
-        },
+        headers,
         body: JSON.stringify(streamRequest),
         signal: abortSignal
       });

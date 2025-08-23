@@ -77,6 +77,7 @@ This extension was created with the assistance of Claude Sonnet 4 via GitHub C
    - Open VS Code settings
    - Search for "CodingAgent"  
    - Set the backend host and port (default: localhost:11434)
+   - Optionally set an API key for authenticated servers (leave empty for local models)
 
 ## Usage
 
@@ -140,6 +141,7 @@ Access settings via VS Code Settings (Ctrl/Cmd + ,) and search for "CodingAgent"
 
 - **Host**: AI backend server host (default: localhost)
 - **Port**: AI backend server port (default: 11434)
+- **API Key**: OpenAI API key (optional, leave empty for local models)
 - **Current Mode**: Active agent mode (Coder, Ask, Architect)
 - **Current Model**: Active model name
 - **Show Thinking**: Display model reasoning process
