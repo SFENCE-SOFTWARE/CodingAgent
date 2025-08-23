@@ -50,7 +50,7 @@ export function getWebviewContent(
             <button id="settingsBtn" class="header-btn" title="Open Settings">
               <img src="${settingsIconUri}" alt="Settings" width="16" height="16">
             </button>
-            <button id="clearBtn" class="header-btn" title="Clear Chat">
+            <button id="clearBtn" class="header-btn" title="Clear Chat (Ctrl+Click to skip confirmation)">
               <img src="${clearIconUri}" alt="Clear" width="16" height="16">
             </button>
           </div>
@@ -161,6 +161,23 @@ export function getWebviewContent(
             <div class="iteration-dialog-footer">
               <button id="stopIterationsBtn" class="iteration-stop-btn">Stop Process</button>
               <button id="continueIterationsBtn" class="iteration-continue-btn">Continue Working</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Clear Confirmation Dialog -->
+        <div class="clear-confirmation-dialog" id="clearConfirmationDialog" style="display: none;">
+          <div class="clear-confirmation-content">
+            <div class="clear-confirmation-header">
+              <h3>🗑️ Clear Chat History</h3>
+            </div>
+            <div class="clear-confirmation-body">
+              <p>This will remove all messages from the current session.</p>
+              <p><strong>Tip:</strong> Hold Ctrl/Cmd while clicking to skip this confirmation.</p>
+            </div>
+            <div class="clear-confirmation-footer">
+              <button id="cancelClearBtn" class="clear-cancel-btn">Cancel</button>
+              <button id="confirmClearBtn" class="clear-confirm-btn">Clear Chat</button>
             </div>
           </div>
         </div>

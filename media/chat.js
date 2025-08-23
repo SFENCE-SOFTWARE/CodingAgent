@@ -26,6 +26,11 @@
   const stopIterationsBtn = document.getElementById('stopIterationsBtn');
   const continueIterationsBtn = document.getElementById('continueIterationsBtn');
   
+  // Clear confirmation dialog elements
+  const clearConfirmationDialog = document.getElementById('clearConfirmationDialog');
+  const cancelClearBtn = document.getElementById('cancelClearBtn');
+  const confirmClearBtn = document.getElementById('confirmClearBtn');
+  
   // Change tracking elements
   const changeTrackingPanel = document.getElementById('changeTrackingPanel');
   const changePanelContent = document.getElementById('changePanelContent');
@@ -70,6 +75,11 @@
   }
   
   function setupEventListeners() {
+    // Debug: Check if elements exist
+    console.log('Setting up event listeners...');
+    console.log('clearBtn exists:', !!clearBtn);
+    console.log('settingsBtn exists:', !!settingsBtn);
+    
     // Send message events
     sendButton.addEventListener('click', sendMessage);
     interruptButton.addEventListener('click', interruptLLM);
@@ -95,6 +105,10 @@
     stopIterationsBtn.addEventListener('click', stopIterations);
     continueIterationsBtn.addEventListener('click', continueIterations);
     
+    // Clear confirmation dialog events
+    cancelClearBtn.addEventListener('click', cancelClearDialog);
+    confirmClearBtn.addEventListener('click', confirmClearDialog);
+    
     // Auto-resize textarea
     messageInput.addEventListener('input', autoResizeTextarea);
     
@@ -116,16 +130,35 @@
     });
     
     // Settings and clear buttons
-    settingsBtn.addEventListener('click', () => {
-      vscode.postMessage({ type: 'openSettings' });
-    });
+    if (settingsBtn) {
+      settingsBtn.addEventListener('click', () => {
+        vscode.postMessage({ type: 'openSettings' });
+      });
+    }
     
-    clearBtn.addEventListener('click', () => {
-      if (confirm('Are you sure you want to clear the chat history?')) {
-        vscode.postMessage({ type: 'clearChat' });
-        clearMessages();
-      }
-    });
+    if (clearBtn) {
+      clearBtn.addEventListener('click', (e) => {
+        console.log('Clear button clicked');
+        
+        // Add visual feedback
+        clearBtn.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+          clearBtn.style.transform = '';
+        }, 150);
+        
+        // Ctrl+Click skips confirmation
+        if (e.ctrlKey || e.metaKey) {
+          console.log('User used Ctrl+Click - skipping confirmation');
+          performClearChat();
+          return;
+        }
+        
+        // Show custom confirmation dialog
+        showClearConfirmationDialog();
+      });
+    } else {
+      console.error('clearBtn element not found!');
+    }
     
     // Change tracking events
     showChangesBtn.addEventListener('click', () => {
@@ -323,6 +356,26 @@
     vscode.postMessage({
       type: 'stopIterations'
     });
+  }
+  
+  function showClearConfirmationDialog() {
+    clearConfirmationDialog.style.display = 'flex';
+  }
+  
+  function cancelClearDialog() {
+    console.log('User cancelled clear');
+    clearConfirmationDialog.style.display = 'none';
+  }
+  
+  function confirmClearDialog() {
+    console.log('User confirmed clear');
+    clearConfirmationDialog.style.display = 'none';
+    performClearChat();
+  }
+  
+  function performClearChat() {
+    vscode.postMessage({ type: 'clearChat' });
+    clearMessages();
   }
   
   function addMessage(message) {
@@ -566,7 +619,7 @@
     welcomeDiv.innerHTML = `
       <div class="welcome-icon">🤖</div>
       <h3>Welcome to CodingAgent!</h3>
-      <p>I'm your AI coding assistant powered by OpenAI API. I can help you with:</p>
+      <p>I'm your AI coding assistant. I can help you with:</p>
       <ul>
         <li>📝 Reading and writing code files</li>
         <li>🔍 Exploring project structure</li>
