@@ -15,6 +15,7 @@
   const clearBtn = document.getElementById('clearBtn');
   const copyAllBtn = document.getElementById('copyAllBtn');
   const copyAllWithThinkingBtn = document.getElementById('copyAllWithThinkingBtn');
+  const refreshModelsBtn = document.getElementById('refreshModelsBtn');
   
   // Correction dialog elements
   const correctionDialog = document.getElementById('correctionDialog');
@@ -178,6 +179,24 @@
       });
     } else {
       console.error('copyAllWithThinkingBtn element not found!');
+    }
+    
+    // Refresh models button
+    if (refreshModelsBtn) {
+      refreshModelsBtn.addEventListener('click', () => {
+        console.log('Refresh models button clicked');
+        
+        // Add visual feedback
+        refreshModelsBtn.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+          refreshModelsBtn.style.transform = '';
+        }, 150);
+        
+        // Request available models
+        requestAvailableModels();
+      });
+    } else {
+      console.error('refreshModelsBtn element not found!');
     }
     
     // Change tracking events

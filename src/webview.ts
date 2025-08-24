@@ -28,6 +28,10 @@ export function getWebviewContent(
     vscode.Uri.joinPath(extensionUri, 'media', 'clear-icon.svg')
   );
 
+  const refreshIconUri = webview.asWebviewUri(
+    vscode.Uri.joinPath(extensionUri, 'media', 'refresh-icon.svg')
+  );
+
   return /* html */`
     <!DOCTYPE html>
     <html lang="en">
@@ -55,6 +59,9 @@ export function getWebviewContent(
           </button>
           <button id="copyAllWithThinkingBtn" class="action-btn" title="Copy all conversation with thinking as markdown">
             🧠
+          </button>
+          <button id="refreshModelsBtn" class="action-btn" title="Refresh available models">
+            <img src="${refreshIconUri}" alt="Refresh" width="16" height="16">
           </button>
           <button id="settingsBtn" class="action-btn" title="Open Settings">
             <img src="${settingsIconUri}" alt="Settings" width="16" height="16">
