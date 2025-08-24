@@ -15,8 +15,9 @@ All notable changes to the "CodingAgent" extension will be documented in this fi
   - **Horizontal rules**: Visual separators with --- or ___
   - **Enhanced code**: Better inline code styling with background
 - **Copy Functionality**: Advanced copy-to-clipboard features
-  - **Copy Message**: Individual message copy as pure markdown (📋 button on hover)
+  - **Copy Message**: Individual message copy as pure markdown (📋 button on hover for all messages)
   - **Copy All Conversation**: Export entire conversation as structured markdown
+  - **Copy All with Thinking**: Export conversation including AI model reasoning/thinking content (🧠 button)
   - **Smart clipboard**: Uses VS Code clipboard API with fallback support
   - **Visual feedback**: Toast notifications for copy operations
 - **Improved UI/UX**:
@@ -26,6 +27,9 @@ All notable changes to the "CodingAgent" extension will be documented in this fi
   - **Responsive design**: Better layout for different content types
   - **Redesigned header**: Action buttons (Copy All, Settings, Clear) moved to dedicated row below title
   - **Icon-only buttons**: Cleaner interface with icon-only action buttons and tooltips
+
+### Fixed
+- **Copy button visibility**: Copy button now appears on all messages including LLM responses (previously only visible on user messages)
 
 ## [0.0.4] - 2025-08-23
 

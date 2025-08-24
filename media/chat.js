@@ -14,6 +14,7 @@
   const settingsBtn = document.getElementById('settingsBtn');
   const clearBtn = document.getElementById('clearBtn');
   const copyAllBtn = document.getElementById('copyAllBtn');
+  const copyAllWithThinkingBtn = document.getElementById('copyAllWithThinkingBtn');
   
   // Correction dialog elements
   const correctionDialog = document.getElementById('correctionDialog');
@@ -168,6 +169,15 @@
       });
     } else {
       console.error('copyAllBtn element not found!');
+    }
+    
+    // Copy all conversation with thinking button
+    if (copyAllWithThinkingBtn) {
+      copyAllWithThinkingBtn.addEventListener('click', () => {
+        copyAllConversationWithThinkingAsMarkdown();
+      });
+    } else {
+      console.error('copyAllWithThinkingBtn element not found!');
     }
     
     // Change tracking events
@@ -1012,6 +1022,27 @@
       }, 1500); // Slightly longer delay than thinking to avoid simultaneous animations
     }
     
+    // Add copy button to message header if it doesn't already exist
+    const headerDiv = streamingData.element.querySelector('.message-header');
+    if (headerDiv && !headerDiv.querySelector('.message-actions')) {
+      // Create message actions container
+      const actionsDiv = document.createElement('div');
+      actionsDiv.className = 'message-actions';
+      
+      // Copy message button
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'message-action-btn copy-message';
+      copyBtn.innerHTML = '📋';
+      copyBtn.title = 'Copy message as markdown';
+      copyBtn.onclick = (e) => {
+        e.stopPropagation();
+        copyMessageAsMarkdown(messageId);
+      };
+      
+      actionsDiv.appendChild(copyBtn);
+      headerDiv.appendChild(actionsDiv);
+    }
+    
     // Clean up
     streamingMessages.delete(messageId);
     scrollToBottom();
@@ -1604,6 +1635,41 @@
     showCopyNotification('Full conversation copied as markdown!');
   }
   
+  function copyAllConversationWithThinkingAsMarkdown() {
+    const messages = document.querySelectorAll('.message:not(.system)');
+    const conversationMarkdown = [];
+    
+    messages.forEach(messageEl => {
+      const role = messageEl.classList.contains('user') ? 'User' : 'Assistant';
+      const timestamp = messageEl.querySelector('.message-timestamp').textContent;
+      const originalContent = messageEl.getAttribute('data-original-content');
+      
+      let messageMarkdown = `## ${role} (${timestamp})\n\n`;
+      
+      // Add thinking content if it exists (for Assistant messages)
+      if (role === 'Assistant') {
+        const thinkingContainer = messageEl.querySelector('.thinking-container');
+        if (thinkingContainer) {
+          const thinkingContent = thinkingContainer.querySelector('.thinking-content');
+          if (thinkingContent && thinkingContent.textContent.trim()) {
+            messageMarkdown += `### 🧠 Model Thinking\n\n\`\`\`\n${thinkingContent.textContent.trim()}\n\`\`\`\n\n`;
+          }
+        }
+      }
+      
+      // Add main message content
+      if (originalContent) {
+        messageMarkdown += `${originalContent}\n`;
+      }
+      
+      conversationMarkdown.push(messageMarkdown);
+    });
+    
+    const fullMarkdown = `# CodingAgent Conversation (with Thinking)\n\n${conversationMarkdown.join('\n---\n\n')}`;
+    copyToClipboard(fullMarkdown);
+    showCopyNotification('Full conversation with thinking copied as markdown!');
+  }
+  
   function copyToClipboard(text) {
     // Use the VS Code API if available, otherwise fall back to navigator.clipboard
     if (typeof vscode !== 'undefined') {
@@ -1673,6 +1739,7 @@
   window.rejectTerminalCommand = rejectTerminalCommand;
   window.copyMessageAsMarkdown = copyMessageAsMarkdown;
   window.copyAllConversationAsMarkdown = copyAllConversationAsMarkdown;
+  window.copyAllConversationWithThinkingAsMarkdown = copyAllConversationWithThinkingAsMarkdown;
   
   // Debug: confirm functions are available
   console.log('Global functions assigned:', {

@@ -53,6 +53,9 @@ export function getWebviewContent(
           <button id="copyAllBtn" class="action-btn" title="Copy all conversation as markdown">
             <span class="icon-copy-all"></span>
           </button>
+          <button id="copyAllWithThinkingBtn" class="action-btn" title="Copy all conversation with thinking as markdown">
+            🧠
+          </button>
           <button id="settingsBtn" class="action-btn" title="Open Settings">
             <img src="${settingsIconUri}" alt="Settings" width="16" height="16">
           </button>
