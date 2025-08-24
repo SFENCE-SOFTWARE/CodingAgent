@@ -203,8 +203,7 @@ export class SettingsPanel {
     const result = await vscode.window.showWarningMessage(
       'Are you sure you want to reset all CodingAgent settings to their default values? This action cannot be undone.',
       { modal: true },
-      'Reset',
-      'Cancel'
+      'Reset'
     );
 
     if (result === 'Reset') {
