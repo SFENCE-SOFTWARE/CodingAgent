@@ -46,17 +46,19 @@ export function getWebviewContent(
             <img src="${iconUri}" alt="CodingAgent" class="header-icon">
             <span class="header-title">CodingAgent</span>
           </div>
-          <div class="header-right">
-            <button id="copyAllBtn" class="copy-all-btn" title="Copy all conversation as markdown">
-              <span class="icon-copy-all"></span> Copy All
-            </button>
-            <button id="settingsBtn" class="header-btn" title="Open Settings">
-              <img src="${settingsIconUri}" alt="Settings" width="16" height="16">
-            </button>
-            <button id="clearBtn" class="header-btn" title="Clear Chat (Ctrl+Click to skip confirmation)">
-              <img src="${clearIconUri}" alt="Clear" width="16" height="16">
-            </button>
-          </div>
+        </div>
+        
+        <!-- Action Buttons Row -->
+        <div class="action-buttons-row">
+          <button id="copyAllBtn" class="action-btn" title="Copy all conversation as markdown">
+            <span class="icon-copy-all"></span>
+          </button>
+          <button id="settingsBtn" class="action-btn" title="Open Settings">
+            <img src="${settingsIconUri}" alt="Settings" width="16" height="16">
+          </button>
+          <button id="clearBtn" class="action-btn" title="Clear Chat (Ctrl+Click to skip confirmation)">
+            <img src="${clearIconUri}" alt="Clear" width="16" height="16">
+          </button>
         </div>
 
         <!-- Messages Container -->

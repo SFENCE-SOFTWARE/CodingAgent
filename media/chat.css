@@ -78,6 +78,41 @@
   gap: 8px;
 }
 
+/* Action Buttons Row */
+.action-buttons-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--vscode-widget-border);
+  background-color: var(--vscode-editor-background);
+}
+
+.action-btn {
+  background-color: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+  border: none;
+  border-radius: 3px;
+  padding: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+  background-color: var(--vscode-button-secondaryHoverBackground);
+  transform: scale(1.05);
+}
+
+.action-btn:active {
+  transform: scale(0.95);
+}
+
 .header-btn {
   background-color: var(--vscode-button-secondaryBackground);
   color: var(--vscode-button-secondaryForeground);
@@ -101,24 +136,7 @@
   height: 16px;
 }
 
-/* Copy All Button */
-.copy-all-btn {
-  background-color: var(--vscode-button-background);
-  color: var(--vscode-button-foreground);
-  border: none;
-  border-radius: 2px;
-  padding: 6px 10px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  height: 28px;
-}
-
-.copy-all-btn:hover {
-  background-color: var(--vscode-button-hoverBackground);
-}
+/* Copy All Button - now using action-btn style */
 
 /* Messages Container */
 .messages-container {

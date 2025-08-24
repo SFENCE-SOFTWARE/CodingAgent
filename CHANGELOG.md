@@ -2,7 +2,7 @@
 
 All notable changes to the "CodingAgent" extension will be documented in this file.
 
-## [0.0.5] - 2025-08-23
+## [0.0.5] - 2025-08-24
 
 ### Added
 - **Enhanced Markdown Support**: Dramatically improved markdown rendering in chat messages
@@ -24,6 +24,8 @@ All notable changes to the "CodingAgent" extension will be documented in this fi
   - **Better visual hierarchy**: Enhanced typography and spacing
   - **Table styling**: Professional table appearance with alternating rows
   - **Responsive design**: Better layout for different content types
+  - **Redesigned header**: Action buttons (Copy All, Settings, Clear) moved to dedicated row below title
+  - **Icon-only buttons**: Cleaner interface with icon-only action buttons and tooltips
 
 ## [0.0.4] - 2025-08-23
 
