@@ -563,7 +563,15 @@
     // Message content
     const contentDiv = document.createElement('div');
     contentDiv.className = 'message-content';
-    contentDiv.innerHTML = formatMessageContent(message.content);
+    
+    // For user messages, just escape HTML and preserve line breaks
+    // For assistant messages, apply full markdown processing
+    if (message.role === 'user') {
+      const escapedContent = escapeHtml(message.content);
+      contentDiv.innerHTML = escapedContent.replace(/\n/g, '<br>');
+    } else {
+      contentDiv.innerHTML = formatMessageContent(message.content);
+    }
     
     messageDiv.appendChild(headerDiv);
     
@@ -738,14 +746,14 @@
       
       let tableHtml = '<table class="markdown-table"><thead><tr>';
       headerCells.forEach(cell => {
-        tableHtml += `<th>${cell}</th>`;
+        tableHtml += `<th>${escapeHtml(cell)}</th>`;
       });
       tableHtml += '</tr></thead><tbody>';
       
       rowData.forEach(row => {
         tableHtml += '<tr>';
         row.forEach(cell => {
-          tableHtml += `<td>${cell}</td>`;
+          tableHtml += `<td>${escapeHtml(cell)}</td>`;
         });
         tableHtml += '</tr>';
       });
@@ -760,42 +768,43 @@
     });
     
     // Convert inline code
-    content = content.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
+    content = content.replace(/`([^`]+)`/g, (match, code) => `<code class="inline-code">${escapeHtml(code)}</code>`);
     
     // Convert bold text **text** and __text__
-    content = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    content = content.replace(/__(.*?)__/g, '<strong>$1</strong>');
+    content = content.replace(/\*\*(.*?)\*\*/g, (match, text) => `<strong>${escapeHtml(text)}</strong>`);
+    content = content.replace(/__(.*?)__/g, (match, text) => `<strong>${escapeHtml(text)}</strong>`);
     
     // Convert italic text *text* and _text_
-    content = content.replace(/(?<!\*)\*([^\*\n]+)\*(?!\*)/g, '<em>$1</em>');
-    content = content.replace(/(?<!_)_([^_\n]+)_(?!_)/g, '<em>$1</em>');
+    content = content.replace(/(?<!\*)\*([^\*\n]+)\*(?!\*)/g, (match, text) => `<em>${escapeHtml(text)}</em>`);
+    content = content.replace(/(?<!_)_([^_\n]+)_(?!_)/g, (match, text) => `<em>${escapeHtml(text)}</em>`);
     
     // Convert strikethrough ~~text~~
-    content = content.replace(/~~(.*?)~~/g, '<del>$1</del>');
+    content = content.replace(/~~(.*?)~~/g, (match, text) => `<del>${escapeHtml(text)}</del>`);
     
     // Convert headers
-    content = content.replace(/^### (.*$)/gm, '<h3>$1</h3>');
-    content = content.replace(/^## (.*$)/gm, '<h2>$1</h2>');
-    content = content.replace(/^# (.*$)/gm, '<h1>$1</h1>');
+    content = content.replace(/^### (.*$)/gm, (match, text) => `<h3>${escapeHtml(text)}</h3>`);
+    content = content.replace(/^## (.*$)/gm, (match, text) => `<h2>${escapeHtml(text)}</h2>`);
+    content = content.replace(/^# (.*$)/gm, (match, text) => `<h1>${escapeHtml(text)}</h1>`);
     
     // Convert unordered lists
-    content = content.replace(/^\* (.+)$/gm, '<li>$1</li>');
-    content = content.replace(/^- (.+)$/gm, '<li>$1</li>');
-    content = content.replace(/^(\+ .+)$/gm, '<li>$1</li>');
+    content = content.replace(/^\* (.+)$/gm, (match, text) => `<li>${escapeHtml(text)}</li>`);
+    content = content.replace(/^- (.+)$/gm, (match, text) => `<li>${escapeHtml(text)}</li>`);
+    content = content.replace(/^(\+ .+)$/gm, (match, text) => `<li>${escapeHtml(text)}</li>`);
     
     // Wrap consecutive list items in <ul>
     content = content.replace(/(<li>.*<\/li>(?:\s*<li>.*<\/li>)*)/g, '<ul>$1</ul>');
     
     // Convert ordered lists
-    content = content.replace(/^\d+\. (.+)$/gm, '<li class="ordered">$1</li>');
+    content = content.replace(/^\d+\. (.+)$/gm, (match, text) => `<li class="ordered">${escapeHtml(text)}</li>`);
     content = content.replace(/(<li class="ordered">.*<\/li>(?:\s*<li class="ordered">.*<\/li>)*)/g, '<ol>$1</ol>');
     content = content.replace(/class="ordered"/g, ''); // Remove the temporary class
     
-    // Convert links [text](url)
-    content = content.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+    // Convert links [text](url) - note: URL should be escaped too
+    content = content.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, url) => 
+      `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(text)}</a>`);
     
     // Convert blockquotes
-    content = content.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
+    content = content.replace(/^> (.+)$/gm, (match, text) => `<blockquote>${escapeHtml(text)}</blockquote>`);
     
     // Convert horizontal rules
     content = content.replace(/^---$/gm, '<hr>');
