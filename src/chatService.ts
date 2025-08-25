@@ -157,12 +157,53 @@ export class ChatService {
       // Create and send task message from the orchestrator
       const taskMessage = this.addTaskMessage(task, 'LLM ORCHESTRATOR MODE');
       
+      // Store original streaming callback to avoid interfering with delegation
+      const originalStreamingCallback = this.streamingCallback;
+      let delegationComplete = false;
+      let finalResponse = '';
+      
+      // Set a temporary callback to track delegation completion
+      this.streamingCallback = (update: StreamingUpdate) => {
+        if (update.type === 'tool_calls_end') {
+          delegationComplete = true;
+        }
+        // Still forward updates to the original callback if it exists
+        if (originalStreamingCallback) {
+          originalStreamingCallback(update);
+        }
+      };
+      
       // Send task to the target mode LLM
       const responseMessages = await this.processMessage(task);
       
-      // Extract the content from the assistant response
+      // Wait for tool calls to complete if they are running
+      const maxWaitTime = 60000; // 60 seconds timeout
+      const startWait = Date.now();
+      while (!delegationComplete && (Date.now() - startWait) < maxWaitTime) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        // Check if we have any recent assistant messages that might be complete
+        const lastMessage = this.messages[this.messages.length - 1];
+        if (lastMessage && lastMessage.role === 'assistant' && (!lastMessage.toolCalls || lastMessage.toolCalls.length === 0)) {
+          delegationComplete = true;
+        }
+      }
+      
+      // Restore original streaming callback
+      this.streamingCallback = originalStreamingCallback;
+      
+      // Extract the content from the final assistant response
       const assistantResponse = responseMessages.find(msg => msg.role === 'assistant');
-      const response = assistantResponse ? assistantResponse.content : 'No response generated';
+      finalResponse = assistantResponse ? assistantResponse.content : 'No response generated';
+      
+      // If we have newer messages in the conversation, use the latest assistant response
+      const latestMessages = this.messages.slice(-5); // Check last 5 messages
+      for (let i = latestMessages.length - 1; i >= 0; i--) {
+        const msg = latestMessages[i];
+        if (msg.role === 'assistant' && msg.content && msg.content.trim()) {
+          finalResponse = msg.content;
+          break;
+        }
+      }
       
       // Send notice about switching back
       this.addNoticeMessage(`🔄 Task completed. Switching back to ${originalMode} mode...`);
@@ -170,7 +211,7 @@ export class ChatService {
       // Switch back to original mode
       await config.update('currentMode', originalMode, vscode.ConfigurationTarget.Global);
       
-      return response;
+      return finalResponse;
     } catch (error) {
       // Ensure we switch back to original mode even on error
       const config = vscode.workspace.getConfiguration('codingagent');
