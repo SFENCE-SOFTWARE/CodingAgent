@@ -247,7 +247,8 @@
                 "fallbackMessage": "I'm ready to help with your coding tasks. What would you like me to do?",
                 "temperature": 0.1,
                 "topP": 0.9,
-                "description": "Expert coding assistant with file and terminal access"
+                "description": "Expert coding assistant with file and terminal access",
+                "llmDescription": "Expert programmer who can read, write, and modify files, execute terminal commands, and perform complex coding tasks. Use for code generation, debugging, file operations, project setup, and any technical implementation work."
               },
               "Ask": {
                 "systemMessage": "You are a helpful AI assistant. Answer questions clearly and concisely.",
@@ -271,7 +272,8 @@
                 "fallbackMessage": "I'm here to answer your questions. What would you like to know?",
                 "temperature": 0.3,
                 "topP": 0.9,
-                "description": "General purpose assistant for questions and research"
+                "description": "General purpose assistant for questions and research",
+                "llmDescription": "Knowledge specialist who can research topics by reading files, webpages, and PDFs. Use for answering questions, gathering information, explaining concepts, and providing summaries or analysis of existing content."
               },
               "Architect": {
                 "systemMessage": "You are a software architect assistant. Help design systems, review architecture, and provide technical guidance.",
@@ -296,7 +298,8 @@
                 "fallbackMessage": "I'm ready to help with architecture and design decisions. What system are you working on?",
                 "temperature": 0.2,
                 "topP": 0.85,
-                "description": "Software architecture and system design specialist"
+                "description": "Software architecture and system design specialist",
+                "llmDescription": "System design expert who can analyze architectures, review technical decisions, and provide high-level guidance. Can ask users for clarification on requirements. Use for architectural planning, system design reviews, and strategic technical decisions."
               },
               "Orchestrator": {
                 "systemMessage": "You are an AI orchestrator that can delegate tasks to specialized modes. Use the call_under_mode tool to assign specific tasks to Coder, Ask, or Architect modes based on the task requirements. Always specify clear instructions and expected response format when delegating tasks.",
@@ -313,12 +316,14 @@
                   "memory_delete",
                   "memory_search",
                   "memory_list",
-                  "memory_export"
+                  "memory_export",
+                  "ask_user"
                 ],
                 "fallbackMessage": "I'm ready to orchestrate tasks by delegating to specialized modes. What would you like me to coordinate?",
                 "temperature": 0.15,
                 "topP": 0.9,
-                "description": "Task orchestrator that delegates work to specialized modes"
+                "description": "Task orchestrator that delegates work to specialized modes",
+                "llmDescription": "Master coordinator who can delegate tasks to specialized AI modes. Can ask users for clarification on complex requirements and break down multi-step workflows across different specialized capabilities."
               }
             },
             "description": "Configuration for different agent modes"

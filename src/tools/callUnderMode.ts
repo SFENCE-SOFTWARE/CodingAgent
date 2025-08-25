@@ -31,7 +31,7 @@ export class CallUnderModeTool implements BaseTool {
       )
       .map(([modeName, modeConfig]: [string, any]) => ({
         name: modeName,
-        description: modeConfig.description || `${modeName} mode`
+        description: modeConfig.llmDescription || modeConfig.description || `${modeName} mode`
       }));
 
     const modeDescriptions = availableModes

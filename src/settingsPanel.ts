@@ -854,8 +854,12 @@ export class SettingsPanel {
                   <input type="text" id="modeName" required />
                 </div>
                 <div class="form-group">
-                  <label for="modeDescription">Description:</label>
-                  <input type="text" id="modeDescription" placeholder="Brief description of this mode" />
+                  <label for="modeDescription">Description (User-facing):</label>
+                  <input type="text" id="modeDescription" placeholder="Brief description of this mode for users" />
+                </div>
+                <div class="form-group">
+                  <label for="modeLlmDescription">Description (LLM Context):</label>
+                  <input type="text" id="modeLlmDescription" placeholder="Description for LLM context (e.g., role, capabilities)" />
                 </div>
                 <div class="form-group">
                   <label for="modeSystemMessage">System Message:</label>

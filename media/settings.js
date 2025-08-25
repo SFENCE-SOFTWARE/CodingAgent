@@ -53,6 +53,7 @@
     modeEditorForm: document.getElementById('modeEditorForm'),
     modeName: document.getElementById('modeName'),
     modeDescription: document.getElementById('modeDescription'),
+    modeLlmDescription: document.getElementById('modeLlmDescription'),
     modeSystemMessage: document.getElementById('modeSystemMessage'),
     modeFallbackMessage: document.getElementById('modeFallbackMessage'),
     modeTemperature: document.getElementById('modeTemperature'),
@@ -271,12 +272,20 @@
     description.className = 'mode-description';
     description.textContent = modeConfig.description || 'No description';
     
+    const llmDescription = document.createElement('div');
+    llmDescription.className = 'mode-llm-description';
+    llmDescription.textContent = `LLM Context: ${modeConfig.llmDescription || 'No LLM description'}`;
+    llmDescription.style.fontSize = '0.9em';
+    llmDescription.style.color = '#666';
+    llmDescription.style.fontStyle = 'italic';
+    
     const details = document.createElement('div');
     details.className = 'mode-details';
     details.textContent = `Temperature: ${modeConfig.temperature || 0.1}, Tools: ${(modeConfig.allowedTools || []).length}`;
     
     info.appendChild(name);
     info.appendChild(description);
+    info.appendChild(llmDescription);
     info.appendChild(details);
     
     const actions = document.createElement('div');
@@ -315,6 +324,7 @@
       elements.modeName.value = modeName;
       elements.modeName.disabled = true;
       elements.modeDescription.value = modeConfig.description || '';
+      elements.modeLlmDescription.value = modeConfig.llmDescription || '';
       elements.modeSystemMessage.value = modeConfig.systemMessage || '';
       elements.modeFallbackMessage.value = modeConfig.fallbackMessage || '';
       elements.modeTemperature.value = modeConfig.temperature || 0.1;
@@ -372,6 +382,7 @@
     const mode = {
       name: elements.modeName.value.trim(),
       description: elements.modeDescription.value.trim(),
+      llmDescription: elements.modeLlmDescription.value.trim(),
       systemMessage: elements.modeSystemMessage.value.trim(),
       fallbackMessage: elements.modeFallbackMessage.value.trim(),
       temperature: parseFloat(elements.modeTemperature.value) || 0.1,
