@@ -175,7 +175,8 @@
             "enum": [
               "Coder",
               "Ask",
-              "Architect"
+              "Architect",
+              "Orchestrator"
             ],
             "description": "Current agent mode"
           },
@@ -296,6 +297,28 @@
                 "temperature": 0.2,
                 "topP": 0.85,
                 "description": "Software architecture and system design specialist"
+              },
+              "Orchestrator": {
+                "systemMessage": "You are an AI orchestrator that can delegate tasks to specialized modes. Use the call_under_mode tool to assign specific tasks to Coder, Ask, or Architect modes based on the task requirements. Always specify clear instructions and expected response format when delegating tasks.",
+                "allowedTools": [
+                  "call_under_mode",
+                  "read_file",
+                  "list_files",
+                  "get_file_size",
+                  "search_in_project",
+                  "search_in_path",
+                  "memory_store",
+                  "memory_retrieve_by_lines",
+                  "memory_retrieve_data",
+                  "memory_delete",
+                  "memory_search",
+                  "memory_list",
+                  "memory_export"
+                ],
+                "fallbackMessage": "I'm ready to orchestrate tasks by delegating to specialized modes. What would you like me to coordinate?",
+                "temperature": 0.15,
+                "topP": 0.9,
+                "description": "Task orchestrator that delegates work to specialized modes"
               }
             },
             "description": "Configuration for different agent modes"

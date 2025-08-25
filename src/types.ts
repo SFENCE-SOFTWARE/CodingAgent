@@ -121,6 +121,7 @@ export interface ChatMessage {
   isStreaming?: boolean;
   isAlreadyDisplayed?: boolean; // Flag to prevent duplicate display in UI
   changeIds?: string[]; // Track associated file changes
+  displayRole?: string; // Override display name (e.g., "LLM ORCHESTRATOR MODE")
 }
 
 export interface ToolResult {
@@ -143,7 +144,7 @@ export interface BaseTool {
 }
 
 export interface StreamingUpdate {
-  type: 'start' | 'content' | 'thinking' | 'tool_calls' | 'end' | 'error' | 'change_tracking' | 'tool_calls_start' | 'tool_calls_end' | 'correction_request' | 'correction_applied' | 'iteration_limit_reached' | 'ask_user_request';
+  type: 'start' | 'content' | 'thinking' | 'tool_calls' | 'end' | 'error' | 'change_tracking' | 'tool_calls_start' | 'tool_calls_end' | 'correction_request' | 'correction_applied' | 'iteration_limit_reached' | 'ask_user_request' | 'notice_message';
   messageId: string;
   content?: string;
   thinking?: string;
@@ -158,6 +159,7 @@ export interface StreamingUpdate {
   question?: string; // For ask user request
   context?: string; // For ask user request
   urgency?: string; // For ask user request
+  message?: ChatMessage; // For notice messages
 }
 
 export interface MessageUpdate {

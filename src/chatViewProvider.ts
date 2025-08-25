@@ -139,6 +139,14 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         });
         break;
 
+      case 'notice_message':
+        // Handle notice messages
+        this.sendMessage({
+          type: 'addMessage',
+          message: (update as any).message
+        });
+        break;
+
       case 'end':
         this.sendMessage({
           type: 'streamingEnd',

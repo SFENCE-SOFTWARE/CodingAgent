@@ -49,6 +49,11 @@ export class ChatService {
     AskUserTool.setInterruptHandler(() => {
       this.isInterrupted = true;
     });
+    
+    // Set up mode change callback
+    this.tools.setModeChangeCallback(async (targetMode: string, task: string, originalMode: string) => {
+      return await this.handleModeChange(targetMode, task, originalMode);
+    });
   }
 
   private handleChangeNotification(changeId: string): void {
@@ -136,6 +141,73 @@ export class ChatService {
   cancelCorrection(): void {
     this.isWaitingForCorrection = false;
     this.pendingCorrection = null;
+  }
+
+  private async handleModeChange(targetMode: string, task: string, originalMode: string): Promise<string> {
+    try {
+      // Get current configuration
+      const config = vscode.workspace.getConfiguration('codingagent');
+      
+      // Send notice about mode switch to UI
+      this.addNoticeMessage(`🔄 Switching to ${targetMode} mode to handle delegated task...`);
+      
+      // Temporarily switch to target mode
+      await config.update('currentMode', targetMode, vscode.ConfigurationTarget.Global);
+      
+      // Create a task message from the orchestrator
+      const taskMessage: ChatMessage = {
+        id: this.generateId(),
+        role: 'user',
+        content: task,
+        timestamp: Date.now()
+      };
+      
+      // Override the display name for this message to show it's from orchestrator
+      (taskMessage as any).displayRole = 'LLM ORCHESTRATOR MODE';
+      
+      this.messages.push(taskMessage);
+      
+      // Send task to the target mode LLM
+      const responseMessages = await this.processMessage(task);
+      
+      // Extract the content from the assistant response
+      const assistantResponse = responseMessages.find(msg => msg.role === 'assistant');
+      const response = assistantResponse ? assistantResponse.content : 'No response generated';
+      
+      // Send notice about switching back
+      this.addNoticeMessage(`🔄 Task completed. Switching back to ${originalMode} mode...`);
+      
+      // Switch back to original mode
+      await config.update('currentMode', originalMode, vscode.ConfigurationTarget.Global);
+      
+      return response;
+    } catch (error) {
+      // Ensure we switch back to original mode even on error
+      const config = vscode.workspace.getConfiguration('codingagent');
+      await config.update('currentMode', originalMode, vscode.ConfigurationTarget.Global);
+      
+      throw error;
+    }
+  }
+
+  private addNoticeMessage(content: string): void {
+    const noticeMessage: ChatMessage = {
+      id: this.generateId(),
+      role: 'notice',
+      content: content,
+      timestamp: Date.now()
+    };
+    
+    this.messages.push(noticeMessage);
+    
+    // Send complete notice message to UI
+    if (this.streamingCallback) {
+      // Create a special update type for notice messages
+      (this.streamingCallback as any)({
+        type: 'notice_message',
+        message: noticeMessage
+      });
+    }
   }
 
   continueIterations(): void {

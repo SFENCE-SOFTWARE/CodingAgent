@@ -524,8 +524,11 @@
     const roleSpan = document.createElement('span');
     roleSpan.className = 'message-role';
     
-    // Dynamic assistant label with model name
-    if (message.role === 'assistant') {
+    // Use displayRole if available, otherwise use default logic
+    if (message.displayRole) {
+      roleSpan.textContent = message.displayRole;
+    } else if (message.role === 'assistant') {
+      // Dynamic assistant label with model name
       const modelName = message.model || currentModel || 'Unknown';
       roleSpan.textContent = `LLM ${modelName}`;
     } else {

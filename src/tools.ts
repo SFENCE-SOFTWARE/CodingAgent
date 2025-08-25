@@ -28,6 +28,7 @@ import { MemorySearchTool } from './tools/memorySearch';
 import { MemoryListTool } from './tools/memoryList';
 import { MemoryExportTool } from './tools/memoryExport';
 import { AskUserTool } from './tools/askUser';
+import { CallUnderModeTool } from './tools/callUnderMode';
 
 export class ToolsService {
   private workspaceRoot: string;
@@ -58,6 +59,11 @@ export class ToolsService {
   // Set callback for terminal command approval
   public setTerminalApprovalCallback(callback: (commandId: string, command: string, cwd: string) => Promise<boolean>): void {
     ExecuteTerminalTool.setCommandApprovalCallback(callback);
+  }
+
+  // Set callback for mode switching
+  public setModeChangeCallback(callback: (targetMode: string, task: string, originalMode: string) => Promise<string>): void {
+    CallUnderModeTool.setModeChangeCallback(callback);
   }
 
   // Handle terminal command approval/rejection
@@ -98,7 +104,8 @@ export class ToolsService {
       new MemorySearchTool(this.memoryService),
       new MemoryListTool(this.memoryService),
       new MemoryExportTool(this.memoryService),
-      new AskUserTool()
+      new AskUserTool(),
+      new CallUnderModeTool()
     ];
 
     // Add each tool to the registry
