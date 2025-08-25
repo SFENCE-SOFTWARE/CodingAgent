@@ -154,18 +154,8 @@ export class ChatService {
       // Temporarily switch to target mode
       await config.update('currentMode', targetMode, vscode.ConfigurationTarget.Global);
       
-      // Create a task message from the orchestrator
-      const taskMessage: ChatMessage = {
-        id: this.generateId(),
-        role: 'user',
-        content: task,
-        timestamp: Date.now()
-      };
-      
-      // Override the display name for this message to show it's from orchestrator
-      (taskMessage as any).displayRole = 'LLM ORCHESTRATOR MODE';
-      
-      this.messages.push(taskMessage);
+      // Create and send task message from the orchestrator
+      const taskMessage = this.addTaskMessage(task, 'LLM ORCHESTRATOR MODE');
       
       // Send task to the target mode LLM
       const responseMessages = await this.processMessage(task);
@@ -1278,6 +1268,30 @@ export class ChatService {
     
     this.messages.push(userMessage);
     return userMessage;
+  }
+
+  addTaskMessage(content: string, displayRole: string): ChatMessage {
+    const taskMessage: ChatMessage = {
+      id: this.generateId(),
+      role: 'user',
+      content,
+      timestamp: Date.now()
+    };
+    
+    // Override the display role
+    (taskMessage as any).displayRole = displayRole;
+    
+    this.messages.push(taskMessage);
+    
+    // Send task message to UI immediately
+    if (this.streamingCallback) {
+      (this.streamingCallback as any)({
+        type: 'notice_message',
+        message: taskMessage
+      });
+    }
+    
+    return taskMessage;
   }
 
   getMessages(): ChatMessage[] {
