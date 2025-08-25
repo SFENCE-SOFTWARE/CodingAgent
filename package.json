@@ -201,6 +201,13 @@
             "maximum": 100,
             "description": "Number of tool iterations before asking user for continuation"
           },
+          "codingagent.askUser.uncertaintyThreshold": {
+            "type": "number",
+            "default": 70,
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Uncertainty percentage threshold - AI will ask for user feedback when uncertainty is above this level"
+          },
           "codingagent.memory.enableProjectMemory": {
             "type": "boolean",
             "default": false,
@@ -282,7 +289,8 @@
                   "memory_delete",
                   "memory_search",
                   "memory_list",
-                  "memory_export"
+                  "memory_export",
+                  "ask_user"
                 ],
                 "fallbackMessage": "I'm ready to help with architecture and design decisions. What system are you working on?",
                 "temperature": 0.2,

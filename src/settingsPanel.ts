@@ -153,6 +153,9 @@ export class SettingsPanel {
         enableStreaming: config.get('enableStreaming'),
         iterationThreshold: config.get('iterationThreshold'),
         enableProjectMemory: config.get('memory.enableProjectMemory'),
+        askUser: {
+          uncertaintyThreshold: config.get('askUser.uncertaintyThreshold')
+        },
         modes: config.get('modes'),
         tools: {
           readFileMaxLines: config.get('tools.readFileMaxLines'),
@@ -606,6 +609,12 @@ export class SettingsPanel {
                   <label for="iterationThreshold">Tool Iteration Threshold:</label>
                   <input type="number" id="iterationThreshold" min="1" max="100" step="1" />
                   <small class="form-hint">Number of tool iterations before asking for user confirmation (1-100)</small>
+                </div>
+
+                <div class="form-group">
+                  <label for="uncertaintyThreshold">Ask User Uncertainty Threshold (%):</label>
+                  <input type="number" id="uncertaintyThreshold" min="0" max="100" step="5" />
+                  <small class="form-hint">AI will ask for user feedback when uncertainty is above this percentage (0-100)</small>
                 </div>
 
                 <div class="form-group">

@@ -4,6 +4,7 @@ import * as vscode from 'vscode';
 import { OpenAIService } from './openai_html_api';
 import { ToolsService } from './tools';
 import { LoggingService } from './loggingService';
+import { AskUserTool } from './tools/askUser';
 import { 
   ChatMessage, 
   OpenAIChatMessage, 
@@ -38,6 +39,16 @@ export class ChatService {
     this.tools.setChangeNotificationCallback((changeId: string) => {
       this.handleChangeNotification(changeId);
     });
+    
+    // Set up ask user message handler
+    AskUserTool.setMessageHandler((payload: any) => {
+      this.handleAskUserRequest(payload);
+    });
+    
+    // Set up ask user interrupt handler
+    AskUserTool.setInterruptHandler(() => {
+      this.isInterrupted = true;
+    });
   }
 
   private handleChangeNotification(changeId: string): void {
@@ -47,6 +58,20 @@ export class ChatService {
         type: 'change_tracking',
         messageId: 'system',
         changeIds: [changeId]
+      });
+    }
+  }
+
+  private handleAskUserRequest(payload: any): void {
+    // Forward ask user request to UI
+    if (this.streamingCallback) {
+      this.streamingCallback({
+        type: 'ask_user_request',
+        messageId: 'system',
+        requestId: payload.requestId,
+        question: payload.question,
+        context: payload.context,
+        urgency: payload.urgency
       });
     }
   }
@@ -293,8 +318,17 @@ export class ChatService {
 
     // Handle tool calls if present
     if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
-      const toolResults = await this.handleToolCalls(assistantMessage, request, undefined, callback, false);
-      return toolResults;
+      try {
+        const toolResults = await this.handleToolCalls(assistantMessage, request, undefined, callback, false);
+        return toolResults;
+      } catch (error) {
+        if (error instanceof Error && error.message === 'USER_CANCELLED_ASK_USER') {
+          // User cancelled ask_user - stop processing and don't add any messages
+          return [];
+        }
+        // Re-throw other errors
+        throw error;
+      }
     }
 
     // Regular response without tool calls
@@ -545,8 +579,17 @@ export class ChatService {
           tool_calls: toolCalls
         };
         
-        const toolResults = await this.handleToolCalls(assistantMessage, request, messageId, callback, true);
-        return toolResults;
+        try {
+          const toolResults = await this.handleToolCalls(assistantMessage, request, messageId, callback, true);
+          return toolResults;
+        } catch (error) {
+          if (error instanceof Error && error.message === 'USER_CANCELLED_ASK_USER') {
+            // User cancelled ask_user - stop processing and don't add any messages
+            return [];
+          }
+          // Re-throw other errors
+          throw error;
+        }
       }
 
       return [chatMessage];
@@ -623,6 +666,22 @@ export class ChatService {
     const iterationWarningThreshold = 10; // Show warning after 10 iterations
 
     while (normalizedToolCalls.length > 0) {
+      // Check for interrupt at the beginning of each iteration
+      if (this.isInterrupted) {
+        console.log('[CodingAgent] Tool calls loop interrupted by user');
+        
+        // Notify UI about tool calls ending due to interrupt
+        if (this.streamingCallback) {
+          this.streamingCallback({
+            type: 'tool_calls_end',
+            messageId: existingMessageId || this.generateId()
+          });
+        }
+        
+        // Stop execution and return current results
+        return results;
+      }
+      
       // Check for iteration limit and ask user for continuation
       if (iterationCount >= this.allowedIterations) {
         this.isWaitingForIterationContinue = true;
@@ -709,6 +768,22 @@ export class ChatService {
 
       // Execute each tool call in the normalized tool calls
       for (const toolCall of normalizedToolCalls) {
+        // Check for interrupt before each tool call
+        if (this.isInterrupted) {
+          console.log('[CodingAgent] Tool execution interrupted by user');
+          
+          // Notify UI about tool calls ending due to interrupt
+          if (this.streamingCallback) {
+            this.streamingCallback({
+              type: 'tool_calls_end',
+              messageId: existingMessageId || this.generateId()
+            });
+          }
+          
+          // Stop execution and return current results
+          return results;
+        }
+        
         // Wait for correction if one is pending
         if (this.isWaitingForCorrection) {
           // Wait until correction is resolved
@@ -745,6 +820,39 @@ export class ChatService {
         try {
           const args = JSON.parse(toolCall.function.arguments);
           const toolResult = await this.tools.executeTool(toolCall.function.name, args);
+          
+          // Check for interrupt after tool execution (for ask_user cancellation)
+          if (this.isInterrupted) {
+            console.log('[CodingAgent] Tool execution interrupted after tool completion');
+            
+            // Notify UI about tool calls ending
+            if (this.streamingCallback) {
+              this.streamingCallback({
+                type: 'tool_calls_end',
+                messageId: existingMessageId || this.generateId()
+              });
+            }
+            
+            // Stop execution and return current results
+            return results;
+          }
+          
+          // Special handling for ask_user tool cancellation (legacy - should be handled by interrupt above)
+          if (toolCall.function.name === 'ask_user' && !toolResult.success && toolResult.error?.includes('cancelled')) {
+            // User cancelled - trigger interrupt like behavior
+            this.isInterrupted = true;
+            
+            // Notify UI about tool calls ending
+            if (this.streamingCallback) {
+              this.streamingCallback({
+                type: 'tool_calls_end',
+                messageId: existingMessageId || this.generateId()
+              });
+            }
+            
+            // Throw special exception to stop processing
+            throw new Error('USER_CANCELLED_ASK_USER');
+          }
           
           const toolResultMessage: OpenAIChatMessage = {
             role: 'tool',

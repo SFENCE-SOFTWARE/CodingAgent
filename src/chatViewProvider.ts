@@ -129,6 +129,16 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         });
         break;
 
+      case 'ask_user_request':
+        this.sendMessage({
+          type: 'askUserRequest',
+          requestId: update.requestId,
+          question: update.question,
+          context: update.context,
+          urgency: update.urgency
+        });
+        break;
+
       case 'end':
         this.sendMessage({
           type: 'streamingEnd',
@@ -197,6 +207,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
           case 'stopIterations':
             this.chatService.stopIterations();
+            break;
+
+          case 'askUserResponse':
+            this.handleAskUserResponse(message.requestId, message.answer, message.cancelled);
             break;
 
           case 'setMode':
@@ -291,6 +305,12 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     this.sendConfiguration();
     this.sendAvailableModels();
     this.sendAvailableModesUpdate();
+  }
+
+  private handleAskUserResponse(requestId: string, answer?: string, cancelled?: boolean) {
+    // Import AskUserTool to resolve the request
+    const { AskUserTool } = require('./tools/askUser');
+    AskUserTool.resolveRequest(requestId, answer, cancelled || false);
   }
 
   private async handleSendMessage(content: string) {

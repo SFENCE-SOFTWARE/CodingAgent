@@ -27,6 +27,7 @@ import { MemoryDeleteTool } from './tools/memoryDelete';
 import { MemorySearchTool } from './tools/memorySearch';
 import { MemoryListTool } from './tools/memoryList';
 import { MemoryExportTool } from './tools/memoryExport';
+import { AskUserTool } from './tools/askUser';
 
 export class ToolsService {
   private workspaceRoot: string;
@@ -96,7 +97,8 @@ export class ToolsService {
       new MemoryDeleteTool(this.memoryService),
       new MemorySearchTool(this.memoryService),
       new MemoryListTool(this.memoryService),
-      new MemoryExportTool(this.memoryService)
+      new MemoryExportTool(this.memoryService),
+      new AskUserTool()
     ];
 
     // Add each tool to the registry

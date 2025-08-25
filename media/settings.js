@@ -18,6 +18,7 @@
     showThinking: document.getElementById('showThinking'),
     enableStreaming: document.getElementById('enableStreaming'),
     iterationThreshold: document.getElementById('iterationThreshold'),
+    uncertaintyThreshold: document.getElementById('uncertaintyThreshold'),
     enableProjectMemory: document.getElementById('enableProjectMemory'),
     loggingEnabled: document.getElementById('loggingEnabled'),
     logFilePath: document.getElementById('logFilePath'),
@@ -202,6 +203,7 @@
     elements.showThinking.checked = config.showThinking || false;
     elements.enableStreaming.checked = config.enableStreaming !== false; // Default to true
     elements.iterationThreshold.value = config.iterationThreshold || 10;
+    elements.uncertaintyThreshold.value = config.askUser?.uncertaintyThreshold || 70;
     elements.enableProjectMemory.checked = config.enableProjectMemory || false;
     
     // Logging settings
@@ -422,6 +424,7 @@
       'showThinking': elements.showThinking.checked,
       'enableStreaming': elements.enableStreaming.checked,
       'iterationThreshold': parseInt(elements.iterationThreshold.value) || 10,
+      'askUser.uncertaintyThreshold': parseInt(elements.uncertaintyThreshold.value) || 70,
       'memory.enableProjectMemory': elements.enableProjectMemory.checked,
       'logging.enabled': elements.loggingEnabled.checked,
       'logging.filePath': elements.logFilePath.value,

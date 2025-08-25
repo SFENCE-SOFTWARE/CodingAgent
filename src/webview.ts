@@ -196,6 +196,25 @@ export function getWebviewContent(
             </div>
           </div>
         </div>
+        
+        <!-- Ask User Dialog -->
+        <div class="ask-user-dialog" id="askUserDialog" style="display: none;">
+          <div class="ask-user-dialog-content">
+            <div class="ask-user-dialog-header">
+              <h3>❓ AI needs your input</h3>
+            </div>
+            <div class="ask-user-dialog-body">
+              <p id="askUserQuestion" class="ask-user-question"></p>
+              <div id="askUserContext" class="ask-user-context" style="display: none;"></div>
+              <textarea id="askUserInput" class="ask-user-input" placeholder="Your response..." rows="3"></textarea>
+              <div class="ask-user-hint">Press Ctrl+Enter to submit</div>
+            </div>
+            <div class="ask-user-dialog-footer">
+              <button id="cancelAskUserBtn" class="ask-user-cancel-btn">Cancel</button>
+              <button id="answerAskUserBtn" class="ask-user-answer-btn">Answer</button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <script src="${scriptUri}"></script>

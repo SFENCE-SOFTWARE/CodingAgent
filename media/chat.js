@@ -34,6 +34,14 @@
   const cancelClearBtn = document.getElementById('cancelClearBtn');
   const confirmClearBtn = document.getElementById('confirmClearBtn');
   
+  // Ask user dialog elements
+  const askUserDialog = document.getElementById('askUserDialog');
+  const askUserQuestion = document.getElementById('askUserQuestion');
+  const askUserContext = document.getElementById('askUserContext');
+  const askUserInput = document.getElementById('askUserInput');
+  const cancelAskUserBtn = document.getElementById('cancelAskUserBtn');
+  const answerAskUserBtn = document.getElementById('answerAskUserBtn');
+  
   // Change tracking elements
   const changeTrackingPanel = document.getElementById('changeTrackingPanel');
   const changePanelContent = document.getElementById('changePanelContent');
@@ -111,6 +119,16 @@
     // Clear confirmation dialog events
     cancelClearBtn.addEventListener('click', cancelClearDialog);
     confirmClearBtn.addEventListener('click', confirmClearDialog);
+    
+    // Ask user dialog events
+    cancelAskUserBtn.addEventListener('click', cancelAskUser);
+    answerAskUserBtn.addEventListener('click', answerAskUser);
+    askUserInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.ctrlKey) {
+        e.preventDefault();
+        answerAskUser();
+      }
+    });
     
     // Auto-resize textarea
     messageInput.addEventListener('input', autoResizeTextarea);
@@ -415,6 +433,63 @@
   function performClearChat() {
     vscode.postMessage({ type: 'clearChat' });
     clearMessages();
+  }
+  
+  // Ask User Dialog Functions
+  function showAskUserDialog(requestId, question, context, urgency) {
+    askUserQuestion.textContent = question;
+    if (context) {
+      askUserContext.textContent = context;
+      askUserContext.style.display = 'block';
+    } else {
+      askUserContext.style.display = 'none';
+    }
+    
+    askUserInput.value = '';
+    askUserDialog.style.display = 'block';
+    askUserDialog.setAttribute('data-request-id', requestId);
+    
+    // Set urgency class for styling (on the dialog element)
+    askUserDialog.className = `ask-user-dialog urgency-${urgency}`;
+    
+    // Focus on input
+    setTimeout(() => askUserInput.focus(), 100);
+  }
+  
+  function cancelAskUser() {
+    const requestId = askUserDialog.getAttribute('data-request-id');
+    askUserDialog.style.display = 'none';
+    
+    // Show visual feedback like interrupt
+    if (isLoading || isToolCallsRunning) {
+      setLoading(false);
+      setToolCallsRunning(false);
+    }
+    
+    vscode.postMessage({
+      type: 'askUserResponse',
+      requestId: requestId,
+      cancelled: true
+    });
+  }
+  
+  function answerAskUser() {
+    const requestId = askUserDialog.getAttribute('data-request-id');
+    const answer = askUserInput.value.trim();
+    
+    if (!answer) {
+      askUserInput.focus();
+      return;
+    }
+    
+    askUserDialog.style.display = 'none';
+    
+    vscode.postMessage({
+      type: 'askUserResponse',
+      requestId: requestId,
+      answer: answer,
+      cancelled: false
+    });
   }
   
   function addMessage(message) {
@@ -1257,6 +1332,10 @@
         
       case 'clearMessages':
         clearMessages();
+        break;
+        
+      case 'askUserRequest':
+        showAskUserDialog(message.requestId, message.question, message.context, message.urgency);
         break;
 
       // Change tracking handlers

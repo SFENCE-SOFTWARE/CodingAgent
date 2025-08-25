@@ -1743,3 +1743,135 @@
   opacity: 1;
   transform: translateX(0);
 }
+
+/* Ask User Dialog - Overlay over input area */
+.ask-user-dialog {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: var(--vscode-panel-background);
+  border-top: 1px solid var(--vscode-panel-border);
+  z-index: 100;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.ask-user-dialog-content {
+  background-color: var(--vscode-panel-background);
+  width: 100%;
+  overflow: hidden;
+}
+
+.ask-user-dialog-header {
+  background-color: var(--vscode-panel-background);
+  border-bottom: 1px solid var(--vscode-panel-border);
+  padding: 12px 16px;
+}
+
+.ask-user-dialog-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--vscode-foreground);
+}
+
+.ask-user-dialog-body {
+  padding: 16px;
+}
+
+.ask-user-question {
+  margin: 0 0 12px 0;
+  color: var(--vscode-foreground);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.ask-user-context {
+  margin: 0 0 16px 0;
+  padding: 12px;
+  background-color: var(--vscode-textBlockQuote-background);
+  border-left: 4px solid var(--vscode-textBlockQuote-border);
+  color: var(--vscode-foreground);
+  font-size: 13px;
+  line-height: 1.4;
+  border-radius: 0 4px 4px 0;
+}
+
+.ask-user-input {
+  width: 100%;
+  background-color: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border);
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-family: var(--vscode-font-family);
+  font-size: 13px;
+  line-height: 1.4;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.ask-user-input:focus {
+  outline: none;
+  border-color: var(--vscode-focusBorder);
+  box-shadow: 0 0 0 1px var(--vscode-focusBorder);
+}
+
+.ask-user-hint {
+  color: var(--vscode-descriptionForeground);
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+.ask-user-dialog-footer {
+  border-top: 1px solid var(--vscode-panel-border);
+  padding: 12px 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.ask-user-cancel-btn, .ask-user-answer-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ask-user-cancel-btn {
+  background-color: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+}
+
+.ask-user-cancel-btn:hover {
+  background-color: var(--vscode-button-secondaryHoverBackground);
+}
+
+.ask-user-answer-btn {
+  background-color: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+}
+
+.ask-user-answer-btn:hover {
+  background-color: var(--vscode-button-hoverBackground);
+}
+
+/* Urgency styling for ask user dialog header */
+.urgency-high .ask-user-dialog-header {
+  background-color: var(--vscode-inputValidation-errorBackground);
+  border-color: var(--vscode-inputValidation-errorBorder);
+}
+
+.urgency-medium .ask-user-dialog-header {
+  background-color: var(--vscode-inputValidation-warningBackground);
+  border-color: var(--vscode-inputValidation-warningBorder);
+}
+
+.urgency-low .ask-user-dialog-header {
+  background-color: var(--vscode-inputValidation-infoBackground);
+  border-color: var(--vscode-inputValidation-infoBorder);
+}
