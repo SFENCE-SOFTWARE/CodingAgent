@@ -1,0 +1,570 @@
+// src/planningService.ts
+
+import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
+
+export interface PlanPoint {
+  id: string;
+  shortName: string;
+  shortDescription: string;
+  detailedDescription: string;
+  acceptanceCriteria: string;
+  careOnPoints: string[]; // IDs of points to consider
+  implemented: boolean;
+  reviewed: boolean;
+  tested: boolean;
+  accepted: boolean;
+  needRework: boolean;
+  reworkReason?: string;
+  comments: string[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface Plan {
+  id: string;
+  name: string;
+  shortDescription: string;
+  longDescription: string;
+  points: PlanPoint[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface PlanState {
+  allImplemented: boolean;
+  allReviewed: boolean;
+  allTested: boolean;
+  allAccepted: boolean;
+  implementedCount: number;
+  reviewedCount: number;
+  testedCount: number;
+  acceptedCount: number;
+  totalCount: number;
+  pendingPoints: string[];
+}
+
+export class PlanningService {
+  private static instance: PlanningService;
+  private plans: Map<string, Plan> = new Map();
+  private plansDirectory: string;
+
+  private constructor(workspaceRoot?: string) {
+    const root = workspaceRoot || vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    if (!root) {
+      throw new Error('No workspace folder found');
+    }
+    this.plansDirectory = path.join(root, '.codingagent', 'plans');
+    this.ensureDirectoryExists();
+    this.loadPlans();
+  }
+
+  public static getInstance(workspaceRoot?: string): PlanningService {
+    if (!PlanningService.instance) {
+      PlanningService.instance = new PlanningService(workspaceRoot);
+    }
+    return PlanningService.instance;
+  }
+
+  public static resetInstance(): void {
+    PlanningService.instance = undefined as any;
+  }
+
+  private ensureDirectoryExists(): void {
+    if (!fs.existsSync(this.plansDirectory)) {
+      fs.mkdirSync(this.plansDirectory, { recursive: true });
+    }
+  }
+
+  private loadPlans(): void {
+    try {
+      if (!fs.existsSync(this.plansDirectory)) {
+        return;
+      }
+
+      const files = fs.readdirSync(this.plansDirectory);
+      for (const file of files) {
+        if (file.endsWith('.json')) {
+          try {
+            const filePath = path.join(this.plansDirectory, file);
+            const content = fs.readFileSync(filePath, 'utf8');
+            const plan: Plan = JSON.parse(content);
+            this.plans.set(plan.id, plan);
+          } catch (error) {
+            console.warn(`Failed to load plan from ${file}:`, error);
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load plans:', error);
+    }
+  }
+
+  private savePlan(plan: Plan): void {
+    try {
+      const filePath = path.join(this.plansDirectory, `${plan.id}.json`);
+      const content = JSON.stringify(plan, null, 2);
+      fs.writeFileSync(filePath, content, 'utf8');
+    } catch (error) {
+      throw new Error(`Failed to save plan ${plan.id}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  private deletePlanFile(planId: string): void {
+    try {
+      const filePath = path.join(this.plansDirectory, `${planId}.json`);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    } catch (error) {
+      throw new Error(`Failed to delete plan file ${planId}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  private generatePointId(plan: Plan): string {
+    const existingIds = plan.points.map(p => parseInt(p.id)).filter(id => !isNaN(id));
+    const nextId = existingIds.length === 0 ? 1 : Math.max(...existingIds) + 1;
+    return nextId.toString();
+  }
+
+  private validatePointId(plan: Plan, pointId: string): boolean {
+    return plan.points.some(p => p.id === pointId);
+  }
+
+  private findPointIndex(plan: Plan, pointId: string): number {
+    return plan.points.findIndex(p => p.id === pointId);
+  }
+
+  // Public API methods
+
+  public createPlan(id: string, name: string, shortDescription: string, longDescription: string): { success: boolean; error?: string } {
+    if (this.plans.has(id)) {
+      return { success: false, error: `Plan with ID '${id}' already exists` };
+    }
+
+    const plan: Plan = {
+      id,
+      name,
+      shortDescription,
+      longDescription,
+      points: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+
+    this.plans.set(id, plan);
+    this.savePlan(plan);
+
+    return { success: true };
+  }
+
+  public listPlans(includeShortDescription: boolean = false): { success: boolean; plans?: Array<{id: string, name: string, shortDescription?: string}>; error?: string } {
+    try {
+      const plansList = Array.from(this.plans.values()).map(plan => ({
+        id: plan.id,
+        name: plan.name,
+        ...(includeShortDescription && { shortDescription: plan.shortDescription })
+      }));
+
+      return { success: true, plans: plansList };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  }
+
+  public addPoint(
+    planId: string,
+    afterPointId: string | null,
+    shortName: string,
+    shortDescription: string,
+    detailedDescription: string,
+    acceptanceCriteria: string
+  ): { success: boolean; pointId?: string; error?: string } {
+    const plan = this.plans.get(planId);
+    if (!plan) {
+      return { success: false, error: `Plan with ID '${planId}' not found` };
+    }
+
+    // Validate afterPointId if provided
+    if (afterPointId && !this.validatePointId(plan, afterPointId)) {
+      return { success: false, error: `Point with ID '${afterPointId}' not found in plan '${planId}'` };
+    }
+
+    const newPointId = this.generatePointId(plan);
+    const newPoint: PlanPoint = {
+      id: newPointId,
+      shortName,
+      shortDescription,
+      detailedDescription,
+      acceptanceCriteria,
+      careOnPoints: [],
+      implemented: false,
+      reviewed: false,
+      tested: false,
+      accepted: false,
+      needRework: false,
+      comments: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+
+    if (afterPointId === null) {
+      // Add at beginning
+      plan.points.unshift(newPoint);
+    } else {
+      // Add after specified point
+      const afterIndex = this.findPointIndex(plan, afterPointId);
+      plan.points.splice(afterIndex + 1, 0, newPoint);
+    }
+
+    plan.updatedAt = Date.now();
+    this.savePlan(plan);
+
+    return { success: true, pointId: newPointId };
+  }
+
+  public changePoint(
+    planId: string,
+    pointId: string,
+    updates: Partial<Pick<PlanPoint, 'shortName' | 'shortDescription' | 'detailedDescription' | 'acceptanceCriteria'>>
+  ): { success: boolean; error?: string } {
+    const plan = this.plans.get(planId);
+    if (!plan) {
+      return { success: false, error: `Plan with ID '${planId}' not found` };
+    }
+
+    const pointIndex = this.findPointIndex(plan, pointId);
+    if (pointIndex === -1) {
+      return { success: false, error: `Point with ID '${pointId}' not found in plan '${planId}'` };
+    }
+
+    const point = plan.points[pointIndex];
+    
+    // Update only provided fields
+    if (updates.shortName !== undefined) point.shortName = updates.shortName;
+    if (updates.shortDescription !== undefined) point.shortDescription = updates.shortDescription;
+    if (updates.detailedDescription !== undefined) point.detailedDescription = updates.detailedDescription;
+    if (updates.acceptanceCriteria !== undefined) point.acceptanceCriteria = updates.acceptanceCriteria;
+
+    point.updatedAt = Date.now();
+    plan.updatedAt = Date.now();
+    this.savePlan(plan);
+
+    return { success: true };
+  }
+
+  public showPlan(planId: string, includePointDescriptions: boolean = false): { success: boolean; plan?: any; error?: string } {
+    const plan = this.plans.get(planId);
+    if (!plan) {
+      return { success: false, error: `Plan with ID '${planId}' not found` };
+    }
+
+    const result = {
+      id: plan.id,
+      name: plan.name,
+      longDescription: plan.longDescription,
+      points: plan.points.map(point => ({
+        id: point.id,
+        shortName: point.shortName,
+        ...(includePointDescriptions && { shortDescription: point.shortDescription })
+      }))
+    };
+
+    return { success: true, plan: result };
+  }
+
+  public setCareOnPoints(planId: string, pointId: string, careOnPointIds: string[]): { success: boolean; error?: string } {
+    const plan = this.plans.get(planId);
+    if (!plan) {
+      return { success: false, error: `Plan with ID '${planId}' not found` };
+    }
+
+    const pointIndex = this.findPointIndex(plan, pointId);
+    if (pointIndex === -1) {
+      return { success: false, error: `Point with ID '${pointId}' not found in plan '${planId}'` };
+    }
+
+    // Validate all care-on point IDs exist
+    for (const careOnId of careOnPointIds) {
+      if (!this.validatePointId(plan, careOnId)) {
+        return { success: false, error: `Care-on point with ID '${careOnId}' not found in plan '${planId}'` };
+      }
+    }
+
+    const point = plan.points[pointIndex];
+    point.careOnPoints = careOnPointIds;
+    point.updatedAt = Date.now();
+    plan.updatedAt = Date.now();
+    this.savePlan(plan);
+
+    return { success: true };
+  }
+
+  public showPoint(planId: string, pointId: string): { success: boolean; point?: any; error?: string } {
+    const plan = this.plans.get(planId);
+    if (!plan) {
+      return { success: false, error: `Plan with ID '${planId}' not found` };
+    }
+
+    const pointIndex = this.findPointIndex(plan, pointId);
+    if (pointIndex === -1) {
+      return { success: false, error: `Point with ID '${pointId}' not found in plan '${planId}'` };
+    }
+
+    const point = plan.points[pointIndex];
+    
+    // Get previous and next points
+    const previousPoints = plan.points.slice(Math.max(0, pointIndex - 2), pointIndex)
+      .map(p => ({ id: p.id, shortName: p.shortName, shortDescription: p.shortDescription }));
+    
+    const nextPoints = plan.points.slice(pointIndex + 1, pointIndex + 3)
+      .map(p => ({ id: p.id, shortName: p.shortName, shortDescription: p.shortDescription }));
+
+    // Get care-on points details
+    const careOnPointsDetails = point.careOnPoints.map(careOnId => {
+      const careOnPoint = plan.points.find(p => p.id === careOnId);
+      return careOnPoint ? {
+        id: careOnPoint.id,
+        shortName: careOnPoint.shortName,
+        shortDescription: careOnPoint.shortDescription
+      } : null;
+    }).filter(p => p !== null);
+
+    const result = {
+      id: point.id,
+      shortName: point.shortName,
+      shortDescription: point.shortDescription,
+      detailedDescription: point.detailedDescription,
+      acceptanceCriteria: point.acceptanceCriteria,
+      state: {
+        implemented: point.implemented,
+        reviewed: point.reviewed,
+        tested: point.tested,
+        accepted: point.accepted,
+        needRework: point.needRework,
+        reworkReason: point.reworkReason
+      },
+      comments: point.comments,
+      previousPoints,
+      nextPoints,
+      careOnPoints: careOnPointsDetails
+    };
+
+    return { success: true, point: result };
+  }
+
+  public addComment(planId: string, pointId: string, comment: string): { success: boolean; error?: string } {
+    const plan = this.plans.get(planId);
+    if (!plan) {
+      return { success: false, error: `Plan with ID '${planId}' not found` };
+    }
+
+    const pointIndex = this.findPointIndex(plan, pointId);
+    if (pointIndex === -1) {
+      return { success: false, error: `Point with ID '${pointId}' not found in plan '${planId}'` };
+    }
+
+    const point = plan.points[pointIndex];
+    const timestampedComment = `[${new Date().toISOString()}] ${comment}`;
+    point.comments.push(timestampedComment);
+    point.updatedAt = Date.now();
+    plan.updatedAt = Date.now();
+    this.savePlan(plan);
+
+    return { success: true };
+  }
+
+  public setImplemented(planId: string, pointId: string): { success: boolean; error?: string } {
+    const plan = this.plans.get(planId);
+    if (!plan) {
+      return { success: false, error: `Plan with ID '${planId}' not found` };
+    }
+
+    const pointIndex = this.findPointIndex(plan, pointId);
+    if (pointIndex === -1) {
+      return { success: false, error: `Point with ID '${pointId}' not found in plan '${planId}'` };
+    }
+
+    const point = plan.points[pointIndex];
+    point.implemented = true;
+    point.needRework = false;
+    point.updatedAt = Date.now();
+    plan.updatedAt = Date.now();
+    this.savePlan(plan);
+
+    return { success: true };
+  }
+
+  public setReviewed(planId: string, pointId: string, skipIfNotReviewable: boolean = false): { success: boolean; error?: string } {
+    const plan = this.plans.get(planId);
+    if (!plan) {
+      return { success: false, error: `Plan with ID '${planId}' not found` };
+    }
+
+    const pointIndex = this.findPointIndex(plan, pointId);
+    if (pointIndex === -1) {
+      return { success: false, error: `Point with ID '${pointId}' not found in plan '${planId}'` };
+    }
+
+    const point = plan.points[pointIndex];
+    
+    if (!point.implemented && !skipIfNotReviewable) {
+      return { success: false, error: `Point '${pointId}' must be implemented before it can be reviewed` };
+    }
+
+    point.reviewed = true;
+    point.updatedAt = Date.now();
+    plan.updatedAt = Date.now();
+    this.savePlan(plan);
+
+    return { success: true };
+  }
+
+  public setTested(planId: string, pointId: string, skipIfNotTestable: boolean = false): { success: boolean; error?: string } {
+    const plan = this.plans.get(planId);
+    if (!plan) {
+      return { success: false, error: `Plan with ID '${planId}' not found` };
+    }
+
+    const pointIndex = this.findPointIndex(plan, pointId);
+    if (pointIndex === -1) {
+      return { success: false, error: `Point with ID '${pointId}' not found in plan '${planId}'` };
+    }
+
+    const point = plan.points[pointIndex];
+    
+    if (!point.implemented && !skipIfNotTestable) {
+      return { success: false, error: `Point '${pointId}' must be implemented before it can be tested` };
+    }
+
+    point.tested = true;
+    point.updatedAt = Date.now();
+    plan.updatedAt = Date.now();
+    this.savePlan(plan);
+
+    return { success: true };
+  }
+
+  public setAccepted(planId: string, pointId: string): { success: boolean; error?: string } {
+    const plan = this.plans.get(planId);
+    if (!plan) {
+      return { success: false, error: `Plan with ID '${planId}' not found` };
+    }
+
+    const pointIndex = this.findPointIndex(plan, pointId);
+    if (pointIndex === -1) {
+      return { success: false, error: `Point with ID '${pointId}' not found in plan '${planId}'` };
+    }
+
+    const point = plan.points[pointIndex];
+    
+    if (!point.reviewed || !point.tested) {
+      return { success: false, error: `Point '${pointId}' must be both reviewed and tested before it can be accepted` };
+    }
+
+    point.accepted = true;
+    point.updatedAt = Date.now();
+    plan.updatedAt = Date.now();
+    this.savePlan(plan);
+
+    return { success: true };
+  }
+
+  public setNeedRework(planId: string, pointId: string, reworkReason: string): { success: boolean; error?: string } {
+    const plan = this.plans.get(planId);
+    if (!plan) {
+      return { success: false, error: `Plan with ID '${planId}' not found` };
+    }
+
+    const pointIndex = this.findPointIndex(plan, pointId);
+    if (pointIndex === -1) {
+      return { success: false, error: `Point with ID '${pointId}' not found in plan '${planId}'` };
+    }
+
+    const point = plan.points[pointIndex];
+    point.implemented = false;
+    point.reviewed = false;
+    point.tested = false;
+    point.accepted = false;
+    point.needRework = true;
+    point.reworkReason = reworkReason;
+    point.updatedAt = Date.now();
+    plan.updatedAt = Date.now();
+    this.savePlan(plan);
+
+    return { success: true };
+  }
+
+  public getPlanState(planId: string): { success: boolean; state?: PlanState; error?: string } {
+    const plan = this.plans.get(planId);
+    if (!plan) {
+      return { success: false, error: `Plan with ID '${planId}' not found` };
+    }
+
+    const totalCount = plan.points.length;
+    const implementedCount = plan.points.filter(p => p.implemented).length;
+    const reviewedCount = plan.points.filter(p => p.reviewed).length;
+    const testedCount = plan.points.filter(p => p.tested).length;
+    const acceptedCount = plan.points.filter(p => p.accepted).length;
+
+    const allImplemented = totalCount > 0 && implementedCount === totalCount;
+    const allReviewed = totalCount > 0 && reviewedCount === totalCount;
+    const allTested = totalCount > 0 && testedCount === totalCount;
+    const allAccepted = totalCount > 0 && acceptedCount === totalCount;
+
+    const pendingPoints = plan.points
+      .filter(p => !p.accepted)
+      .map(p => p.id);
+
+    const state: PlanState = {
+      allImplemented,
+      allReviewed,
+      allTested,
+      allAccepted,
+      implementedCount,
+      reviewedCount,
+      testedCount,
+      acceptedCount,
+      totalCount,
+      pendingPoints
+    };
+
+    return { success: true, state };
+  }
+
+  public isPlanDone(planId: string): { success: boolean; done?: boolean; pendingPoints?: string[]; error?: string } {
+    const stateResult = this.getPlanState(planId);
+    if (!stateResult.success) {
+      return stateResult;
+    }
+
+    const done = stateResult.state!.allAccepted;
+    return {
+      success: true,
+      done,
+      pendingPoints: done ? [] : stateResult.state!.pendingPoints
+    };
+  }
+
+  public deletePlan(planId: string, forceDelete: boolean = false): { success: boolean; needsConfirmation?: boolean; error?: string } {
+    const plan = this.plans.get(planId);
+    if (!plan) {
+      return { success: false, error: `Plan with ID '${planId}' not found` };
+    }
+
+    const doneResult = this.isPlanDone(planId);
+    if (!doneResult.success) {
+      return doneResult;
+    }
+
+    if (!doneResult.done && !forceDelete) {
+      return { success: false, needsConfirmation: true, error: `Plan '${planId}' is not complete. Use force delete with user confirmation to delete incomplete plan.` };
+    }
+
+    this.plans.delete(planId);
+    this.deletePlanFile(planId);
+
+    return { success: true };
+  }
+}

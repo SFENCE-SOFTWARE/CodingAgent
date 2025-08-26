@@ -242,13 +242,14 @@
                   "memory_delete",
                   "memory_search",
                   "memory_list",
-                  "memory_export"
+                  "memory_export",
+                  "plan_show_point"
                 ],
                 "fallbackMessage": "I'm ready to help with your coding tasks. What would you like me to do?",
                 "temperature": 0.1,
                 "topP": 0.9,
                 "description": "Expert coding assistant with file and terminal access",
-                "llmDescription": "Expert programmer who can read, write, and modify files, execute terminal commands, and perform complex coding tasks. Use for code generation, debugging, file operations, project setup, and any technical implementation work."
+                "llmDescription": "Expert programmer who can read, write, and modify files, execute terminal commands, and perform complex coding tasks. Can view specific plan points for context. Use for code generation, debugging, file operations, project setup, and any technical implementation work. Available tools: <tools>"
               },
               "Ask": {
                 "systemMessage": "You are a helpful AI assistant. Answer questions clearly and concisely.",
@@ -273,7 +274,7 @@
                 "temperature": 0.3,
                 "topP": 0.9,
                 "description": "General purpose assistant for questions and research",
-                "llmDescription": "Knowledge specialist who can research topics by reading files, webpages, and PDFs. Use for answering questions, gathering information, explaining concepts, and providing summaries or analysis of existing content."
+                "llmDescription": "Knowledge specialist who can research topics by reading files, webpages, and PDFs. Use for answering questions, gathering information, explaining concepts, and providing summaries or analysis of existing content. Available tools: <tools>"
               },
               "Architect": {
                 "systemMessage": "You are a software architect assistant. Help design systems, review architecture, and provide technical guidance.",
@@ -293,16 +294,17 @@
                   "memory_search",
                   "memory_list",
                   "memory_export",
-                  "ask_user"
+                  "ask_user",
+                  "plan_show"
                 ],
                 "fallbackMessage": "I'm ready to help with architecture and design decisions. What system are you working on?",
                 "temperature": 0.2,
                 "topP": 0.85,
                 "description": "Software architecture and system design specialist",
-                "llmDescription": "System design expert who can analyze architectures, review technical decisions, and provide high-level guidance. Can ask users for clarification on requirements. Use for architectural planning, system design reviews, and strategic technical decisions."
+                "llmDescription": "System design expert who can analyze architectures, review technical decisions, and provide high-level guidance. Can view plan details for architectural context. Use for architectural planning, system design reviews, and strategic technical decisions. Available tools: <tools>"
               },
               "Orchestrator": {
-                "systemMessage": "You are an AI orchestrator that can delegate tasks to specialized modes. Use the call_under_mode tool to assign specific tasks to Coder, Ask, or Architect modes based on the task requirements. Always specify clear instructions and expected response format when delegating tasks.",
+                "systemMessage": "You are an AI project orchestrator responsible for comprehensive project planning and execution management. Your primary responsibilities are:\n\n1. TASK ANALYSIS: Upon receiving any task, immediately analyze it and create a detailed plan using plan_new tool\n2. PLAN CREATION: Break down tasks into specific, actionable points with clear acceptance criteria\n3. EXECUTION OVERSIGHT: Monitor and coordinate plan execution by delegating specific tasks to specialized modes (Coder, Ask, Architect) using call_under_mode\n4. PROGRESS TRACKING: Continuously update point statuses (implemented, reviewed, tested, accepted) based on responses from specialized modes\n5. PLAN MANAGEMENT: You may also be asked to continue work on existing plans - use plan_list and plan_show to assess current state\n6. COMPLETION RESPONSIBILITY: Ensure all plan points are properly executed and accepted before considering a task complete\n\nCURRENT ACTIVE PLAN: <plan_id>\n\nAlways start by creating or reviewing a plan. Use the planning tools extensively to maintain organized project execution. You are the master coordinator responsible for both planning and execution oversight.",
                 "allowedTools": [
                   "call_under_mode",
                   "read_file",
@@ -317,13 +319,30 @@
                   "memory_search",
                   "memory_list",
                   "memory_export",
-                  "ask_user"
+                  "ask_user",
+                  "plan_new",
+                  "plan_list",
+                  "plan_open",
+                  "plan_add_point",
+                  "plan_change_point",
+                  "plan_show",
+                  "plan_show_point",
+                  "plan_point_implemented",
+                  "plan_point_reviewed",
+                  "plan_point_tested",
+                  "plan_point_accepted",
+                  "plan_point_need_rework",
+                  "plan_point_care_on",
+                  "plan_point_comment",
+                  "plan_state",
+                  "plan_done",
+                  "plan_delete"
                 ],
                 "fallbackMessage": "I'm ready to orchestrate tasks by delegating to specialized modes. What would you like me to coordinate?",
                 "temperature": 0.15,
                 "topP": 0.9,
                 "description": "Task orchestrator that delegates work to specialized modes",
-                "llmDescription": "Master coordinator who can delegate tasks to specialized AI modes. Can ask users for clarification on complex requirements and break down multi-step workflows across different specialized capabilities."
+                "llmDescription": "Master project coordinator responsible for comprehensive planning and execution oversight. Creates detailed plans, delegates tasks to specialized AI modes (Coder, Ask, Architect), and tracks progress until completion. Can manage both new projects and continue existing plans. Available tools: <tools>"
               }
             },
             "description": "Configuration for different agent modes"

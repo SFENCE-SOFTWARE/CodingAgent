@@ -29,10 +29,20 @@ export class CallUnderModeTool implements BaseTool {
       .filter(([modeName, modeConfig]: [string, any]) => 
         !modeConfig.allowedTools?.includes('call_under_mode')
       )
-      .map(([modeName, modeConfig]: [string, any]) => ({
-        name: modeName,
-        description: modeConfig.llmDescription || modeConfig.description || `${modeName} mode`
-      }));
+      .map(([modeName, modeConfig]: [string, any]) => {
+        let description = modeConfig.llmDescription || modeConfig.description || `${modeName} mode`;
+        
+        // Replace <tools> placeholder with actual tools list
+        if (description.includes('<tools>') && modeConfig.allowedTools) {
+          const toolsList = modeConfig.allowedTools.join(', ');
+          description = description.replace('<tools>', toolsList);
+        }
+        
+        return {
+          name: modeName,
+          description
+        };
+      });
 
     const modeDescriptions = availableModes
       .map(mode => `- ${mode.name}: ${mode.description}`)

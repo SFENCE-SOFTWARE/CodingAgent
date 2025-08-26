@@ -30,6 +30,25 @@ import { MemoryExportTool } from './tools/memoryExport';
 import { AskUserTool } from './tools/askUser';
 import { CallUnderModeTool } from './tools/callUnderMode';
 
+// Planning tools
+import { PlanNewTool } from './tools/planNew';
+import { PlanOpenTool } from './tools/planOpen';
+import { PlanListTool } from './tools/planList';
+import { PlanAddPointTool } from './tools/planAddPoint';
+import { PlanChangePointTool } from './tools/planChangePoint';
+import { PlanShowTool } from './tools/planShow';
+import { PlanPointCareOnTool } from './tools/planPointCareOn';
+import { PlanShowPointTool } from './tools/planShowPoint';
+import { PlanPointCommentTool } from './tools/planPointComment';
+import { PlanPointImplementedTool } from './tools/planPointImplemented';
+import { PlanPointReviewedTool } from './tools/planPointReviewed';
+import { PlanPointTestedTool } from './tools/planPointTested';
+import { PlanPointAcceptedTool } from './tools/planPointAccepted';
+import { PlanPointNeedReworkTool } from './tools/planPointNeedRework';
+import { PlanStateTool } from './tools/planState';
+import { PlanDoneTool } from './tools/planDone';
+import { PlanDeleteTool } from './tools/planDelete';
+
 export class ToolsService {
   private workspaceRoot: string;
   private tools: Map<string, BaseTool> = new Map();
@@ -105,7 +124,26 @@ export class ToolsService {
       new MemoryListTool(this.memoryService),
       new MemoryExportTool(this.memoryService),
       new AskUserTool(),
-      new CallUnderModeTool()
+      new CallUnderModeTool(),
+
+      // Planning tools
+      new PlanNewTool(),
+      new PlanOpenTool(),
+      new PlanListTool(),
+      new PlanAddPointTool(),
+      new PlanChangePointTool(),
+      new PlanShowTool(),
+      new PlanPointCareOnTool(),
+      new PlanShowPointTool(),
+      new PlanPointCommentTool(),
+      new PlanPointImplementedTool(),
+      new PlanPointReviewedTool(),
+      new PlanPointTestedTool(),
+      new PlanPointAcceptedTool(),
+      new PlanPointNeedReworkTool(),
+      new PlanStateTool(),
+      new PlanDoneTool(),
+      new PlanDeleteTool()
     ];
 
     // Add each tool to the registry

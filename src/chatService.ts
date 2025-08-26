@@ -5,6 +5,7 @@ import { OpenAIService } from './openai_html_api';
 import { ToolsService } from './tools';
 import { LoggingService } from './loggingService';
 import { AskUserTool } from './tools/askUser';
+import { PlanContextManager } from './planContextManager';
 import { 
   ChatMessage, 
   OpenAIChatMessage, 
@@ -29,6 +30,7 @@ export class ChatService {
   private isWaitingForIterationContinue: boolean = false;
   private shouldContinueIterations: boolean = false;
   private allowedIterations: number = 10; // How many iterations are currently allowed
+  private currentPlanId: string | null = null; // Track the current active plan ID
 
   constructor(toolsService?: ToolsService) {
     this.openai = new OpenAIService();
@@ -48,6 +50,12 @@ export class ChatService {
     // Set up ask user interrupt handler
     AskUserTool.setInterruptHandler(() => {
       this.isInterrupted = true;
+    });
+    
+    // Set up plan context manager callback
+    const planContextManager = PlanContextManager.getInstance();
+    planContextManager.setUpdateCallback((planId: string | null) => {
+      this.currentPlanId = planId;
     });
     
     // Set up mode change callback
@@ -115,6 +123,38 @@ export class ChatService {
 
   setStreamingCallback(callback: (update: StreamingUpdate) => void): void {
     this.streamingCallback = callback;
+  }
+
+  /**
+   * Process system message by replacing dynamic placeholders
+   */
+  private processSystemMessage(systemMessage: string): string {
+    let processedMessage = systemMessage;
+    
+    // Replace <plan_id> placeholder with current plan ID
+    if (processedMessage.includes('<plan_id>')) {
+      const planContextManager = PlanContextManager.getInstance();
+      const planIdValue = planContextManager.getCurrentPlanId() || 'No active plan';
+      processedMessage = processedMessage.replace('<plan_id>', planIdValue);
+    }
+    
+    return processedMessage;
+  }
+
+  /**
+   * Set the current active plan ID for context in system messages
+   */
+  public setCurrentPlanId(planId: string | null): void {
+    const planContextManager = PlanContextManager.getInstance();
+    planContextManager.setCurrentPlanId(planId);
+  }
+
+  /**
+   * Get the current active plan ID
+   */
+  public getCurrentPlanId(): string | null {
+    const planContextManager = PlanContextManager.getInstance();
+    return planContextManager.getCurrentPlanId();
   }
 
   interruptLLM(): void {
@@ -298,7 +338,7 @@ export class ChatService {
       const openaiMessages: OpenAIChatMessage[] = [
         {
           role: 'system',
-          content: modeConfig.systemMessage
+          content: this.processSystemMessage(modeConfig.systemMessage)
         }
       ];
 
