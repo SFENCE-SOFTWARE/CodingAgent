@@ -171,9 +171,11 @@
         "properties": {
           "codingagent.currentMode": {
             "type": "string",
-            "default": "Coder",
+            "default": "Ask",
             "enum": [
               "Coder",
+              "Tester",
+              "Reviewer",
               "Ask",
               "Architect",
               "Orchestrator"
@@ -182,7 +184,7 @@
           },
           "codingagent.currentModel": {
             "type": "string",
-            "default": "llama3:8b",
+            "default": "",
             "description": "Current OpenAI API model to use"
           },
           "codingagent.showThinking": {
@@ -250,6 +252,58 @@
                 "topP": 0.9,
                 "description": "Expert coding assistant with file and terminal access",
                 "llmDescription": "Expert programmer who can read, write, and modify files, execute terminal commands, and perform complex coding tasks. Can view specific plan points for context. Use for code generation, debugging, file operations, project setup, and any technical implementation work. Available tools: <tools>"
+              },
+              "Tester": {
+                "systemMessage": "You are an expert software testing specialist. You excel at creating comprehensive test suites, analyzing code coverage, performing quality assurance testing, and ensuring software reliability. Focus on test-driven development, unit testing, integration testing, and automated testing strategies.",
+                "allowedTools": [
+                  "read_file",
+                  "write_file",
+                  "list_files",
+                  "get_file_size",
+                  "execute_terminal",
+                  "create_folder",
+                  "patch_file",
+                  "modify_lines",
+                  "rename_file",
+                  "search_in_project",
+                  "search_in_path",
+                  "memory_store",
+                  "memory_retrieve_by_lines",
+                  "memory_retrieve_data",
+                  "memory_delete",
+                  "memory_search",
+                  "memory_list",
+                  "memory_export",
+                  "plan_show_point"
+                ],
+                "fallbackMessage": "I'm ready to help with testing tasks. What would you like me to test or validate?",
+                "temperature": 0.1,
+                "topP": 0.9,
+                "description": "Software testing and quality assurance specialist",
+                "llmDescription": "Testing expert who creates comprehensive test suites, performs quality assurance, and ensures software reliability. Specializes in unit testing, integration testing, test automation, and coverage analysis. Can view specific plan points for testing context. Use for test creation, test strategy, quality validation, and testing automation. Available tools: <tools>"
+              },
+              "Reviewer": {
+                "systemMessage": "You are an expert code reviewer and quality assurance specialist. You excel at analyzing code quality, identifying potential issues, suggesting improvements, and ensuring adherence to best practices and coding standards. Focus on security, performance, maintainability, and code structure analysis.",
+                "allowedTools": [
+                  "read_file",
+                  "list_files",
+                  "get_file_size",
+                  "search_in_project",
+                  "search_in_path",
+                  "memory_store",
+                  "memory_retrieve_by_lines",
+                  "memory_retrieve_data",
+                  "memory_delete",
+                  "memory_search",
+                  "memory_list",
+                  "memory_export",
+                  "plan_show_point"
+                ],
+                "fallbackMessage": "I'm ready to review your code and provide quality feedback. What would you like me to review?",
+                "temperature": 0.2,
+                "topP": 0.85,
+                "description": "Code review and quality assurance specialist",
+                "llmDescription": "Code review expert who analyzes code quality, identifies issues, and suggests improvements. Focuses on security, performance, maintainability, best practices, and coding standards. Can view specific plan points for review context. Use for code reviews, quality analysis, security audits, and improvement recommendations. Available tools: <tools>"
               },
               "Ask": {
                 "systemMessage": "You are a helpful AI assistant. Answer questions clearly and concisely.",
