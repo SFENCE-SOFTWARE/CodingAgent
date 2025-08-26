@@ -737,6 +737,12 @@
     // Store original markdown content for copy functionality
     const originalMarkdown = content;
     
+    // FIRST: Escape any existing HTML tags in the content to make it safe
+    // This prevents HTML injection and ensures existing HTML shows as text
+    content = escapeHtml(content);
+    
+    // NOW: Convert markdown syntax to HTML (on the escaped content)
+    
     // Convert markdown tables to HTML
     content = content.replace(/\|(.+)\|(?:\r?\n|\r)\|[-:\|]+\|(?:\r?\n|\r)((?:\|.+\|\r?\n?)*)/g, (match, header, rows) => {
       const headerCells = header.split('|').map(cell => cell.trim()).filter(cell => cell);
@@ -746,14 +752,14 @@
       
       let tableHtml = '<table class="markdown-table"><thead><tr>';
       headerCells.forEach(cell => {
-        tableHtml += `<th>${escapeHtml(cell)}</th>`;
+        tableHtml += `<th>${cell}</th>`;  // Already escaped
       });
       tableHtml += '</tr></thead><tbody>';
       
       rowData.forEach(row => {
         tableHtml += '<tr>';
         row.forEach(cell => {
-          tableHtml += `<td>${escapeHtml(cell)}</td>`;
+          tableHtml += `<td>${cell}</td>`;  // Already escaped
         });
         tableHtml += '</tr>';
       });
@@ -764,47 +770,50 @@
     
     // Convert markdown-style code blocks to HTML
     content = content.replace(/```(\w+)?\n?([\s\S]*?)```/g, (match, lang, code) => {
-      return `<pre><code class="language-${lang || 'text'}">${escapeHtml(code.trim())}</code></pre>`;
+      return `<pre><code class="language-${lang || 'text'}">${code.trim()}</code></pre>`;  // Already escaped
     });
     
     // Convert inline code
-    content = content.replace(/`([^`]+)`/g, (match, code) => `<code class="inline-code">${escapeHtml(code)}</code>`);
+    content = content.replace(/`([^`]+)`/g, (match, code) => `<code class="inline-code">${code}</code>`);  // Already escaped
     
     // Convert bold text **text** and __text__
-    content = content.replace(/\*\*(.*?)\*\*/g, (match, text) => `<strong>${escapeHtml(text)}</strong>`);
-    content = content.replace(/__(.*?)__/g, (match, text) => `<strong>${escapeHtml(text)}</strong>`);
+    content = content.replace(/\*\*(.*?)\*\*/g, (match, text) => `<strong>${text}</strong>`);  // Already escaped
+    content = content.replace(/__(.*?)__/g, (match, text) => `<strong>${text}</strong>`);  // Already escaped
     
     // Convert italic text *text* and _text_
-    content = content.replace(/(?<!\*)\*([^\*\n]+)\*(?!\*)/g, (match, text) => `<em>${escapeHtml(text)}</em>`);
-    content = content.replace(/(?<!_)_([^_\n]+)_(?!_)/g, (match, text) => `<em>${escapeHtml(text)}</em>`);
+    content = content.replace(/(?<!\*)\*([^\*\n]+)\*(?!\*)/g, (match, text) => `<em>${text}</em>`);  // Already escaped
+    content = content.replace(/(?<!_)_([^_\n]+)_(?!_)/g, (match, text) => `<em>${text}</em>`);  // Already escaped
     
     // Convert strikethrough ~~text~~
-    content = content.replace(/~~(.*?)~~/g, (match, text) => `<del>${escapeHtml(text)}</del>`);
+    content = content.replace(/~~(.*?)~~/g, (match, text) => `<del>${text}</del>`);  // Already escaped
     
     // Convert headers
-    content = content.replace(/^### (.*$)/gm, (match, text) => `<h3>${escapeHtml(text)}</h3>`);
-    content = content.replace(/^## (.*$)/gm, (match, text) => `<h2>${escapeHtml(text)}</h2>`);
-    content = content.replace(/^# (.*$)/gm, (match, text) => `<h1>${escapeHtml(text)}</h1>`);
+    content = content.replace(/^### (.*$)/gm, (match, text) => `<h3>${text}</h3>`);  // Already escaped
+    content = content.replace(/^## (.*$)/gm, (match, text) => `<h2>${text}</h2>`);  // Already escaped
+    content = content.replace(/^# (.*$)/gm, (match, text) => `<h1>${text}</h1>`);  // Already escaped
     
     // Convert unordered lists
-    content = content.replace(/^\* (.+)$/gm, (match, text) => `<li>${escapeHtml(text)}</li>`);
-    content = content.replace(/^- (.+)$/gm, (match, text) => `<li>${escapeHtml(text)}</li>`);
-    content = content.replace(/^(\+ .+)$/gm, (match, text) => `<li>${escapeHtml(text)}</li>`);
+    content = content.replace(/^\* (.+)$/gm, (match, text) => `<li>${text}</li>`);  // Already escaped
+    content = content.replace(/^- (.+)$/gm, (match, text) => `<li>${text}</li>`);  // Already escaped
+    content = content.replace(/^(\+ .+)$/gm, (match, text) => `<li>${text}</li>`);  // Already escaped
     
     // Wrap consecutive list items in <ul>
     content = content.replace(/(<li>.*<\/li>(?:\s*<li>.*<\/li>)*)/g, '<ul>$1</ul>');
     
     // Convert ordered lists
-    content = content.replace(/^\d+\. (.+)$/gm, (match, text) => `<li class="ordered">${escapeHtml(text)}</li>`);
+    content = content.replace(/^\d+\. (.+)$/gm, (match, text) => `<li class="ordered">${text}</li>`);  // Already escaped
     content = content.replace(/(<li class="ordered">.*<\/li>(?:\s*<li class="ordered">.*<\/li>)*)/g, '<ol>$1</ol>');
     content = content.replace(/class="ordered"/g, ''); // Remove the temporary class
     
-    // Convert links [text](url) - note: URL should be escaped too
-    content = content.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, url) => 
-      `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(text)}</a>`);
+    // Convert links [text](url) - URLs need to be decoded back for href, but text stays escaped
+    content = content.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, url) => {
+      // Decode the URL for href attribute but keep the text escaped
+      const decodedUrl = url.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+      return `<a href="${decodedUrl}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+    });
     
     // Convert blockquotes
-    content = content.replace(/^> (.+)$/gm, (match, text) => `<blockquote>${escapeHtml(text)}</blockquote>`);
+    content = content.replace(/^> (.+)$/gm, (match, text) => `<blockquote>${text}</blockquote>`);  // Already escaped
     
     // Convert horizontal rules
     content = content.replace(/^---$/gm, '<hr>');
