@@ -8,7 +8,7 @@ import { PlanningService } from '../src/planningService';
 import { PlanContextManager } from '../src/planContextManager';
 import { PlanNewTool } from '../src/tools/planNew';
 import { PlanListTool } from '../src/tools/planList';
-import { PlanAddPointTool } from '../src/tools/planAddPoint';
+import { PlanAddPointsTool } from '../src/tools/planAddPoints';
 import { PlanChangePointTool } from '../src/tools/planChangePoint';
 import { PlanShowTool } from '../src/tools/planShow';
 import { PlanPointCareOnTool } from '../src/tools/planPointCareOn';
@@ -22,6 +22,7 @@ import { PlanPointNeedReworkTool } from '../src/tools/planPointNeedRework';
 import { PlanStateTool } from '../src/tools/planState';
 import { PlanDoneTool } from '../src/tools/planDone';
 import { PlanDeleteTool } from '../src/tools/planDelete';
+import { PlanOpenTool } from '../src/tools/planOpen';
 
 suite('Planning Tools Test Suite', () => {
   const testWorkspaceRoot = '/tmp/planning-test-workspace';
@@ -32,7 +33,7 @@ suite('Planning Tools Test Suite', () => {
   
   let planNewTool: PlanNewTool;
   let planListTool: PlanListTool;
-  let planAddPointTool: PlanAddPointTool;
+  let planAddPointsTool: PlanAddPointsTool;
   let planChangePointTool: PlanChangePointTool;
   let planShowTool: PlanShowTool;
   let planPointCareOnTool: PlanPointCareOnTool;
@@ -46,6 +47,7 @@ suite('Planning Tools Test Suite', () => {
   let planStateTool: PlanStateTool;
   let planDoneTool: PlanDoneTool;
   let planDeleteTool: PlanDeleteTool;
+  let planOpenTool: PlanOpenTool;
 
   setup(() => {
     // Generate unique plan ID for each test run
@@ -62,7 +64,7 @@ suite('Planning Tools Test Suite', () => {
     // Initialize all planning tools
     planNewTool = new PlanNewTool();
     planListTool = new PlanListTool();
-    planAddPointTool = new PlanAddPointTool();
+    planAddPointsTool = new PlanAddPointsTool();
     planChangePointTool = new PlanChangePointTool();
     planShowTool = new PlanShowTool();
     planPointCareOnTool = new PlanPointCareOnTool();
@@ -76,6 +78,7 @@ suite('Planning Tools Test Suite', () => {
     planStateTool = new PlanStateTool();
     planDoneTool = new PlanDoneTool();
     planDeleteTool = new PlanDeleteTool();
+    planOpenTool = new PlanOpenTool();
   });
 
   teardown(async () => {
@@ -110,7 +113,7 @@ suite('Planning Tools Test Suite', () => {
   suite('Tool Info and Definitions', () => {
     test('All tools have proper info', () => {
       const tools = [
-        planNewTool, planListTool, planAddPointTool, planChangePointTool,
+        planNewTool, planListTool, planAddPointsTool, planChangePointTool,
         planShowTool, planPointCareOnTool, planShowPointTool, planPointCommentTool,
         planPointImplementedTool, planPointReviewedTool, planPointTestedTool,
         planPointAcceptedTool, planPointNeedReworkTool, planStateTool,
@@ -197,45 +200,98 @@ suite('Planning Tools Test Suite', () => {
       planContextManager.setCurrentPlanId(testPlanId);
     });
 
-    test('Add point to plan', async () => {
+    test('Add points to plan', async () => {
       // Plan context is already set in setup
 
-      const result = await planAddPointTool.execute({
+      const result = await planAddPointsTool.execute({
         after_point_id: null,
-        short_name: 'Test Point',
-        short_description: 'A test point for validation',
-        detailed_description: 'A comprehensive test point used for validating the planning point system functionality',
-        acceptance_criteria: 'Point should be created successfully and appear in plan'
+        points: [{
+          short_name: 'Test Point',
+          short_description: 'A test point for validation',
+          detailed_description: 'A comprehensive test point used for validating the planning point system functionality',
+          acceptance_criteria: 'Point should be created successfully and appear in plan'
+        }]
       }, testWorkspaceRoot);
 
       if (!result.success) {
-        console.log('Add point failed:', result.error);
+        console.log('Add points failed:', result.error);
       }
-      assert.strictEqual(result.success, true, 'Point addition should succeed');
+      assert.strictEqual(result.success, true, 'Points addition should succeed');
       
       // Extract point ID from the response content for use in other tests
-      const match = result.content.match(/Point '([^']+)'/);
+      const match = result.content.match(/Point IDs: ([^)]+)/);
       if (match) {
-        testPointId = match[1];
+        testPointId = match[1].split(', ')[0]; // Get first point ID
       }
       
       assert.ok(result.content.includes('Point'), 'Result should mention point creation');
     });
 
+    test('Add multiple points to plan at once', async () => {
+      // Plan context is already set in setup
+
+      const result = await planAddPointsTool.execute({
+        after_point_id: null,
+        points: [
+          {
+            short_name: 'Point 1',
+            short_description: 'First test point',
+            detailed_description: 'Detailed description for the first test point',
+            acceptance_criteria: 'First point acceptance criteria'
+          },
+          {
+            short_name: 'Point 2',
+            short_description: 'Second test point',
+            detailed_description: 'Detailed description for the second test point',
+            acceptance_criteria: 'Second point acceptance criteria'
+          },
+          {
+            short_name: 'Point 3',
+            short_description: 'Third test point',
+            detailed_description: 'Detailed description for the third test point',
+            acceptance_criteria: 'Third point acceptance criteria'
+          }
+        ]
+      }, testWorkspaceRoot);
+
+      if (!result.success) {
+        console.log('Add multiple points failed:', result.error);
+      }
+      assert.strictEqual(result.success, true, 'Multiple points addition should succeed');
+      assert.ok(result.content.includes('3 points added'), 'Result should mention 3 points created');
+      
+      // Extract point IDs from the response for verification
+      const match = result.content.match(/Point IDs: ([^)]+)/);
+      assert.ok(match, 'Should have point IDs in response');
+      const pointIds = match[1].split(', ');
+      assert.strictEqual(pointIds.length, 3, 'Should have 3 point IDs');
+      
+      // Verify that all IDs are unique
+      const uniqueIds = new Set(pointIds);
+      assert.strictEqual(uniqueIds.size, 3, 'All point IDs should be unique');
+      
+      // Verify that IDs are sequential
+      const numericIds = pointIds.map(id => parseInt(id)).sort((a, b) => a - b);
+      assert.strictEqual(numericIds[1] - numericIds[0], 1, 'IDs should be sequential');
+      assert.strictEqual(numericIds[2] - numericIds[1], 1, 'IDs should be sequential');
+    });
+
     test('Change point details', async () => {
       // Plan context is already set in setup, add a point first
-      const addResult = await planAddPointTool.execute({
+      const addResult = await planAddPointsTool.execute({
         after_point_id: null,
-        short_name: 'Test Point',
-        short_description: 'A test point for validation',
-        detailed_description: 'A comprehensive test point used for validating the planning point system functionality',
-        acceptance_criteria: 'Point should be created successfully and appear in plan'
+        points: [{
+          short_name: 'Test Point',
+          short_description: 'A test point for validation',
+          detailed_description: 'A comprehensive test point used for validating the planning point system functionality',
+          acceptance_criteria: 'Point should be created successfully and appear in plan'
+        }]
       }, testWorkspaceRoot);
 
       // Extract point ID from the response
-      const match = addResult.content.match(/Point '([^']+)'/);
+      const match = addResult.content.match(/Point IDs: ([^)]+)/);
       if (match) {
-        testPointId = match[1];
+        testPointId = match[1].split(', ')[0];
       }
 
       const result = await planChangePointTool.execute({
@@ -258,18 +314,20 @@ suite('Planning Tools Test Suite', () => {
       }, testWorkspaceRoot);
 
       // Then add a point
-      const addResult = await planAddPointTool.execute({
+      const addResult = await planAddPointsTool.execute({
         after_point_id: null,
-        short_name: 'Test Point',
-        short_description: 'A test point for validation',
-        detailed_description: 'A comprehensive test point used for validating the planning point system functionality',
-        acceptance_criteria: 'Point should be created successfully and appear in plan'
+        points: [{
+          short_name: 'Test Point',
+          short_description: 'A test point for validation',
+          detailed_description: 'A comprehensive test point used for validating the planning point system functionality',
+          acceptance_criteria: 'Point should be created successfully and appear in plan'
+        }]
       }, testWorkspaceRoot);
 
       // Extract point ID from the response
-      const match = addResult.content.match(/Point '([^']+)'/);
+      const match = addResult.content.match(/Point IDs: ([^)]+)/);
       if (match) {
-        testPointId = match[1];
+        testPointId = match[1].split(', ')[0];
       }
 
       const result = await planShowPointTool.execute({
@@ -296,18 +354,20 @@ suite('Planning Tools Test Suite', () => {
       // Set current plan context for all status operations
       planContextManager.setCurrentPlanId(testPlanId);
 
-      const addResult = await planAddPointTool.execute({
+      const addResult = await planAddPointsTool.execute({
         after_point_id: null,
-        short_name: 'Test Point',
-        short_description: 'A test point for validation',
-        detailed_description: 'A comprehensive test point used for validating the planning point system functionality',
-        acceptance_criteria: 'Point should be created successfully and appear in plan'
+        points: [{
+          short_name: 'Test Point',
+          short_description: 'A test point for validation',
+          detailed_description: 'A comprehensive test point used for validating the planning point system functionality',
+          acceptance_criteria: 'Point should be created successfully and appear in plan'
+        }]
       }, testWorkspaceRoot);
 
       // Extract point ID from the response
       const match = addResult.content.match(/Point '([^']+)'/);
       if (match) {
-        testPointId = match[1];
+        testPointId = match[1].split(', ')[0];
       }
     });
 
@@ -329,18 +389,20 @@ suite('Planning Tools Test Suite', () => {
         long_description: 'A comprehensive test plan used for validating the planning system functionality'
       }, testWorkspaceRoot);
 
-      const addResult = await planAddPointTool.execute({
+      const addResult = await planAddPointsTool.execute({
         after_point_id: null,
-        short_name: 'Test Point',
-        short_description: 'A test point for validation',
-        detailed_description: 'A comprehensive test point used for validating the planning point system functionality',
-        acceptance_criteria: 'Point should be created successfully and appear in plan'
+        points: [{
+          short_name: 'Test Point',
+          short_description: 'A test point for validation',
+          detailed_description: 'A comprehensive test point used for validating the planning point system functionality',
+          acceptance_criteria: 'Point should be created successfully and appear in plan'
+        }]
       }, testWorkspaceRoot);
 
       // Extract point ID from the response
       const match = addResult.content.match(/Point '([^']+)'/);
       if (match) {
-        testPointId = match[1];
+        testPointId = match[1].split(', ')[0];
       }
 
       // First mark as implemented
@@ -365,18 +427,20 @@ suite('Planning Tools Test Suite', () => {
         long_description: 'A comprehensive test plan used for validating the planning system functionality'
       }, testWorkspaceRoot);
 
-      const addResult = await planAddPointTool.execute({
+      const addResult = await planAddPointsTool.execute({
         after_point_id: null,
-        short_name: 'Test Point',
-        short_description: 'A test point for validation',
-        detailed_description: 'A comprehensive test point used for validating the planning point system functionality',
-        acceptance_criteria: 'Point should be created successfully and appear in plan'
+        points: [{
+          short_name: 'Test Point',
+          short_description: 'A test point for validation',
+          detailed_description: 'A comprehensive test point used for validating the planning point system functionality',
+          acceptance_criteria: 'Point should be created successfully and appear in plan'
+        }]
       }, testWorkspaceRoot);
 
       // Extract point ID from the response
       const match = addResult.content.match(/Point '([^']+)'/);
       if (match) {
-        testPointId = match[1];
+        testPointId = match[1].split(', ')[0];
       }
 
       // First mark as implemented and reviewed
@@ -405,18 +469,20 @@ suite('Planning Tools Test Suite', () => {
         long_description: 'A comprehensive test plan used for validating the planning system functionality'
       }, testWorkspaceRoot);
 
-      const addResult = await planAddPointTool.execute({
+      const addResult = await planAddPointsTool.execute({
         after_point_id: null,
-        short_name: 'Test Point',
-        short_description: 'A test point for validation',
-        detailed_description: 'A comprehensive test point used for validating the planning point system functionality',
-        acceptance_criteria: 'Point should be created successfully and appear in plan'
+        points: [{
+          short_name: 'Test Point',
+          short_description: 'A test point for validation',
+          detailed_description: 'A comprehensive test point used for validating the planning point system functionality',
+          acceptance_criteria: 'Point should be created successfully and appear in plan'
+        }]
       }, testWorkspaceRoot);
 
       // Extract point ID from the response
       const match = addResult.content.match(/Point '([^']+)'/);
       if (match) {
-        testPointId = match[1];
+        testPointId = match[1].split(', ')[0];
       }
 
       // First mark as implemented, reviewed, and tested
@@ -467,12 +533,14 @@ suite('Planning Tools Test Suite', () => {
       // Set current plan context for all feature operations
       planContextManager.setCurrentPlanId(testPlanId);
 
-      const addResult1 = await planAddPointTool.execute({
+      const addResult1 = await planAddPointsTool.execute({
         after_point_id: null,
-        short_name: 'Test Point',
-        short_description: 'A test point for validation',
-        detailed_description: 'A comprehensive test point used for validating the planning point system functionality',
-        acceptance_criteria: 'Point should be created successfully and appear in plan'
+        points: [{
+          short_name: 'Test Point',
+          short_description: 'A test point for validation',
+          detailed_description: 'A comprehensive test point used for validating the planning point system functionality',
+          acceptance_criteria: 'Point should be created successfully and appear in plan'
+        }]
       }, testWorkspaceRoot);
 
       // Extract first point ID
@@ -481,12 +549,14 @@ suite('Planning Tools Test Suite', () => {
         testPointId = match1[1];
       }
 
-      await planAddPointTool.execute({
+      await planAddPointsTool.execute({
         after_point_id: null,
-        short_name: 'Second Point',
-        short_description: 'Another test point',
-        detailed_description: 'Another comprehensive test point used for validating dependencies',
-        acceptance_criteria: 'Point should be created successfully and can be used as dependency'
+        points: [{
+          short_name: 'Second Point',
+          short_description: 'Another test point',
+          detailed_description: 'Another comprehensive test point used for validating dependencies',
+          acceptance_criteria: 'Point should be created successfully and can be used as dependency'
+        }]
       }, testWorkspaceRoot);
     });
 
@@ -533,18 +603,20 @@ suite('Planning Tools Test Suite', () => {
         long_description: 'A comprehensive test plan used for validating the planning system functionality'
       }, testWorkspaceRoot);
 
-      const addResult = await planAddPointTool.execute({
+      const addResult = await planAddPointsTool.execute({
         after_point_id: null,
-        short_name: 'Test Point',
-        short_description: 'A test point for validation',
-        detailed_description: 'A comprehensive test point used for validating the planning point system functionality',
-        acceptance_criteria: 'Point should be created successfully and appear in plan'
+        points: [{
+          short_name: 'Test Point',
+          short_description: 'A test point for validation',
+          detailed_description: 'A comprehensive test point used for validating the planning point system functionality',
+          acceptance_criteria: 'Point should be created successfully and appear in plan'
+        }]
       }, testWorkspaceRoot);
 
       // Extract point ID from the response
       const match = addResult.content.match(/Point '([^']+)'/);
       if (match) {
-        testPointId = match[1];
+        testPointId = match[1].split(', ')[0];
       }
     });
 
@@ -594,17 +666,23 @@ suite('Planning Tools Test Suite', () => {
         long_description: 'A comprehensive test plan used for validating the planning system functionality'
       }, testWorkspaceRoot);
 
-      const addResult = await planAddPointTool.execute({
-        plan_id: uniquePlanId,
+      // Set the plan as active for all operations
+      await planOpenTool.execute({
+        plan_id: uniquePlanId
+      }, testWorkspaceRoot);
+
+      const addResult = await planAddPointsTool.execute({
         after_point_id: null,
-        short_name: 'Test Point',
-        short_description: 'A test point for validation',
-        detailed_description: 'A comprehensive test point used for validating the planning point system functionality',
-        acceptance_criteria: 'Point should be created successfully and appear in plan'
+        points: [{
+          short_name: 'Test Point',
+          short_description: 'A test point for validation',
+          detailed_description: 'A comprehensive test point used for validating the planning point system functionality',
+          acceptance_criteria: 'Point should be created successfully and appear in plan'
+        }]
       }, testWorkspaceRoot);
 
       // Extract point ID from the response
-      const match = addResult.content.match(/Point '([^']+)'/);
+      const match = addResult.content.match(/Point IDs: ([^,\s]+)/);
       let localTestPointId = '';
       if (match) {
         localTestPointId = match[1];
@@ -612,29 +690,23 @@ suite('Planning Tools Test Suite', () => {
 
       // Mark point through the full workflow: implemented -> reviewed -> tested -> accepted
       await planPointImplementedTool.execute({
-        plan_id: uniquePlanId,
         point_id: localTestPointId
       }, testWorkspaceRoot);
 
       await planPointReviewedTool.execute({
-        plan_id: uniquePlanId,
         point_id: localTestPointId
       }, testWorkspaceRoot);
 
       await planPointTestedTool.execute({
-        plan_id: uniquePlanId,
         point_id: localTestPointId
       }, testWorkspaceRoot);
 
       // Mark point as accepted
       await planPointAcceptedTool.execute({
-        plan_id: uniquePlanId,
         point_id: localTestPointId
       }, testWorkspaceRoot);
 
-      const result = await planDoneTool.execute({
-        plan_id: uniquePlanId
-      }, testWorkspaceRoot);
+      const result = await planDoneTool.execute({}, testWorkspaceRoot);
 
       assert.strictEqual(result.success, true, 'Check should succeed');
       assert.ok(result.content.includes('COMPLETE') || result.content.includes('done'), 'Should show complete status');

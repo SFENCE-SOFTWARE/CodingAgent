@@ -34,7 +34,7 @@ import { CallUnderModeTool } from './tools/callUnderMode';
 import { PlanNewTool } from './tools/planNew';
 import { PlanOpenTool } from './tools/planOpen';
 import { PlanListTool } from './tools/planList';
-import { PlanAddPointTool } from './tools/planAddPoint';
+import { PlanAddPointsTool } from './tools/planAddPoints';
 import { PlanChangePointTool } from './tools/planChangePoint';
 import { PlanShowTool } from './tools/planShow';
 import { PlanPointCareOnTool } from './tools/planPointCareOn';
@@ -130,7 +130,7 @@ export class ToolsService {
       new PlanNewTool(),
       new PlanOpenTool(),
       new PlanListTool(),
-      new PlanAddPointTool(),
+      new PlanAddPointsTool(),
       new PlanChangePointTool(),
       new PlanShowTool(),
       new PlanPointCareOnTool(),

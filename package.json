@@ -331,7 +331,7 @@
                 "llmDescription": "Knowledge specialist who can research topics by reading files, webpages, and PDFs. Use for answering questions, gathering information, explaining concepts, and providing summaries or analysis of existing content. Available tools: <tools>"
               },
               "Architect": {
-                "systemMessage": "You are a software architect assistant. Help design systems, review architecture, and provide technical guidance.",
+                "systemMessage": "You are a software architect responsible EXCLUSIVELY for plan creation and modification. Your role is strictly limited to:\n\n1. PLAN ANALYSIS: Review existing plans using plan_show and plan_show_point to understand current structure\n2. PLAN DESIGN: Create detailed implementation plans by adding new points with plan_add_points\n3. PLAN REFINEMENT: Modify and improve existing plan points using plan_change_point\n\nIMPORTANT LIMITATIONS:\n- You do NOT implement code or make any actual changes to the codebase\n- You do NOT execute tasks - you only design and plan them\n- You do NOT manage project execution or coordinate with other team members\n- Your responsibility ends at creating comprehensive, actionable plans\n\nFocus on creating well-structured plans with clear acceptance criteria and detailed descriptions. Leave all implementation and coordination to other specialized roles.",
                 "allowedTools": [
                   "read_file",
                   "list_files",
@@ -349,23 +349,22 @@
                   "memory_list",
                   "memory_export",
                   "ask_user",
-                  "plan_show"
+                  "plan_show",
+                  "plan_show_point",
+                  "plan_add_points",
+                  "plan_change_point",
+                  "plan_point_care_on"
                 ],
-                "fallbackMessage": "I'm ready to help with architecture and design decisions. What system are you working on?",
+                "fallbackMessage": "I'm ready to create and refine implementation plans. What project needs detailed planning?",
                 "temperature": 0.2,
                 "topP": 0.85,
-                "description": "Software architecture and system design specialist",
-                "llmDescription": "System design expert who can analyze architectures, review technical decisions, and provide high-level guidance. Can view plan details for architectural context. Use for architectural planning, system design reviews, and strategic technical decisions. Available tools: <tools>"
+                "description": "Plan creation and modification specialist",
+                "llmDescription": "Planning specialist responsible exclusively for creating and modifying implementation plans. Reviews existing plans, designs detailed implementation strategies, refines plan structures, and adds new points to existing plans using plan_add_points. Does NOT implement code or coordinate execution - only plans. Use for plan creation, plan analysis, plan improvement, and adding points to existing plans. Available tools: <tools>"
               },
               "Orchestrator": {
-                "systemMessage": "You are an AI project orchestrator responsible for comprehensive project planning and execution management. Your primary responsibilities are:\n\n1. TASK ANALYSIS: Upon receiving any task, immediately analyze it and create a detailed plan using plan_new tool\n2. PLAN CREATION: Break down tasks into specific, actionable points with clear acceptance criteria\n3. EXECUTION OVERSIGHT: Monitor and coordinate plan execution by delegating specific tasks to specialized modes (Coder, Ask, Architect) using call_under_mode\n4. PROGRESS TRACKING: Continuously update point statuses (implemented, reviewed, tested, accepted) based on responses from specialized modes\n5. PLAN MANAGEMENT: You may also be asked to continue work on existing plans - use plan_list and plan_show to assess current state\n6. COMPLETION RESPONSIBILITY: Ensure all plan points are properly executed and accepted before considering a task complete\n\nCURRENT ACTIVE PLAN: <plan_id>\n\nAlways start by creating or reviewing a plan. Use the planning tools extensively to maintain organized project execution. You are the master coordinator responsible for both planning and execution oversight.",
+                "systemMessage": "You are an AI project orchestrator responsible for comprehensive project planning and execution management. Your primary responsibilities are:\n\n1. TASK ANALYSIS: Upon receiving any task, immediately analyze it and create a detailed plan using plan_new tool\n2. PLAN CREATION: Break down tasks into specific, actionable points with clear acceptance criteria\n3. EXECUTION OVERSIGHT: Monitor and coordinate plan execution by delegating specific tasks to specialized modes (Coder, Ask, Architect) using call_under_mode\n4. PROGRESS TRACKING: Continuously update point statuses (implemented, reviewed, tested, accepted) based on responses from specialized modes\n5. PLAN MANAGEMENT: You may also be asked to continue work on existing plans - use plan_list and plan_show to assess current state\n6. COMPLETION RESPONSIBILITY: Ensure all plan points are properly executed and accepted before considering a task complete\n\nIMPORTANT DELEGATION RULES:\n- PLAN MODIFICATIONS: Only the Architect mode can add new points to existing plans using plan_add_points. If plan modifications are needed, delegate to Architect.\n- CODE IMPLEMENTATION: Delegate coding tasks to Coder mode\n- RESEARCH/ANALYSIS: Delegate information gathering to Ask mode\n- PLAN EXPANSION: Delegate plan refinement and point addition to Architect mode\n\nCURRENT ACTIVE PLAN: <plan_id>\n\nAlways start by creating or reviewing a plan. Use the planning tools extensively to maintain organized project execution. You are the master coordinator responsible for both planning and execution oversight.",
                 "allowedTools": [
                   "call_under_mode",
-                  "read_file",
-                  "list_files",
-                  "get_file_size",
-                  "search_in_project",
-                  "search_in_path",
                   "memory_store",
                   "memory_retrieve_by_lines",
                   "memory_retrieve_data",
@@ -377,8 +376,6 @@
                   "plan_new",
                   "plan_list",
                   "plan_open",
-                  "plan_add_point",
-                  "plan_change_point",
                   "plan_show",
                   "plan_show_point",
                   "plan_point_implemented",
@@ -386,7 +383,6 @@
                   "plan_point_tested",
                   "plan_point_accepted",
                   "plan_point_need_rework",
-                  "plan_point_care_on",
                   "plan_point_comment",
                   "plan_state",
                   "plan_done",
@@ -396,7 +392,7 @@
                 "temperature": 0.15,
                 "topP": 0.9,
                 "description": "Task orchestrator that delegates work to specialized modes",
-                "llmDescription": "Master project coordinator responsible for comprehensive planning and execution oversight. Creates detailed plans, delegates tasks to specialized AI modes (Coder, Ask, Architect), and tracks progress until completion. Can manage both new projects and continue existing plans. Available tools: <tools>"
+                "llmDescription": "Master project coordinator responsible for comprehensive planning and execution oversight. Creates initial detailed plans, delegates tasks to specialized AI modes (Coder for implementation, Ask for research, Architect for plan modifications), and tracks progress until completion. Cannot add points to existing plans - must delegate plan modifications to Architect mode. Can manage both new projects and continue existing plans. Available tools: <tools>"
               }
             },
             "description": "Configuration for different agent modes"

@@ -224,6 +224,73 @@ export class PlanningService {
     return { success: true, pointId: newPointId };
   }
 
+  public addPoints(
+    planId: string,
+    afterPointId: string | null,
+    points: Array<{
+      short_name: string;
+      short_description: string;
+      detailed_description: string;
+      acceptance_criteria: string;
+    }>
+  ): { success: boolean; pointIds?: string[]; error?: string } {
+    const plan = this.plans.get(planId);
+    if (!plan) {
+      return { success: false, error: `Plan with ID '${planId}' not found` };
+    }
+
+    // Validate afterPointId if provided
+    if (afterPointId && !this.validatePointId(plan, afterPointId)) {
+      return { success: false, error: `Point with ID '${afterPointId}' not found in plan '${planId}'` };
+    }
+
+    const newPointIds: string[] = [];
+    const newPoints: PlanPoint[] = [];
+
+    // Get existing IDs to avoid conflicts
+    const existingIds = plan.points.map(p => parseInt(p.id)).filter(id => !isNaN(id));
+    let nextId = existingIds.length === 0 ? 1 : Math.max(...existingIds) + 1;
+
+    // Create all new points with unique IDs
+    for (const pointData of points) {
+      const newPointId = nextId.toString();
+      const newPoint: PlanPoint = {
+        id: newPointId,
+        shortName: pointData.short_name,
+        shortDescription: pointData.short_description,
+        detailedDescription: pointData.detailed_description,
+        acceptanceCriteria: pointData.acceptance_criteria,
+        careOnPoints: [],
+        implemented: false,
+        reviewed: false,
+        tested: false,
+        accepted: false,
+        needRework: false,
+        comments: [],
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      };
+      newPoints.push(newPoint);
+      newPointIds.push(newPointId);
+      nextId++; // Increment for next point
+    }
+
+    // Insert all points at once
+    if (afterPointId === null) {
+      // Add at beginning
+      plan.points.unshift(...newPoints);
+    } else {
+      // Add after specified point
+      const afterIndex = this.findPointIndex(plan, afterPointId);
+      plan.points.splice(afterIndex + 1, 0, ...newPoints);
+    }
+
+    plan.updatedAt = Date.now();
+    this.savePlan(plan);
+
+    return { success: true, pointIds: newPointIds };
+  }
+
   public changePoint(
     planId: string,
     pointId: string,
