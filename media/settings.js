@@ -627,7 +627,7 @@
     });
     
     // AGGRESSIVE DOM MANIPULATION - Force hide ALL tabs first
-    const allTabs = ['connection-tab', 'behavior-tab', 'tools-tab', 'modes-tab', 'logging-tab', 'advanced-tab', 'profiles-tab'];
+    const allTabs = ['profiles-tab', 'connection-tab', 'behavior-tab', 'tools-tab', 'modes-tab', 'logging-tab', 'advanced-tab'];
     allTabs.forEach(tabId => {
       const tab = document.getElementById(tabId);
       if (tab) {

@@ -792,7 +792,11 @@ export class SettingsPanel {
         <div class="settings-layout">
           <!-- Tab Navigation Sidebar -->
           <nav class="settings-sidebar">
-            <button class="tab-button active" data-tab="connection" title="Connection Settings">
+            <button class="tab-button active" data-tab="profiles" title="Configuration Profiles">
+              <img src="${settingsIconUri}" alt="Profiles" />
+              <span class="tab-label">Profiles</span>
+            </button>
+            <button class="tab-button" data-tab="connection" title="Connection Settings">
               <img src="${connectionIconUri}" alt="Connection" />
               <span class="tab-label">Connection</span>
             </button>
@@ -816,16 +820,46 @@ export class SettingsPanel {
               <img src="${advancedIconUri}" alt="Advanced" />
               <span class="tab-label">Advanced</span>
             </button>
-            <button class="tab-button" data-tab="profiles" title="Configuration Profiles">
-              <img src="${settingsIconUri}" alt="Profiles" />
-              <span class="tab-label">Profiles</span>
-            </button>
           </nav>
 
           <!-- Main Content Area -->
           <main class="settings-content">
+            <!-- Profiles Tab -->
+            <div id="profiles-tab" class="tab-content active">
+              <section class="settings-section">
+                <h2>💾 Configuration Profiles</h2>
+                <p class="section-description">Save and manage different configuration profiles for quick switching</p>
+                
+                <div class="profiles-actions">
+                  <div class="profile-save-section">
+                    <h3>Save Current Configuration</h3>
+                    <div class="form-group">
+                      <label for="newProfileName">Profile Name:</label>
+                      <div class="profile-input-group">
+                        <input type="text" id="newProfileName" placeholder="Enter profile name (e.g., Development, Production)" maxlength="50" />
+                        <button id="saveProfileBtn" class="primary-button">💾 Save Profile</button>
+                      </div>
+                      <small class="form-hint">Only letters, numbers, underscores, and hyphens allowed</small>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="profiles-list-section">
+                  <h3>Saved Profiles</h3>
+                  <div id="profilesList" class="profiles-list">
+                    <!-- Profiles will be populated here -->
+                    <div class="no-profiles" id="noProfiles">
+                      <div class="no-profiles-icon">📁</div>
+                      <p>No saved profiles yet</p>
+                      <p class="no-profiles-hint">Save your current configuration above to create your first profile</p>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
+
             <!-- Connection Tab -->
-            <div id="connection-tab" class="tab-content active">
+            <div id="connection-tab" class="tab-content">
               <section class="settings-section">
                 <h2>🔗 OpenAI API Connection</h2>
                 <p class="section-description">Configure connection to your OpenAI-compatible API server</p>
@@ -1106,40 +1140,6 @@ export class SettingsPanel {
                   <label for="requestTimeout">Request Timeout (ms):</label>
                   <input type="number" id="requestTimeout" placeholder="30000" min="1000" max="300000" />
                   <small class="form-hint">How long to wait for API responses before timing out</small>
-                </div>
-              </section>
-            </div>
-
-            <!-- Profiles Tab -->
-            <div id="profiles-tab" class="tab-content">
-              <section class="settings-section">
-                <h2>💾 Configuration Profiles</h2>
-                <p class="section-description">Save and manage different configuration profiles for quick switching</p>
-                
-                <div class="profiles-actions">
-                  <div class="profile-save-section">
-                    <h3>Save Current Configuration</h3>
-                    <div class="form-group">
-                      <label for="newProfileName">Profile Name:</label>
-                      <div class="profile-input-group">
-                        <input type="text" id="newProfileName" placeholder="Enter profile name (e.g., Development, Production)" maxlength="50" />
-                        <button id="saveProfileBtn" class="primary-button">💾 Save Profile</button>
-                      </div>
-                      <small class="form-hint">Only letters, numbers, underscores, and hyphens allowed</small>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="profiles-list-section">
-                  <h3>Saved Profiles</h3>
-                  <div id="profilesList" class="profiles-list">
-                    <!-- Profiles will be populated here -->
-                    <div class="no-profiles" id="noProfiles">
-                      <div class="no-profiles-icon">📁</div>
-                      <p>No saved profiles yet</p>
-                      <p class="no-profiles-hint">Save your current configuration above to create your first profile</p>
-                    </div>
-                  </div>
                 </div>
               </section>
             </div>
