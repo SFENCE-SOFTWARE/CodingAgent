@@ -43,8 +43,10 @@ import { PlanPointCommentTool } from './tools/planPointComment';
 import { PlanPointImplementedTool } from './tools/planPointImplemented';
 import { PlanPointReviewedTool } from './tools/planPointReviewed';
 import { PlanPointTestedTool } from './tools/planPointTested';
-import { PlanPointAcceptedTool } from './tools/planPointAccepted';
 import { PlanPointNeedReworkTool } from './tools/planPointNeedRework';
+import { PlanReviewedTool } from './tools/planReviewed';
+import { PlanNeedWorksTool } from './tools/planNeedWorks';
+import { PlanAcceptedTool } from './tools/planAccepted';
 import { PlanStateTool } from './tools/planState';
 import { PlanDoneTool } from './tools/planDone';
 import { PlanDeleteTool } from './tools/planDelete';
@@ -139,8 +141,10 @@ export class ToolsService {
       new PlanPointImplementedTool(),
       new PlanPointReviewedTool(),
       new PlanPointTestedTool(),
-      new PlanPointAcceptedTool(),
       new PlanPointNeedReworkTool(),
+      new PlanReviewedTool(),
+      new PlanNeedWorksTool(),
+      new PlanAcceptedTool(),
       new PlanStateTool(),
       new PlanDoneTool(),
       new PlanDeleteTool()

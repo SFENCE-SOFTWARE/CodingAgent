@@ -60,6 +60,27 @@ export class PlanShowTool implements BaseTool {
         let content = `Plan: ${plan.name} (ID: ${plan.id})\n\n`;
         content += `Description:\n${plan.longDescription}\n\n`;
         
+        // Show plan review and acceptance status
+        if (plan.accepted) {
+          content += `✅ Plan Status: ACCEPTED\n`;
+          if (plan.acceptedComment) {
+            content += `   Acceptance Comment: ${plan.acceptedComment}\n`;
+          }
+        } else if (plan.reviewed) {
+          content += `✅ Plan Status: REVIEWED (pending acceptance)\n`;
+          if (plan.reviewedComment) {
+            content += `   Review Comment: ${plan.reviewedComment}\n`;
+          }
+        } else if (plan.needsWork) {
+          content += `❌ Plan Status: NEEDS WORK\n`;
+          if (plan.needsWorkComment) {
+            content += `   Improvement Required: ${plan.needsWorkComment}\n`;
+          }
+        } else {
+          content += `⏳ Plan Status: PENDING REVIEW\n`;
+        }
+        content += '\n';
+        
         if (plan.points.length === 0) {
           content += 'No points in this plan yet.';
         } else {

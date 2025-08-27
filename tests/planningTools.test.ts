@@ -17,8 +17,10 @@ import { PlanPointCommentTool } from '../src/tools/planPointComment';
 import { PlanPointImplementedTool } from '../src/tools/planPointImplemented';
 import { PlanPointReviewedTool } from '../src/tools/planPointReviewed';
 import { PlanPointTestedTool } from '../src/tools/planPointTested';
-import { PlanPointAcceptedTool } from '../src/tools/planPointAccepted';
 import { PlanPointNeedReworkTool } from '../src/tools/planPointNeedRework';
+import { PlanReviewedTool } from '../src/tools/planReviewed';
+import { PlanNeedWorksTool } from '../src/tools/planNeedWorks';
+import { PlanAcceptedTool } from '../src/tools/planAccepted';
 import { PlanStateTool } from '../src/tools/planState';
 import { PlanDoneTool } from '../src/tools/planDone';
 import { PlanDeleteTool } from '../src/tools/planDelete';
@@ -42,8 +44,10 @@ suite('Planning Tools Test Suite', () => {
   let planPointImplementedTool: PlanPointImplementedTool;
   let planPointReviewedTool: PlanPointReviewedTool;
   let planPointTestedTool: PlanPointTestedTool;
-  let planPointAcceptedTool: PlanPointAcceptedTool;
   let planPointNeedReworkTool: PlanPointNeedReworkTool;
+  let planReviewedTool: PlanReviewedTool;
+  let planNeedWorksTool: PlanNeedWorksTool;
+  let planAcceptedTool: PlanAcceptedTool;
   let planStateTool: PlanStateTool;
   let planDoneTool: PlanDoneTool;
   let planDeleteTool: PlanDeleteTool;
@@ -73,8 +77,10 @@ suite('Planning Tools Test Suite', () => {
     planPointImplementedTool = new PlanPointImplementedTool();
     planPointReviewedTool = new PlanPointReviewedTool();
     planPointTestedTool = new PlanPointTestedTool();
-    planPointAcceptedTool = new PlanPointAcceptedTool();
     planPointNeedReworkTool = new PlanPointNeedReworkTool();
+    planReviewedTool = new PlanReviewedTool();
+    planNeedWorksTool = new PlanNeedWorksTool();
+    planAcceptedTool = new PlanAcceptedTool();
     planStateTool = new PlanStateTool();
     planDoneTool = new PlanDoneTool();
     planDeleteTool = new PlanDeleteTool();
@@ -116,8 +122,8 @@ suite('Planning Tools Test Suite', () => {
         planNewTool, planListTool, planAddPointsTool, planChangePointTool,
         planShowTool, planPointCareOnTool, planShowPointTool, planPointCommentTool,
         planPointImplementedTool, planPointReviewedTool, planPointTestedTool,
-        planPointAcceptedTool, planPointNeedReworkTool, planStateTool,
-        planDoneTool, planDeleteTool
+        planPointNeedReworkTool, planReviewedTool,
+        planNeedWorksTool, planAcceptedTool, planStateTool, planDoneTool, planDeleteTool
       ];
       tools.forEach(tool => {
         const info = tool.getToolInfo();
@@ -411,7 +417,8 @@ suite('Planning Tools Test Suite', () => {
       }, testWorkspaceRoot);
 
       const result = await planPointReviewedTool.execute({
-        point_id: testPointId
+        point_id: testPointId,
+        comment: 'Code review passed - implementation meets requirements'
       }, testWorkspaceRoot);
 
       assert.strictEqual(result.success, true, 'Mark reviewed should succeed');
@@ -449,61 +456,17 @@ suite('Planning Tools Test Suite', () => {
       }, testWorkspaceRoot);
 
       await planPointReviewedTool.execute({
-        point_id: testPointId
+        point_id: testPointId,
+        comment: 'Code review passed - good implementation'
       }, testWorkspaceRoot);
 
       const result = await planPointTestedTool.execute({
-        point_id: testPointId
+        point_id: testPointId,
+        comment: 'All tests passed successfully'
       }, testWorkspaceRoot);
 
       assert.strictEqual(result.success, true, 'Mark tested should succeed');
       assert.ok(result.content.includes('tested'), 'Result should mention tested status');
-    });
-
-    test('Mark point as accepted', async () => {
-      // First create a plan and add a point
-      await planNewTool.execute({
-        id: testPlanId,
-        name: 'Test Plan',
-        short_description: 'A test plan for validation',
-        long_description: 'A comprehensive test plan used for validating the planning system functionality'
-      }, testWorkspaceRoot);
-
-      const addResult = await planAddPointsTool.execute({
-        after_point_id: null,
-        points: [{
-          short_name: 'Test Point',
-          short_description: 'A test point for validation',
-          detailed_description: 'A comprehensive test point used for validating the planning point system functionality',
-          acceptance_criteria: 'Point should be created successfully and appear in plan'
-        }]
-      }, testWorkspaceRoot);
-
-      // Extract point ID from the response
-      const match = addResult.content.match(/Point '([^']+)'/);
-      if (match) {
-        testPointId = match[1].split(', ')[0];
-      }
-
-      // First mark as implemented, reviewed, and tested
-      await planPointImplementedTool.execute({
-        point_id: testPointId
-      }, testWorkspaceRoot);
-
-      await planPointReviewedTool.execute({
-        point_id: testPointId
-      }, testWorkspaceRoot);
-
-      await planPointTestedTool.execute({
-        point_id: testPointId
-      }, testWorkspaceRoot);
-
-      const result = await planPointAcceptedTool.execute({
-        point_id: testPointId
-      }, testWorkspaceRoot);
-
-      assert.strictEqual(result.success, true, 'Mark accepted should succeed');
-      assert.ok(result.content.includes('accepted'), 'Result should mention accepted status');
     });
 
     test('Mark point as needing rework', async () => {
@@ -515,6 +478,92 @@ suite('Planning Tools Test Suite', () => {
       assert.strictEqual(result.success, true, 'Mark need rework should succeed');
       assert.ok(result.content.includes('rework'), 'Result should mention rework status');
       assert.ok(result.content.includes('Failed unit tests'), 'Result should include rework reason');
+    });
+
+    test('Mark plan as accepted', async () => {
+      // Create a new plan with a fresh point for this test
+      const planAcceptanceTestId = 'plan-acceptance-test-' + Date.now();
+      
+      await planNewTool.execute({
+        id: planAcceptanceTestId,
+        name: 'Plan Acceptance Test',
+        short_description: 'A test plan for plan acceptance validation',
+        long_description: 'A test plan created specifically to validate plan acceptance functionality'
+      }, testWorkspaceRoot);
+
+      // Set context to this plan
+      const planContextManager = PlanContextManager.getInstance();
+      planContextManager.setCurrentPlanId(planAcceptanceTestId);
+
+      // Add a point to this plan
+      const addResult = await planAddPointsTool.execute({
+        after_point_id: null,
+        points: [{
+          short_name: 'Acceptance Test Point',
+          short_description: 'A point for plan acceptance testing',
+          detailed_description: 'A point created specifically for testing plan acceptance workflow',
+          acceptance_criteria: 'Point should be properly reviewed and tested before plan acceptance'
+        }]
+      }, testWorkspaceRoot);
+
+      console.log('Add point result:', addResult);
+
+      // Extract point ID from the response
+      const match = addResult.content.match(/Point IDs?: ([^.\s]+)/);
+      let acceptanceTestPointId: string;
+      if (match) {
+        acceptanceTestPointId = match[1].trim();
+      } else {
+        throw new Error(`Failed to extract point ID from add result: ${addResult.content}`);
+      }
+
+      // Complete the workflow: implement, review, and test the point
+      await planPointImplementedTool.execute({
+        point_id: acceptanceTestPointId
+      }, testWorkspaceRoot);
+
+      await planPointReviewedTool.execute({
+        point_id: acceptanceTestPointId,
+        comment: 'Code review completed successfully - all requirements met'
+      }, testWorkspaceRoot);
+
+      await planPointTestedTool.execute({
+        point_id: acceptanceTestPointId,
+        comment: 'All tests pass and coverage is adequate'
+      }, testWorkspaceRoot);
+
+      // Now test plan acceptance with all points reviewed and tested
+      const result = await planAcceptedTool.execute({
+        comment: 'All plan requirements have been met. Implementation is complete, tested, and reviewed. Ready for production.'
+      }, testWorkspaceRoot);
+
+      console.log('Plan acceptance result:', result);
+      assert.strictEqual(result.success, true, `Mark plan accepted should succeed. Error: ${result.error}`);
+      assert.ok(result.content.includes('accepted'), 'Result should mention accepted status');
+      assert.ok(result.content.includes('production'), 'Result should include acceptance comment');
+
+      // Reset context back to original plan
+      planContextManager.setCurrentPlanId(testPlanId);
+    });
+
+    test('Mark plan as reviewed', async () => {
+      const result = await planReviewedTool.execute({
+        comment: 'Plan structure is well-designed and comprehensive. All requirements are clearly defined.'
+      }, testWorkspaceRoot);
+
+      assert.strictEqual(result.success, true, 'Mark plan reviewed should succeed');
+      assert.ok(result.content.includes('reviewed'), 'Result should mention reviewed status');
+      assert.ok(result.content.includes('comprehensive'), 'Result should include comment');
+    });
+
+    test('Mark plan as needing work', async () => {
+      const result = await planNeedWorksTool.execute({
+        comment: 'Plan needs more detailed acceptance criteria and additional test cases. Consider adding security requirements.'
+      }, testWorkspaceRoot);
+
+      assert.strictEqual(result.success, true, 'Mark plan need works should succeed');
+      assert.ok(result.content.includes('needing work'), 'Result should mention need work status');
+      assert.ok(result.content.includes('acceptance criteria'), 'Result should include comment');
     });
   });
 
@@ -639,7 +688,7 @@ suite('Planning Tools Test Suite', () => {
       assert.ok(result.content.includes('Status'), 'Should show completion status');
     });
 
-    test('Plan is not done with unaccepted points', async () => {
+    test('Plan is not done when plan is not accepted', async () => {
       const result = await planDoneTool.execute({
         plan_id: testPlanId
       }, testWorkspaceRoot);
@@ -648,7 +697,7 @@ suite('Planning Tools Test Suite', () => {
       assert.ok(result.content.includes('IN PROGRESS'), 'Should show in progress status');
     });
 
-    test('Plan is done with all points accepted', async () => {
+    test('Plan is done when plan is accepted', async () => {
       // Use unique plan ID for this test
       const uniquePlanId = `test-plan-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
@@ -694,16 +743,18 @@ suite('Planning Tools Test Suite', () => {
       }, testWorkspaceRoot);
 
       await planPointReviewedTool.execute({
-        point_id: localTestPointId
+        point_id: localTestPointId,
+        comment: 'Code review passed - implementation complete'
       }, testWorkspaceRoot);
 
       await planPointTestedTool.execute({
-        point_id: localTestPointId
+        point_id: localTestPointId,
+        comment: 'All tests passing - validation complete'
       }, testWorkspaceRoot);
 
-      // Mark point as accepted
-      await planPointAcceptedTool.execute({
-        point_id: localTestPointId
+      // Mark entire plan as accepted instead of individual points
+      await planAcceptedTool.execute({
+        comment: 'All plan requirements have been met and implementation is complete'
       }, testWorkspaceRoot);
 
       const result = await planDoneTool.execute({}, testWorkspaceRoot);

@@ -1,15 +1,15 @@
-// src/tools/planPointTested.ts
+// src/tools/planNeedWorks.ts
 
 import { BaseTool, ToolInfo, ToolDefinition, ToolResult } from '../types';
 import { PlanningService } from '../planningService';
 import { PlanContextManager } from '../planContextManager';
 
-export class PlanPointTestedTool implements BaseTool {
+export class PlanNeedWorksTool implements BaseTool {
   getToolInfo(): ToolInfo {
     return {
-      name: 'plan_point_tested',
-      displayName: 'Mark Point as Tested',
-      description: 'Mark a point in the current active plan as tested',
+      name: 'plan_need_works',
+      displayName: 'Mark Plan as Needing Work',
+      description: 'Mark the current active plan as needing work with a required comment',
       category: 'other'
     };
   }
@@ -18,21 +18,17 @@ export class PlanPointTestedTool implements BaseTool {
     return {
       type: 'function',
       function: {
-        name: 'plan_point_tested',
-        description: 'Mark a point in the current active plan as tested with a required comment',
+        name: 'plan_need_works',
+        description: 'Mark the current active plan as needing work with a required comment',
         parameters: {
           type: 'object',
           properties: {
-            point_id: {
-              type: 'string',
-              description: 'ID of the point to mark as tested'
-            },
             comment: {
               type: 'string',
-              description: 'Required comment explaining the testing outcome and any findings'
+              description: 'Required comment explaining what needs to be improved or reworked in the plan'
             }
           },
-          required: ['point_id', 'comment'],
+          required: ['comment'],
           additionalProperties: false
         }
       }
@@ -40,21 +36,13 @@ export class PlanPointTestedTool implements BaseTool {
   }
 
   async execute(args: any, workspaceRoot: string): Promise<ToolResult> {
-    const { point_id, comment } = args;
-
-    if (!point_id) {
-      return {
-        success: false,
-        content: '',
-        error: 'Required parameter: point_id'
-      };
-    }
+    const { comment } = args;
 
     if (!comment) {
       return {
         success: false,
         content: '',
-        error: 'Required parameter: comment (explanation of testing outcome and findings)'
+        error: 'Required parameter: comment (explanation of what needs to be improved in the plan)'
       };
     }
 
@@ -72,25 +60,25 @@ export class PlanPointTestedTool implements BaseTool {
       }
 
       const planningService = PlanningService.getInstance(workspaceRoot);
-      const result = planningService.setTested(currentPlanId, point_id, comment);
+      const result = planningService.setPlanNeedsWork(currentPlanId, comment);
 
       if (result.success) {
         return {
           success: true,
-          content: `Point '${point_id}' in plan '${currentPlanId}' marked as tested with comment: "${comment}"`
+          content: `Plan '${currentPlanId}' marked as needing work with comment: "${comment}"`
         };
       } else {
         return {
           success: false,
           content: '',
-          error: result.error || 'Failed to mark point as tested'
+          error: result.error || 'Failed to mark plan as needing work'
         };
       }
     } catch (error) {
       return {
         success: false,
         content: '',
-        error: `Failed to mark point as tested: ${error instanceof Error ? error.message : String(error)}`
+        error: `Failed to mark plan as needing work: ${error instanceof Error ? error.message : String(error)}`
       };
     }
   }

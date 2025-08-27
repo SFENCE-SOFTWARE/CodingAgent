@@ -13,8 +13,9 @@ export interface PlanPoint {
   careOnPoints: string[]; // IDs of points to consider
   implemented: boolean;
   reviewed: boolean;
+  reviewedComment?: string;
   tested: boolean;
-  accepted: boolean;
+  testedComment?: string;
   needRework: boolean;
   reworkReason?: string;
   comments: string[];
@@ -28,6 +29,12 @@ export interface Plan {
   shortDescription: string;
   longDescription: string;
   points: PlanPoint[];
+  reviewed: boolean;
+  reviewedComment?: string;
+  needsWork: boolean;
+  needsWorkComment?: string;
+  accepted: boolean;
+  acceptedComment?: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -149,6 +156,9 @@ export class PlanningService {
       shortDescription,
       longDescription,
       points: [],
+      reviewed: false,
+      needsWork: false,
+      accepted: false,
       createdAt: Date.now(),
       updatedAt: Date.now()
     };
@@ -202,7 +212,6 @@ export class PlanningService {
       implemented: false,
       reviewed: false,
       tested: false,
-      accepted: false,
       needRework: false,
       comments: [],
       createdAt: Date.now(),
@@ -264,7 +273,6 @@ export class PlanningService {
         implemented: false,
         reviewed: false,
         tested: false,
-        accepted: false,
         needRework: false,
         comments: [],
         createdAt: Date.now(),
@@ -407,8 +415,9 @@ export class PlanningService {
       state: {
         implemented: point.implemented,
         reviewed: point.reviewed,
+        reviewedComment: point.reviewedComment,
         tested: point.tested,
-        accepted: point.accepted,
+        testedComment: point.testedComment,
         needRework: point.needRework,
         reworkReason: point.reworkReason
       },
@@ -463,7 +472,7 @@ export class PlanningService {
     return { success: true };
   }
 
-  public setReviewed(planId: string, pointId: string, skipIfNotReviewable: boolean = false): { success: boolean; error?: string } {
+  public setReviewed(planId: string, pointId: string, comment: string, skipIfNotReviewable: boolean = false): { success: boolean; error?: string } {
     const plan = this.plans.get(planId);
     if (!plan) {
       return { success: false, error: `Plan with ID '${planId}' not found` };
@@ -481,6 +490,7 @@ export class PlanningService {
     }
 
     point.reviewed = true;
+    point.reviewedComment = comment;
     point.updatedAt = Date.now();
     plan.updatedAt = Date.now();
     this.savePlan(plan);
@@ -488,7 +498,7 @@ export class PlanningService {
     return { success: true };
   }
 
-  public setTested(planId: string, pointId: string, skipIfNotTestable: boolean = false): { success: boolean; error?: string } {
+  public setTested(planId: string, pointId: string, comment: string, skipIfNotTestable: boolean = false): { success: boolean; error?: string } {
     const plan = this.plans.get(planId);
     if (!plan) {
       return { success: false, error: `Plan with ID '${planId}' not found` };
@@ -506,6 +516,7 @@ export class PlanningService {
     }
 
     point.tested = true;
+    point.testedComment = comment;
     point.updatedAt = Date.now();
     plan.updatedAt = Date.now();
     this.savePlan(plan);
@@ -513,25 +524,61 @@ export class PlanningService {
     return { success: true };
   }
 
-  public setAccepted(planId: string, pointId: string): { success: boolean; error?: string } {
+  public setPlanReviewed(planId: string, comment: string): { success: boolean; error?: string } {
     const plan = this.plans.get(planId);
     if (!plan) {
       return { success: false, error: `Plan with ID '${planId}' not found` };
     }
 
-    const pointIndex = this.findPointIndex(plan, pointId);
-    if (pointIndex === -1) {
-      return { success: false, error: `Point with ID '${pointId}' not found in plan '${planId}'` };
+    plan.reviewed = true;
+    plan.reviewedComment = comment;
+    plan.needsWork = false;
+    plan.needsWorkComment = undefined;
+    plan.accepted = false;  // Reset acceptance when plan structure is reviewed
+    plan.acceptedComment = undefined;
+    plan.updatedAt = Date.now();
+    this.savePlan(plan);
+
+    return { success: true };
+  }
+
+  public setPlanNeedsWork(planId: string, comment: string): { success: boolean; error?: string } {
+    const plan = this.plans.get(planId);
+    if (!plan) {
+      return { success: false, error: `Plan with ID '${planId}' not found` };
     }
 
-    const point = plan.points[pointIndex];
-    
-    if (!point.reviewed || !point.tested) {
-      return { success: false, error: `Point '${pointId}' must be both reviewed and tested before it can be accepted` };
+    plan.needsWork = true;
+    plan.needsWorkComment = comment;
+    plan.reviewed = false;
+    plan.reviewedComment = undefined;
+    plan.accepted = false;
+    plan.acceptedComment = undefined;
+    plan.updatedAt = Date.now();
+    this.savePlan(plan);
+
+    return { success: true };
+  }
+
+  public setPlanAccepted(planId: string, comment: string): { success: boolean; error?: string } {
+    const plan = this.plans.get(planId);
+    if (!plan) {
+      return { success: false, error: `Plan with ID '${planId}' not found` };
     }
 
-    point.accepted = true;
-    point.updatedAt = Date.now();
+    // Check if all points are reviewed and tested
+    const allPointsReviewedAndTested = plan.points.every(point => 
+      point.reviewed && point.tested
+    );
+
+    if (!allPointsReviewedAndTested) {
+      return { success: false, error: 'All plan points must be reviewed and tested before the plan can be accepted' };
+    }
+
+    plan.accepted = true;
+    plan.acceptedComment = comment;
+    plan.needsWork = false;
+    plan.needsWorkComment = undefined;
     plan.updatedAt = Date.now();
     this.savePlan(plan);
 
@@ -553,7 +600,6 @@ export class PlanningService {
     point.implemented = false;
     point.reviewed = false;
     point.tested = false;
-    point.accepted = false;
     point.needRework = true;
     point.reworkReason = reworkReason;
     point.updatedAt = Date.now();
@@ -573,26 +619,26 @@ export class PlanningService {
     const implementedCount = plan.points.filter(p => p.implemented).length;
     const reviewedCount = plan.points.filter(p => p.reviewed).length;
     const testedCount = plan.points.filter(p => p.tested).length;
-    const acceptedCount = plan.points.filter(p => p.accepted).length;
 
     const allImplemented = totalCount > 0 && implementedCount === totalCount;
     const allReviewed = totalCount > 0 && reviewedCount === totalCount;
     const allTested = totalCount > 0 && testedCount === totalCount;
-    const allAccepted = totalCount > 0 && acceptedCount === totalCount;
+    const planAccepted = plan.accepted || false;
 
+    // Pending points are those that are not yet reviewed and tested
     const pendingPoints = plan.points
-      .filter(p => !p.accepted)
+      .filter(p => !p.reviewed || !p.tested)
       .map(p => p.id);
 
     const state: PlanState = {
       allImplemented,
       allReviewed,
       allTested,
-      allAccepted,
+      allAccepted: planAccepted, // Plan-level acceptance instead of point-level
       implementedCount,
       reviewedCount,
       testedCount,
-      acceptedCount,
+      acceptedCount: planAccepted ? 1 : 0, // 1 if plan is accepted, 0 otherwise
       totalCount,
       pendingPoints
     };

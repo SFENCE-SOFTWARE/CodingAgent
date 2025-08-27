@@ -1,15 +1,15 @@
-// src/tools/planPointAccepted.ts
+// src/tools/planAccepted.ts
 
 import { BaseTool, ToolInfo, ToolDefinition, ToolResult } from '../types';
 import { PlanningService } from '../planningService';
 import { PlanContextManager } from '../planContextManager';
 
-export class PlanPointAcceptedTool implements BaseTool {
+export class PlanAcceptedTool implements BaseTool {
   getToolInfo(): ToolInfo {
     return {
-      name: 'plan_point_accepted',
-      displayName: 'Mark Point as Accepted',
-      description: 'Mark a point in the current active plan as accepted',
+      name: 'plan_accepted',
+      displayName: 'Mark Plan as Accepted',
+      description: 'Mark the entire current active plan as accepted with required acceptance comment',
       category: 'other'
     };
   }
@@ -18,17 +18,17 @@ export class PlanPointAcceptedTool implements BaseTool {
     return {
       type: 'function',
       function: {
-        name: 'plan_point_accepted',
-        description: 'Mark a point in the current active plan as accepted',
+        name: 'plan_accepted',
+        description: 'Mark the entire current active plan as accepted with required acceptance comment',
         parameters: {
           type: 'object',
           properties: {
-            point_id: {
+            comment: {
               type: 'string',
-              description: 'ID of the point to mark as accepted'
+              description: 'Required detailed comment explaining why the plan is accepted, what was validated, and overall assessment'
             }
           },
-          required: ['point_id'],
+          required: ['comment'],
           additionalProperties: false
         }
       }
@@ -36,13 +36,13 @@ export class PlanPointAcceptedTool implements BaseTool {
   }
 
   async execute(args: any, workspaceRoot: string): Promise<ToolResult> {
-    const { point_id } = args;
+    const { comment } = args;
 
-    if (!point_id) {
+    if (!comment || comment.trim().length === 0) {
       return {
         success: false,
         content: '',
-        error: 'Required parameter: point_id'
+        error: 'Required parameter: comment (must be a detailed explanation of why the plan is accepted)'
       };
     }
 
@@ -60,25 +60,25 @@ export class PlanPointAcceptedTool implements BaseTool {
       }
 
       const planningService = PlanningService.getInstance(workspaceRoot);
-      const result = planningService.setAccepted(currentPlanId, point_id);
+      const result = planningService.setPlanAccepted(currentPlanId, comment.trim());
 
       if (result.success) {
         return {
           success: true,
-          content: `Point '${point_id}' in plan '${currentPlanId}' marked as accepted`
+          content: `Plan '${currentPlanId}' marked as accepted with comment: "${comment.trim()}"`
         };
       } else {
         return {
           success: false,
           content: '',
-          error: result.error || 'Failed to mark point as accepted'
+          error: result.error || 'Failed to mark plan as accepted'
         };
       }
     } catch (error) {
       return {
         success: false,
         content: '',
-        error: `Failed to mark point as accepted: ${error instanceof Error ? error.message : String(error)}`
+        error: `Failed to mark plan as accepted: ${error instanceof Error ? error.message : String(error)}`
       };
     }
   }

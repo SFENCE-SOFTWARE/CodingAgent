@@ -863,7 +863,7 @@ export class SettingsPanel {
                 </div>
                 <div class="form-group">
                   <label for="modeSystemMessage">System Message:</label>
-                  <textarea id="modeSystemMessage" rows="4" required placeholder="System prompt for this mode"></textarea>
+                  <textarea id="modeSystemMessage" rows="20" required placeholder="System prompt for this mode"></textarea>
                 </div>
                 <div class="form-group">
                   <label for="modeFallbackMessage">Fallback Message:</label>

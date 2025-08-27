@@ -19,16 +19,20 @@ export class PlanPointReviewedTool implements BaseTool {
       type: 'function',
       function: {
         name: 'plan_point_reviewed',
-        description: 'Mark a point in the current active plan as reviewed',
+        description: 'Mark a point in the current active plan as reviewed with a required comment',
         parameters: {
           type: 'object',
           properties: {
             point_id: {
               type: 'string',
               description: 'ID of the point to mark as reviewed'
+            },
+            comment: {
+              type: 'string',
+              description: 'Required comment explaining the review outcome and any findings'
             }
           },
-          required: ['point_id'],
+          required: ['point_id', 'comment'],
           additionalProperties: false
         }
       }
@@ -36,13 +40,21 @@ export class PlanPointReviewedTool implements BaseTool {
   }
 
   async execute(args: any, workspaceRoot: string): Promise<ToolResult> {
-    const { point_id } = args;
+    const { point_id, comment } = args;
 
     if (!point_id) {
       return {
         success: false,
         content: '',
         error: 'Required parameter: point_id'
+      };
+    }
+
+    if (!comment) {
+      return {
+        success: false,
+        content: '',
+        error: 'Required parameter: comment (explanation of review outcome and findings)'
       };
     }
 
@@ -60,12 +72,12 @@ export class PlanPointReviewedTool implements BaseTool {
       }
 
       const planningService = PlanningService.getInstance(workspaceRoot);
-      const result = planningService.setReviewed(currentPlanId, point_id);
+      const result = planningService.setReviewed(currentPlanId, point_id, comment);
 
       if (result.success) {
         return {
           success: true,
-          content: `Point '${point_id}' in plan '${currentPlanId}' marked as reviewed`
+          content: `Point '${point_id}' in plan '${currentPlanId}' marked as reviewed with comment: "${comment}"`
         };
       } else {
         return {

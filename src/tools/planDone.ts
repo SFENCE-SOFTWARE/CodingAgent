@@ -9,7 +9,7 @@ export class PlanDoneTool implements BaseTool {
     return {
       name: 'plan_done',
       displayName: 'Check if Plan is Done',
-      description: 'Check if a plan is completely done (all points accepted)',
+      description: 'Check if a plan is completely done (plan is accepted)',
       category: 'other'
     };
   }
@@ -19,7 +19,7 @@ export class PlanDoneTool implements BaseTool {
       type: 'function',
       function: {
         name: 'plan_done',
-        description: 'Check if the current active plan is completely done by verifying that all points have been accepted',
+        description: 'Check if the current active plan is completely done by verifying that the plan has been accepted',
         parameters: {
           type: 'object',
           properties: {},
@@ -57,7 +57,7 @@ export class PlanDoneTool implements BaseTool {
         if (!isDone && pendingPoints.length > 0) {
           content += `Pending Points: [${pendingPoints.join(', ')}]\n`;
         } else if (isDone) {
-          content += 'All points have been accepted!\n';
+          content += 'Plan has been accepted!\n';
         }
 
         return {

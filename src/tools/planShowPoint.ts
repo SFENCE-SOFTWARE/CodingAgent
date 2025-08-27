@@ -67,28 +67,49 @@ export class PlanShowPointTool implements BaseTool {
         
         let content = `Plan: ${currentPlanId}\n`;
         content += `Point ID: ${point.id}\n`;
-        content += `Title: ${point.title}\n`;
-        content += `Description: ${point.description}\n`;
-        content += `Priority: ${point.priority}\n`;
-        content += `Assigned To: ${point.assignedTo || 'Unassigned'}\n`;
-        content += `Status: ${point.status}\n`;
-        content += `Created: ${point.createdAt}\n`;
-        content += `Updated: ${point.updatedAt}\n`;
+        content += `Title: ${point.shortName}\n`;
+        content += `Short Description: ${point.shortDescription}\n`;
+        content += `Detailed Description: ${point.detailedDescription}\n`;
+        content += `Acceptance Criteria: ${point.acceptanceCriteria}\n\n`;
+        
+        // Status information
+        content += `Status:\n`;
+        content += `  Implemented: ${point.state.implemented ? '✅' : '❌'}\n`;
+        content += `  Reviewed: ${point.state.reviewed ? '✅' : '❌'}`;
+        if (point.state.reviewed && point.state.reviewedComment) {
+          content += ` - ${point.state.reviewedComment}`;
+        }
+        content += `\n`;
+        content += `  Tested: ${point.state.tested ? '✅' : '❌'}`;
+        if (point.state.tested && point.state.testedComment) {
+          content += ` - ${point.state.testedComment}`;
+        }
+        content += `\n`;
+        content += `  Accepted: ${point.state.accepted ? '✅' : '❌'}\n`;
+        content += `  Needs Rework: ${point.state.needRework ? '❌' : '✅'}`;
+        if (point.state.needRework && point.state.reworkReason) {
+          content += ` - ${point.state.reworkReason}`;
+        }
+        content += `\n\n`;
 
         if (point.careOnPoints && point.careOnPoints.length > 0) {
-          content += `Care-On Points: [${point.careOnPoints.join(', ')}]\n`;
+          content += `Care-On Points:\n`;
+          point.careOnPoints.forEach((carePoint: any) => {
+            content += `  - [${carePoint.id}] ${carePoint.shortName}\n`;
+          });
+          content += '\n';
         }
 
         if (point.comments && point.comments.length > 0) {
-          content += '\nComments:\n';
-          point.comments.forEach((comment: any, index: number) => {
-            content += `  ${index + 1}. [${comment.timestamp}] ${comment.text}\n`;
+          content += 'Comments:\n';
+          point.comments.forEach((comment: string, index: number) => {
+            content += `  ${index + 1}. ${comment}\n`;
           });
         }
 
         return {
           success: true,
-          content
+          content: content.trim()
         };
       } else {
         return {
