@@ -17,7 +17,7 @@
   ],
   "main": "./out/src/extension.js",
   "activationEvents": [
-    "*"
+    "onView:codingagent-chat"
   ],
   "contributes": {
     "commands": [
