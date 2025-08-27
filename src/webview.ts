@@ -101,7 +101,7 @@ export function getWebviewContent(
 
         <!-- Change Tracking Toggle Button -->
         <button id="showChangesBtn" class="show-changes-btn" title="Show File Changes" style="display: none;">
-          📝 <span id="changeCount">0</span>
+          <span id="changeCount">0</span>
         </button>
 
         <!-- Terminal Approval Panel -->

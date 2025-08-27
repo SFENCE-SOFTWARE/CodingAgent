@@ -265,6 +265,9 @@
     
     // Update interrupt button visibility based on tool calls state
     updateInterruptButtonVisibility();
+    
+    // Update compact mode for changes button
+    updateChangesButtonCompactMode();
   }
   
   function updateSendButtonState() {
@@ -278,6 +281,11 @@
       sendButton.title = 'Send Message';
     }
   }
+  
+  function updateChangesButtonCompactMode() {
+    // Always use compact mode - just add the class
+    showChangesBtn.classList.add('compact');
+  }
 
   function setToolCallsRunning(running) {
     isToolCallsRunning = running;
@@ -288,6 +296,9 @@
     }
     
     updateInterruptButtonVisibility();
+    
+    // Update compact mode for changes button
+    updateChangesButtonCompactMode();
   }
 
   function updateInterruptButtonVisibility() {
@@ -350,6 +361,9 @@
     correctionDialog.style.display = 'flex';
     correctionInput.focus();
     
+    // Update compact mode for changes button
+    updateChangesButtonCompactMode();
+    
     // Send request to backend
     vscode.postMessage({
       type: 'requestCorrection'
@@ -372,6 +386,9 @@
     
     // Hide dialog
     correctionDialog.style.display = 'none';
+    
+    // Update compact mode for changes button
+    updateChangesButtonCompactMode();
   }
 
   function cancelCorrection() {
@@ -382,6 +399,9 @@
     
     // Hide dialog
     correctionDialog.style.display = 'none';
+    
+    // Update compact mode for changes button
+    updateChangesButtonCompactMode();
   }
 
   function showCorrectionAppliedNotice(correctionText) {
@@ -1481,11 +1501,17 @@
       showChangesBtn.style.display = 'none';
       hideChangesPanel();
     }
+    
+    // Update compact mode
+    updateChangesButtonCompactMode();
   }
   
   function updateChangeCount() {
     const totalChanges = pendingChanges.reduce((sum, fileChange) => sum + fileChange.changeCount, 0);
-    changeCount.textContent = `${pendingChanges.length} file(s), ${totalChanges} change(s)`;
+    
+    // Always show only the number (compact mode)
+    changeCount.textContent = totalChanges.toString();
+    showChangesBtn.title = `${pendingChanges.length} file(s), ${totalChanges} change(s) pending - click for details`;
   }
   
   function renderPendingChanges() {
