@@ -7,7 +7,9 @@
   const messagesContainer = document.getElementById('messagesContainer');
   const messageInput = document.getElementById('messageInput');
   const sendButton = document.getElementById('sendButton');
-  const interruptButton = document.getElementById('interruptButton');
+  const interruptButton = document.getElementById('softInterruptButton'); // Keep for backward compatibility
+  const softInterruptButton = document.getElementById('softInterruptButton');
+  const hardInterruptButton = document.getElementById('hardInterruptButton');
   const correctionButton = document.getElementById('correctionButton');
   const modeSelect = document.getElementById('modeSelect');
   const modelSelect = document.getElementById('modelSelect');
@@ -93,7 +95,9 @@
     
     // Send message events
     sendButton.addEventListener('click', sendMessage);
-    interruptButton.addEventListener('click', interruptLLM);
+    interruptButton.addEventListener('click', softInterruptLLM);
+    softInterruptButton.addEventListener('click', softInterruptLLM);
+    hardInterruptButton.addEventListener('click', hardInterruptLLM);
     correctionButton.addEventListener('click', requestCorrection);
     messageInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
@@ -305,19 +309,25 @@
     // Update button states based on loading or tool calls running
     if (isLoading || isToolCallsRunning) {
       // Enable interrupt and correction buttons during loading or tool calls
-      interruptButton.disabled = isInterruptPending;
+      softInterruptButton.disabled = isInterruptPending;
+      hardInterruptButton.disabled = isInterruptPending;
       correctionButton.disabled = false;
       
-      // Update interrupt button appearance based on pending state
+      // Update interrupt buttons appearance based on pending state
       if (isInterruptPending) {
-        interruptButton.innerHTML = '<span class="icon-loading"></span>';
-        interruptButton.title = 'Interrupt pending...';
+        softInterruptButton.innerHTML = '<span class="icon-loading"></span>';
+        softInterruptButton.title = 'Soft interrupt pending...';
+        hardInterruptButton.innerHTML = '<span class="icon-loading"></span>';
+        hardInterruptButton.title = 'Hard interrupt pending...';
       } else {
-        interruptButton.innerHTML = '<span class="icon-stop"></span>';
+        softInterruptButton.innerHTML = '<span class="icon-pause"></span>';
+        hardInterruptButton.innerHTML = '<span class="icon-stop"></span>';
         if (isLoading && !isToolCallsRunning) {
-          interruptButton.title = 'Interrupt LLM (ready to interrupt)';
+          softInterruptButton.title = 'Soft Interrupt (graceful stop)';
+          hardInterruptButton.title = 'Hard Interrupt (immediate termination)';
         } else {
-          interruptButton.title = 'Interrupt LLM';
+          softInterruptButton.title = 'Soft Interrupt';
+          hardInterruptButton.title = 'Hard Interrupt';
         }
       }
       
@@ -329,10 +339,13 @@
       }
     } else {
       // Disable buttons when no loading or tool calls are running
-      interruptButton.disabled = true;
+      softInterruptButton.disabled = true;
+      hardInterruptButton.disabled = true;
       correctionButton.disabled = true;
-      interruptButton.innerHTML = '<span class="icon-stop"></span>';
-      interruptButton.title = 'Interrupt LLM (not available - no active request)';
+      softInterruptButton.innerHTML = '<span class="icon-pause"></span>';
+      hardInterruptButton.innerHTML = '<span class="icon-stop"></span>';
+      softInterruptButton.title = 'Soft Interrupt (not available - no active request)';
+      hardInterruptButton.title = 'Hard Interrupt (not available - no active request)';
       correctionButton.title = 'Send Correction (not available - no active request)';
     }
     
@@ -340,12 +353,27 @@
     updateSendButtonState();
   }
 
-  function interruptLLM() {
+  function softInterruptLLM() {
     // Don't allow multiple interrupt requests
     if (isInterruptPending) return;
     
     vscode.postMessage({
       type: 'interruptLLM'
+    });
+    
+    // Set pending state and update button appearance
+    isInterruptPending = true;
+    updateInterruptButtonVisibility();
+    
+    // Don't show any immediate message - it will come from the backend when actually interrupted
+  }
+
+  function hardInterruptLLM() {
+    // Don't allow multiple interrupt requests
+    if (isInterruptPending) return;
+    
+    vscode.postMessage({
+      type: 'hardInterruptLLM'
     });
     
     // Set pending state and update button appearance

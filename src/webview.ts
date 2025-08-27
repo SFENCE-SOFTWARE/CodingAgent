@@ -137,7 +137,10 @@ export function getWebviewContent(
             <button id="correctionButton" class="action-button correction-button" title="Send Correction">
               <span class="icon-edit"></span>
             </button>
-            <button id="interruptButton" class="action-button interrupt-button" title="Interrupt LLM">
+            <button id="softInterruptButton" class="action-button soft-interrupt-button" title="Soft Interrupt">
+              <span class="icon-pause"></span>
+            </button>
+            <button id="hardInterruptButton" class="action-button hard-interrupt-button" title="Hard Interrupt">
               <span class="icon-stop"></span>
             </button>
           </div>

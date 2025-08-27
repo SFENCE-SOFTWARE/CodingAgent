@@ -29,6 +29,7 @@ export class ChatService {
   private isWaitingForCorrection: boolean = false;
   private isWaitingForIterationContinue: boolean = false;
   private shouldContinueIterations: boolean = false;
+  private currentAbortController: AbortController | null = null;
   private allowedIterations: number = 10; // How many iterations are currently allowed
   private currentPlanId: string | null = null; // Track the current active plan ID
 
@@ -159,6 +160,15 @@ export class ChatService {
 
   interruptLLM(): void {
     this.isInterrupted = true;
+  }
+
+  hardInterruptLLM(): void {
+    this.isInterrupted = true;
+    // Immediately abort any ongoing request
+    if (this.currentAbortController) {
+      this.currentAbortController.abort('Hard interrupt requested');
+      this.currentAbortController = null;
+    }
   }
 
   requestCorrection(): void {
@@ -432,7 +442,12 @@ export class ChatService {
       context: 'request-sent'
     });
 
-    const response = await this.openai.sendChat(request);
+    // Create abort controller for this request
+    this.currentAbortController = new AbortController();
+
+    const response = await this.openai.sendChat(request, this.currentAbortController.signal);
+    this.currentAbortController = null; // Clear after completion
+    
     const endTime = Date.now();
     
     // Log the response immediately when received
@@ -550,8 +565,11 @@ export class ChatService {
       context: 'streaming-request-sent'
     });
 
+    // Create abort controller for this request
+    this.currentAbortController = new AbortController();
+
     try {
-      for await (const chunk of this.openai.sendChatStream(request)) {
+      for await (const chunk of this.openai.sendChatStream(request, this.currentAbortController.signal)) {
         streamedChunks.push(chunk);
         const delta = chunk.choices[0]?.delta;
         
@@ -735,9 +753,14 @@ export class ChatService {
         }
       }
 
+      // Clear abort controller after successful completion
+      this.currentAbortController = null;
       return [chatMessage];
 
     } catch (error) {
+      // Clear abort controller on error
+      this.currentAbortController = null;
+      
       // Send error event
       if (this.streamingCallback) {
         this.streamingCallback({
@@ -1049,7 +1072,9 @@ export class ChatService {
           }
           
           try {
-            for await (const chunk of this.openai.sendChatStream(followUpRequest)) {
+            // Use the current abort controller if available
+            const abortSignal = this.currentAbortController?.signal;
+            for await (const chunk of this.openai.sendChatStream(followUpRequest, abortSignal)) {
               const delta = chunk.choices[0]?.delta;
               
               if (!delta) continue;
@@ -1178,7 +1203,8 @@ export class ChatService {
           
         } else {
           // Non-streaming follow-up response
-          followUpResponse = await this.openai.sendChat(followUpRequest);
+          const abortSignal = this.currentAbortController?.signal;
+          followUpResponse = await this.openai.sendChat(followUpRequest, abortSignal);
           followUpEndTime = Date.now();
         }
 

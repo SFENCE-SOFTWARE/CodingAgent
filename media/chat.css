@@ -2,12 +2,13 @@
 .icon-send:before { content: "▶"; font-weight: bold; }
 .icon-edit:before { content: "✏"; }
 .icon-stop:before { content: "⏹"; }
+.icon-pause:before { content: "⏸"; }
 .icon-loading:before { content: "⟳"; }
 .icon-copy:before { content: "📋"; }
 .icon-copy-all:before { content: "📋"; }
 
 /* Icon base styles */
-.icon-send, .icon-edit, .icon-stop, .icon-loading {
+.icon-send, .icon-edit, .icon-stop, .icon-pause, .icon-loading {
   font-size: 16px;
   font-style: normal;
   font-variant: normal;
@@ -613,13 +614,24 @@
   background-color: var(--vscode-button-background);
 }
 
-.interrupt-button {
+.soft-interrupt-button {
+  background-color: var(--vscode-inputValidation-warningBackground);
+  color: var(--vscode-inputValidation-warningForeground);
+  border-color: var(--vscode-inputValidation-warningBorder);
+}
+
+.soft-interrupt-button:hover:not(:disabled) {
+  background-color: var(--vscode-button-hoverBackground);
+  color: var(--vscode-button-foreground);
+}
+
+.hard-interrupt-button {
   background-color: var(--vscode-inputValidation-errorBackground);
   color: var(--vscode-inputValidation-errorForeground);
   border-color: var(--vscode-inputValidation-errorBorder);
 }
 
-.interrupt-button:hover:not(:disabled) {
+.hard-interrupt-button:hover:not(:disabled) {
   background-color: var(--vscode-button-hoverBackground);
   color: var(--vscode-button-foreground);
 }

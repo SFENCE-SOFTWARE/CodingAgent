@@ -197,6 +197,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             this.chatService.interruptLLM();
             break;
 
+          case 'hardInterruptLLM':
+            this.chatService.hardInterruptLLM();
+            break;
+
           case 'requestCorrection':
             this.chatService.requestCorrection();
             break;
