@@ -215,7 +215,7 @@
           },
           "codingagent.memory.enableProjectMemory": {
             "type": "boolean",
-            "default": false,
+            "default": true,
             "description": "Enable persistent project memory storage (stored in .codingagent/memory/)"
           }
         }
