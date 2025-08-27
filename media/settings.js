@@ -42,6 +42,12 @@
     connectionStatus: document.getElementById('connectionStatus'),
     saveStatus: document.getElementById('saveStatus'),
     
+    // Profile elements
+    newProfileName: document.getElementById('newProfileName'),
+    saveProfileBtn: document.getElementById('saveProfileBtn'),
+    profilesList: document.getElementById('profilesList'),
+    noProfiles: document.getElementById('noProfiles'),
+    
     // Tab elements
     tabButtons: document.querySelectorAll('.tab-button'),
     tabContents: document.querySelectorAll('.tab-content'),
@@ -85,6 +91,14 @@
     elements.selectLogFileBtn.addEventListener('click', selectLogFile);
     elements.selectLogModeFileBtn.addEventListener('click', selectLogModeFile);
     elements.testConnectionBtn?.addEventListener('click', testConnection);
+    
+    // Profile controls
+    elements.saveProfileBtn?.addEventListener('click', saveProfile);
+    elements.newProfileName?.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        saveProfile();
+      }
+    });
     
     // Modal controls
     elements.closeModeEditor.addEventListener('click', closeModeEditor);
@@ -560,6 +574,36 @@
       case 'connectionTestResult':
         updateConnectionStatus(message.success, message.message);
         break;
+        
+      case 'profileSaved':
+        if (message.success) {
+          showSaveStatus(`✅ Profile "${message.profileName}" saved successfully!`);
+          requestProfiles();
+        } else {
+          showSaveStatus(`❌ Failed to save profile: ${message.error}`, 'error');
+        }
+        break;
+        
+      case 'profileLoaded':
+        if (message.success) {
+          showSaveStatus(`✅ Profile "${message.profileName}" loaded successfully!`);
+        } else {
+          showSaveStatus(`❌ Failed to load profile: ${message.error}`, 'error');
+        }
+        break;
+        
+      case 'profileDeleted':
+        if (message.success) {
+          showSaveStatus(`✅ Profile "${message.profileName}" deleted successfully!`);
+          requestProfiles();
+        } else {
+          showSaveStatus(`❌ Failed to delete profile: ${message.error}`, 'error');
+        }
+        break;
+        
+      case 'profilesList':
+        renderProfiles(message.profiles);
+        break;
     }
   });
 
@@ -583,7 +627,7 @@
     });
     
     // AGGRESSIVE DOM MANIPULATION - Force hide ALL tabs first
-    const allTabs = ['connection-tab', 'behavior-tab', 'tools-tab', 'modes-tab', 'logging-tab', 'advanced-tab'];
+    const allTabs = ['connection-tab', 'behavior-tab', 'tools-tab', 'modes-tab', 'logging-tab', 'advanced-tab', 'profiles-tab'];
     allTabs.forEach(tabId => {
       const tab = document.getElementById(tabId);
       if (tab) {
@@ -650,6 +694,112 @@
       status.className = 'save-status';
     }, 3000);
   }
+
+  // Profile Management Functions
+  function saveProfile() {
+    const profileName = elements.newProfileName?.value?.trim();
+    
+    if (!profileName) {
+      showSaveStatus('Profile name is required', 'error');
+      return;
+    }
+
+    // Validate profile name
+    if (!/^[a-zA-Z0-9_-]+$/.test(profileName)) {
+      showSaveStatus('Profile name can only contain letters, numbers, underscores, and hyphens', 'error');
+      return;
+    }
+
+    vscode.postMessage({
+      type: 'saveProfile',
+      profileName: profileName
+    });
+
+    // Clear input after saving
+    if (elements.newProfileName) {
+      elements.newProfileName.value = '';
+    }
+  }
+
+  function loadProfile(profileName) {
+    vscode.postMessage({
+      type: 'loadProfile',
+      profileName: profileName
+    });
+  }
+
+  function deleteProfile(profileName) {
+    if (confirm(`Are you sure you want to delete profile "${profileName}"? This action cannot be undone.`)) {
+      vscode.postMessage({
+        type: 'deleteProfile',
+        profileName: profileName
+      });
+    }
+  }
+
+  function requestProfiles() {
+    vscode.postMessage({
+      type: 'listProfiles'
+    });
+  }
+
+  function renderProfiles(profiles) {
+    if (!elements.profilesList) return;
+
+    if (!profiles || profiles.length === 0) {
+      elements.profilesList.innerHTML = `
+        <div class="no-profiles" id="noProfiles">
+          <div class="no-profiles-icon">📁</div>
+          <p>No saved profiles yet</p>
+          <p class="no-profiles-hint">Save your current configuration above to create your first profile</p>
+        </div>
+      `;
+      return;
+    }
+
+    const profilesHtml = profiles.map(profile => {
+      const savedDate = new Date(profile.savedAt).toLocaleString();
+      
+      return `
+        <div class="profile-card">
+          <div class="profile-header">
+            <h4 class="profile-name">${escapeHtml(profile.name)}</h4>
+            <div class="profile-actions">
+              <button class="profile-button" onclick="loadProfile('${escapeHtml(profile.name)}')">
+                📁 Load
+              </button>
+              <button class="profile-button danger" onclick="deleteProfile('${escapeHtml(profile.name)}')">
+                🗑️ Delete
+              </button>
+            </div>
+          </div>
+          <div class="profile-details">
+            <div class="profile-detail">
+              <div class="profile-detail-label">Mode:</div>
+              <div class="profile-detail-value">${escapeHtml(profile.currentMode || 'Unknown')}</div>
+            </div>
+            <div class="profile-detail">
+              <div class="profile-detail-label">Model:</div>
+              <div class="profile-detail-value">${escapeHtml(profile.currentModel || 'Unknown')}</div>
+            </div>
+          </div>
+          <div class="profile-saved-date">Saved: ${savedDate}</div>
+        </div>
+      `;
+    }).join('');
+
+    elements.profilesList.innerHTML = profilesHtml;
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // Make functions global for onclick handlers
+  window.loadProfile = loadProfile;
+  window.deleteProfile = deleteProfile;
 
   // Initialize when DOM is ready
   if (document.readyState === 'loading') {

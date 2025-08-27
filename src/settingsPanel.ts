@@ -107,6 +107,18 @@ export class SettingsPanel {
           case 'showError':
             vscode.window.showErrorMessage(message.message);
             break;
+          case 'saveProfile':
+            this._saveProfile(message.profileName);
+            break;
+          case 'loadProfile':
+            this._loadProfile(message.profileName);
+            break;
+          case 'deleteProfile':
+            this._deleteProfile(message.profileName);
+            break;
+          case 'listProfiles':
+            this._listProfiles();
+            break;
         }
       },
       null,
@@ -177,6 +189,9 @@ export class SettingsPanel {
       },
       availableTools: availableTools
     });
+
+    // Also send profiles list
+    this._listProfiles();
   }
 
   private async _updateConfiguration(configUpdate: any) {
@@ -470,6 +485,256 @@ export class SettingsPanel {
     }
   }
 
+  private _getProfilesPath(): string {
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+    if (workspaceFolder) {
+      return path.join(workspaceFolder.uri.fsPath, '.codingagent', 'profiles');
+    }
+    
+    // Fallback to global storage if no workspace
+    const homeDir = require('os').homedir();
+    return path.join(homeDir, '.codingagent', 'profiles');
+  }
+
+  private async _saveProfile(profileName: string) {
+    try {
+      if (!profileName || profileName.trim() === '') {
+        throw new Error('Profile name cannot be empty');
+      }
+
+      // Validate profile name (no special characters)
+      if (!/^[a-zA-Z0-9_-]+$/.test(profileName)) {
+        throw new Error('Profile name can only contain letters, numbers, underscores, and hyphens');
+      }
+
+      const config = vscode.workspace.getConfiguration('codingagent');
+      
+      // Get current configuration
+      const profileData = {
+        host: config.get('openai.host'),
+        port: config.get('openai.port'),
+        apiKey: config.get('openai.apiKey'),
+        currentMode: config.get('currentMode'),
+        currentModel: config.get('currentModel'),
+        showThinking: config.get('showThinking'),
+        enableStreaming: config.get('enableStreaming'),
+        iterationThreshold: config.get('iterationThreshold'),
+        enableProjectMemory: config.get('memory.enableProjectMemory'),
+        askUser: {
+          uncertaintyThreshold: config.get('askUser.uncertaintyThreshold')
+        },
+        modes: config.get('modes'),
+        tools: {
+          readFileMaxLines: config.get('tools.readFileMaxLines'),
+          autoApproveCommands: config.get('tools.autoApproveCommands')
+        },
+        memory: {
+          maxLines: config.get('memory.maxLines'),
+          maxChars: config.get('memory.maxChars'),
+          autoSafetyLimit: config.get('memory.autoSafetyLimit'),
+          largeValueThreshold: config.get('memory.largeValueThreshold')
+        },
+        logging: {
+          enabled: config.get('logging.enabled'),
+          filePath: config.get('logging.filePath'),
+          verbosity: config.get('logging.verbosity'),
+          logMode: config.get('logging.logMode'),
+          logModeFilePath: config.get('logging.logModeFilePath')
+        },
+        savedAt: new Date().toISOString()
+      };
+
+      const profilesPath = this._getProfilesPath();
+      const profileFile = path.join(profilesPath, `${profileName}.json`);
+
+      // Ensure profiles directory exists
+      if (!fs.existsSync(profilesPath)) {
+        fs.mkdirSync(profilesPath, { recursive: true });
+      }
+
+      // Save profile
+      fs.writeFileSync(profileFile, JSON.stringify(profileData, null, 2));
+
+      this._panel.webview.postMessage({
+        type: 'profileSaved',
+        success: true,
+        profileName: profileName
+      });
+
+      vscode.window.showInformationMessage(`Profile "${profileName}" saved successfully`);
+    } catch (error) {
+      this._panel.webview.postMessage({
+        type: 'profileSaved',
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }
+
+  private async _loadProfile(profileName: string) {
+    try {
+      if (!profileName || profileName.trim() === '') {
+        throw new Error('Profile name cannot be empty');
+      }
+
+      const profilesPath = this._getProfilesPath();
+      const profileFile = path.join(profilesPath, `${profileName}.json`);
+
+      if (!fs.existsSync(profileFile)) {
+        throw new Error(`Profile "${profileName}" not found`);
+      }
+
+      const profileData = JSON.parse(fs.readFileSync(profileFile, 'utf-8'));
+      const config = vscode.workspace.getConfiguration('codingagent');
+
+      // Apply profile settings
+      await config.update('openai.host', profileData.host, vscode.ConfigurationTarget.Global);
+      await config.update('openai.port', profileData.port, vscode.ConfigurationTarget.Global);
+      await config.update('openai.apiKey', profileData.apiKey, vscode.ConfigurationTarget.Global);
+      await config.update('currentMode', profileData.currentMode, vscode.ConfigurationTarget.Global);
+      await config.update('currentModel', profileData.currentModel, vscode.ConfigurationTarget.Global);
+      await config.update('showThinking', profileData.showThinking, vscode.ConfigurationTarget.Global);
+      await config.update('enableStreaming', profileData.enableStreaming, vscode.ConfigurationTarget.Global);
+      await config.update('iterationThreshold', profileData.iterationThreshold, vscode.ConfigurationTarget.Global);
+      await config.update('memory.enableProjectMemory', profileData.enableProjectMemory, vscode.ConfigurationTarget.Global);
+      
+      if (profileData.askUser) {
+        await config.update('askUser.uncertaintyThreshold', profileData.askUser.uncertaintyThreshold, vscode.ConfigurationTarget.Global);
+      }
+      
+      if (profileData.modes) {
+        await config.update('modes', profileData.modes, vscode.ConfigurationTarget.Global);
+      }
+      
+      if (profileData.tools) {
+        await config.update('tools.readFileMaxLines', profileData.tools.readFileMaxLines, vscode.ConfigurationTarget.Global);
+        await config.update('tools.autoApproveCommands', profileData.tools.autoApproveCommands, vscode.ConfigurationTarget.Global);
+      }
+      
+      if (profileData.memory) {
+        await config.update('memory.maxLines', profileData.memory.maxLines, vscode.ConfigurationTarget.Global);
+        await config.update('memory.maxChars', profileData.memory.maxChars, vscode.ConfigurationTarget.Global);
+        await config.update('memory.autoSafetyLimit', profileData.memory.autoSafetyLimit, vscode.ConfigurationTarget.Global);
+        await config.update('memory.largeValueThreshold', profileData.memory.largeValueThreshold, vscode.ConfigurationTarget.Global);
+      }
+      
+      if (profileData.logging) {
+        await config.update('logging.enabled', profileData.logging.enabled, vscode.ConfigurationTarget.Global);
+        await config.update('logging.filePath', profileData.logging.filePath, vscode.ConfigurationTarget.Global);
+        await config.update('logging.verbosity', profileData.logging.verbosity, vscode.ConfigurationTarget.Global);
+        await config.update('logging.logMode', profileData.logging.logMode, vscode.ConfigurationTarget.Global);
+        await config.update('logging.logModeFilePath', profileData.logging.logModeFilePath, vscode.ConfigurationTarget.Global);
+      }
+
+      // Send updated configuration to frontend
+      this._sendConfiguration();
+
+      this._panel.webview.postMessage({
+        type: 'profileLoaded',
+        success: true,
+        profileName: profileName
+      });
+
+      vscode.window.showInformationMessage(`Profile "${profileName}" loaded successfully`);
+    } catch (error) {
+      this._panel.webview.postMessage({
+        type: 'profileLoaded',
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }
+
+  private async _deleteProfile(profileName: string) {
+    const result = await vscode.window.showWarningMessage(
+      `Are you sure you want to delete profile "${profileName}"? This action cannot be undone.`,
+      { modal: true },
+      'Delete',
+      'Cancel'
+    );
+
+    if (result === 'Delete') {
+      try {
+        const profilesPath = this._getProfilesPath();
+        const profileFile = path.join(profilesPath, `${profileName}.json`);
+
+        if (!fs.existsSync(profileFile)) {
+          throw new Error(`Profile "${profileName}" not found`);
+        }
+
+        fs.unlinkSync(profileFile);
+
+        this._panel.webview.postMessage({
+          type: 'profileDeleted',
+          success: true,
+          profileName: profileName
+        });
+
+        // Refresh profiles list
+        this._listProfiles();
+
+        vscode.window.showInformationMessage(`Profile "${profileName}" deleted successfully`);
+      } catch (error) {
+        this._panel.webview.postMessage({
+          type: 'profileDeleted',
+          success: false,
+          error: error instanceof Error ? error.message : String(error)
+        });
+      }
+    }
+  }
+
+  private _listProfiles() {
+    try {
+      const profilesPath = this._getProfilesPath();
+      
+      if (!fs.existsSync(profilesPath)) {
+        this._panel.webview.postMessage({
+          type: 'profilesList',
+          profiles: []
+        });
+        return;
+      }
+
+      const files = fs.readdirSync(profilesPath);
+      const profiles = [];
+
+      for (const file of files) {
+        if (file.endsWith('.json')) {
+          try {
+            const profileFile = path.join(profilesPath, file);
+            const profileData = JSON.parse(fs.readFileSync(profileFile, 'utf-8'));
+            const profileName = path.basename(file, '.json');
+            
+            profiles.push({
+              name: profileName,
+              savedAt: profileData.savedAt || 'Unknown',
+              currentMode: profileData.currentMode || 'Unknown',
+              currentModel: profileData.currentModel || 'Unknown'
+            });
+          } catch (error) {
+            // Skip corrupted profile files
+            console.warn(`Skipping corrupted profile file: ${file}`, error);
+          }
+        }
+      }
+
+      // Sort by saved date (newest first)
+      profiles.sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime());
+
+      this._panel.webview.postMessage({
+        type: 'profilesList',
+        profiles: profiles
+      });
+    } catch (error) {
+      this._panel.webview.postMessage({
+        type: 'profilesList',
+        profiles: [],
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }
+
   private _getHtmlForWebview(webview: vscode.Webview): string {
     const styleUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this._extensionUri, 'media', 'settings.css')
@@ -497,6 +762,9 @@ export class SettingsPanel {
     );
     const advancedIconUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this._extensionUri, 'media', 'advanced-icon.svg')
+    );
+    const settingsIconUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this._extensionUri, 'media', 'settings-icon.svg')
     );
 
     return `<!DOCTYPE html>
@@ -547,6 +815,10 @@ export class SettingsPanel {
             <button class="tab-button" data-tab="advanced" title="Advanced Settings">
               <img src="${advancedIconUri}" alt="Advanced" />
               <span class="tab-label">Advanced</span>
+            </button>
+            <button class="tab-button" data-tab="profiles" title="Configuration Profiles">
+              <img src="${settingsIconUri}" alt="Profiles" />
+              <span class="tab-label">Profiles</span>
             </button>
           </nav>
 
@@ -834,6 +1106,40 @@ export class SettingsPanel {
                   <label for="requestTimeout">Request Timeout (ms):</label>
                   <input type="number" id="requestTimeout" placeholder="30000" min="1000" max="300000" />
                   <small class="form-hint">How long to wait for API responses before timing out</small>
+                </div>
+              </section>
+            </div>
+
+            <!-- Profiles Tab -->
+            <div id="profiles-tab" class="tab-content">
+              <section class="settings-section">
+                <h2>💾 Configuration Profiles</h2>
+                <p class="section-description">Save and manage different configuration profiles for quick switching</p>
+                
+                <div class="profiles-actions">
+                  <div class="profile-save-section">
+                    <h3>Save Current Configuration</h3>
+                    <div class="form-group">
+                      <label for="newProfileName">Profile Name:</label>
+                      <div class="profile-input-group">
+                        <input type="text" id="newProfileName" placeholder="Enter profile name (e.g., Development, Production)" maxlength="50" />
+                        <button id="saveProfileBtn" class="primary-button">💾 Save Profile</button>
+                      </div>
+                      <small class="form-hint">Only letters, numbers, underscores, and hyphens allowed</small>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="profiles-list-section">
+                  <h3>Saved Profiles</h3>
+                  <div id="profilesList" class="profiles-list">
+                    <!-- Profiles will be populated here -->
+                    <div class="no-profiles" id="noProfiles">
+                      <div class="no-profiles-icon">📁</div>
+                      <p>No saved profiles yet</p>
+                      <p class="no-profiles-hint">Save your current configuration above to create your first profile</p>
+                    </div>
+                  </div>
                 </div>
               </section>
             </div>
