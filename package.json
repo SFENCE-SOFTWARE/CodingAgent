@@ -247,7 +247,8 @@
                   "memory_search",
                   "memory_list",
                   "memory_export",
-                  "plan_show_point"
+                  "plan_show_point",
+                  "plan_point_implemented"
                 ],
                 "fallbackMessage": "I'm ready to help with your coding tasks. What would you like me to do?",
                 "temperature": 0.1,
@@ -388,7 +389,8 @@
                   "plan_show_point",
                   "plan_add_points",
                   "plan_change_point",
-                  "plan_point_care_on"
+                  "plan_point_care_on",
+                  "plan_point_remove"
                 ],
                 "fallbackMessage": "I'm ready to create and refine implementation plans. What project needs detailed planning?",
                 "temperature": 0.2,
@@ -464,7 +466,6 @@
                   "plan_open",
                   "plan_show",
                   "plan_show_point",
-                  "plan_point_implemented",
                   "plan_point_need_rework",
                   "plan_point_comment",
                   "plan_state",

@@ -50,6 +50,7 @@ import { PlanAcceptedTool } from './tools/planAccepted';
 import { PlanStateTool } from './tools/planState';
 import { PlanDoneTool } from './tools/planDone';
 import { PlanDeleteTool } from './tools/planDelete';
+import { PlanPointRemoveTool } from './tools/planPointRemove';
 
 export class ToolsService {
   private workspaceRoot: string;
@@ -147,7 +148,8 @@ export class ToolsService {
       new PlanAcceptedTool(),
       new PlanStateTool(),
       new PlanDoneTool(),
-      new PlanDeleteTool()
+      new PlanDeleteTool(),
+      new PlanPointRemoveTool()
     ];
 
     // Add each tool to the registry

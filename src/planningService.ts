@@ -680,4 +680,39 @@ export class PlanningService {
 
     return { success: true };
   }
+
+  public removePoints(planId: string, pointIds: string[]): { success: boolean; removedPoints?: PlanPoint[]; error?: string } {
+    const plan = this.plans.get(planId);
+    if (!plan) {
+      return { success: false, error: `Plan with ID '${planId}' not found` };
+    }
+
+    if (!Array.isArray(pointIds) || pointIds.length === 0) {
+      return { success: false, error: 'point_ids must be a non-empty array of point IDs' };
+    }
+
+    // Check which points exist
+    const existingPoints = pointIds.filter(id => plan.points.some(p => p.id === id));
+    const nonExistentPoints = pointIds.filter(id => !plan.points.some(p => p.id === id));
+
+    if (nonExistentPoints.length > 0) {
+      return { success: false, error: `Points not found in plan '${planId}': ${nonExistentPoints.join(', ')}` };
+    }
+
+    // Remove the points and collect them
+    const removedPoints: PlanPoint[] = [];
+    for (const pointId of pointIds) {
+      const pointIndex = plan.points.findIndex(p => p.id === pointId);
+      if (pointIndex !== -1) {
+        const removedPoint = plan.points.splice(pointIndex, 1)[0];
+        removedPoints.push(removedPoint);
+      }
+    }
+
+    // Update plan timestamp and save
+    plan.updatedAt = Date.now();
+    this.savePlan(plan);
+
+    return { success: true, removedPoints };
+  }
 }
