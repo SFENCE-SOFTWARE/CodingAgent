@@ -69,7 +69,6 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         break;
 
       case 'thinking':
-        console.log(`[CodingAgent ChatViewProvider] Sending thinking to frontend:`, update.thinking);
         // TODO: Fix TypeScript issue with getLoggingService method
         // this.chatService.getLoggingService().logDebug('ChatViewProvider sending thinking to frontend', {
         //   messageId: update.messageId,
@@ -731,7 +730,6 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
   private sendMessage(message: any) {
     if (message.type === 'streamingThinking') {
-      console.log(`[CodingAgent ChatViewProvider] sendMessage streamingThinking:`, message);
       // TODO: Fix TypeScript issue with getLoggingService method  
       // this.chatService.getLoggingService().logDebug('ChatViewProvider sendMessage streamingThinking', message);
     }

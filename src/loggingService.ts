@@ -107,6 +107,8 @@ export class LoggingService {
       duration?: number;
       error?: string;
       context?: string;
+      toolCalls?: any[];
+      toolResults?: any[];
     } = {}
   ) {
     if (!this.isEnabled || !this.logFilePath) {
@@ -115,7 +117,7 @@ export class LoggingService {
 
     try {
       const timestamp = metadata.timestamp || Date.now();
-      const logEntry = this.formatLogEntry(request, response, {
+      const logEntry = this.formatChatLikeLogEntry(request, response, {
         ...metadata,
         timestamp
       });
@@ -171,6 +173,148 @@ export class LoggingService {
         }
       });
     }
+  }
+
+  private formatChatLikeLogEntry(
+    request: any,
+    response: any,
+    metadata: {
+      model?: string;
+      mode?: string;
+      timestamp: number;
+      duration?: number;
+      error?: string;
+      context?: string;
+      toolCalls?: any[];
+      toolResults?: any[];
+    }
+  ): string {
+    const date = new Date(metadata.timestamp);
+    const dateStr = date.toISOString();
+    
+    let entry = `\n${'='.repeat(100)}\n`;
+    entry += `📅 ${dateStr}`;
+    if (metadata.duration) {
+      entry += ` | ⏱️ ${metadata.duration}ms`;
+    }
+    if (metadata.context && metadata.context !== 'initial') {
+      entry += ` | 🔄 ${metadata.context}`;
+    }
+    entry += `\n`;
+    entry += `🤖 Model: ${metadata.model || 'unknown'} | 🎭 Mode: ${metadata.mode || 'unknown'}\n`;
+    entry += `${'='.repeat(100)}\n\n`;
+
+    // Extract user message from request
+    if (request && request.messages && Array.isArray(request.messages)) {
+      const userMessages = request.messages.filter((msg: any) => msg.role === 'user');
+      const lastUserMessage = userMessages[userMessages.length - 1];
+      
+      if (lastUserMessage) {
+        entry += `👤 User:\n`;
+        entry += `${this.formatContent(lastUserMessage.content)}\n\n`;
+      }
+    }
+
+    // Format assistant response
+    if (metadata.error) {
+      entry += `🔴 Assistant (ERROR):\n`;
+      entry += `❌ ${metadata.error}\n\n`;
+    } else if (response) {
+      const assistantMessage = response.choices?.[0]?.message;
+      if (assistantMessage) {
+        entry += `🤖 Assistant:\n`;
+        
+        // Main content
+        if (assistantMessage.content) {
+          entry += `💬 ${this.formatContent(assistantMessage.content)}\n\n`;
+        }
+        
+        // Reasoning/thinking
+        if (assistantMessage.reasoning || assistantMessage.reasoning_content) {
+          const reasoning = assistantMessage.reasoning || assistantMessage.reasoning_content;
+          entry += `🧠 Thinking:\n`;
+          entry += `${this.formatContent(reasoning)}\n\n`;
+        }
+        
+        // Tool calls with results
+        if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
+          entry += `🔧 Tool Calls:\n`;
+          assistantMessage.tool_calls.forEach((toolCall: any, index: number) => {
+            entry += `  ${index + 1}. 🛠️ ${toolCall.function?.name || 'unknown'} (${toolCall.id || 'no-id'})\n`;
+            
+            // Arguments
+            if (toolCall.function?.arguments) {
+              try {
+                const args = JSON.parse(toolCall.function.arguments);
+                entry += `     📋 Arguments:\n`;
+                Object.entries(args).forEach(([key, value]) => {
+                  entry += `       • ${key}: ${this.formatArgValue(value)}\n`;
+                });
+              } catch (error) {
+                entry += `     📋 Arguments (raw): ${toolCall.function.arguments}\n`;
+              }
+            }
+            
+            // Tool result (if available for this tool call)
+            if (metadata.toolResults && metadata.toolResults.length > index) {
+              const result = metadata.toolResults[index];
+              if (result.success !== undefined) {
+                entry += `     📈 Success: ${result.success ? '✅ Yes' : '❌ No'}\n`;
+              }
+              
+              if (result.content) {
+                entry += `     📄 Result:\n`;
+                entry += `${this.indentContent(this.formatContent(result.content))}\n`;
+              }
+              
+              if (result.error) {
+                entry += `     ⚠️ Error: ${result.error}\n`;
+              }
+            }
+            
+            entry += `\n`;
+          });
+        }
+      }
+    }
+
+    return entry;
+  }
+
+  private formatContent(content: string): string {
+    if (!content) return '';
+    
+    // Truncate based on verbosity
+    if (this.verbosity === 'Minimal' && content.length > 200) {
+      return content.substring(0, 200) + '... [truncated]';
+    } else if (this.verbosity === 'Standard' && content.length > 1000) {
+      return content.substring(0, 1000) + '... [truncated]';
+    }
+    
+    return content;
+  }
+
+  private formatArgValue(value: any): string {
+    if (typeof value === 'string') {
+      if (value.length > 100) {
+        return `"${value.substring(0, 100)}..." [${value.length} chars]`;
+      }
+      return `"${value}"`;
+    }
+    
+    if (typeof value === 'object') {
+      const jsonStr = JSON.stringify(value);
+      if (jsonStr.length > 100) {
+        return `[Object: ${jsonStr.substring(0, 100)}...]`;
+      }
+      return jsonStr;
+    }
+    
+    return String(value);
+  }
+
+  private indentContent(content: string): string {
+    return content.split('\n').map(line => `       ${line}`).join('\n');
   }
 
   private formatLogEntry(

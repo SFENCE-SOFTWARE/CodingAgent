@@ -54,3 +54,6 @@ yarn.lock
 
 # Chat history (workspace-specific)
 .codingagent/
+
+# But allow example log files for documentation
+!.codingagent/logs/*-example.log

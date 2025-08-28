@@ -105,29 +105,6 @@ export class ChatService {
    */
   private extractReasoning(obj: any): string | undefined {
     const reasoning = obj.reasoning || obj.reasoning_content;
-    
-    // Debug logging to see which field is being used and what content we have
-    console.log(`[CodingAgent] Debug - obj.reasoning:`, obj.reasoning);
-    console.log(`[CodingAgent] Debug - obj.reasoning_content:`, obj.reasoning_content);
-    console.log(`[CodingAgent] Debug - extracted reasoning:`, reasoning);
-    
-    // Log to file as well
-    this.logging.logDebug('extractReasoning called', {
-      hasReasoning: !!obj.reasoning,
-      hasReasoningContent: !!obj.reasoning_content,
-      reasoningValue: obj.reasoning,
-      reasoningContentValue: obj.reasoning_content,
-      extractedValue: reasoning
-    });
-    
-    if (reasoning) {
-      console.log(`[CodingAgent] Reasoning extracted from field: ${obj.reasoning ? 'reasoning' : 'reasoning_content'}`);
-      this.logging.logDebug('Reasoning extracted successfully', {
-        fromField: obj.reasoning ? 'reasoning' : 'reasoning_content',
-        value: reasoning
-      });
-    }
-    
     return reasoning;
   }
 
@@ -437,15 +414,8 @@ export class ChatService {
     startTime: number,
     callback?: (update: ChatUpdate) => void
   ): Promise<ChatMessage[]> {
-    // Log the outgoing request immediately
-    this.logging.logAiCommunication(request, null, {
-      model: currentModel,
-      mode: currentMode,
-      timestamp: startTime,
-      context: 'request-sent'
-    });
-
-    // Log raw JSON request if log mode is enabled
+    // Log the outgoing request immediately 
+    // NOTE: Only raw JSON logging for requests - readable log will be done with complete response
     this.logging.logRawJsonCommunication(request, null, {
       model: currentModel,
       mode: currentMode,
@@ -461,13 +431,13 @@ export class ChatService {
     
     const endTime = Date.now();
     
-    // Log the response immediately when received
+    // Log the response immediately when received (for non-streaming final responses)
     this.logging.logAiCommunication(request, response, {
       model: currentModel,
       mode: currentMode,
       timestamp: endTime,
       duration: endTime - startTime,
-      context: 'response-received'
+      context: 'non-streaming-response'
     });
 
     // Log raw JSON response if log mode is enabled
@@ -562,14 +532,7 @@ export class ChatService {
     }
 
     // Log the outgoing request immediately (before streaming starts)
-    this.logging.logAiCommunication(request, null, {
-      model: currentModel,
-      mode: currentMode,
-      timestamp: startTime,
-      context: 'streaming-request-sent'
-    });
-
-    // Log raw JSON request if log mode is enabled
+    // NOTE: Only raw JSON logging for requests - readable log will be done with complete response
     this.logging.logRawJsonCommunication(request, null, {
       model: currentModel,
       mode: currentMode,
@@ -586,9 +549,6 @@ export class ChatService {
         const delta = chunk.choices[0]?.delta;
         
         if (!delta) continue;
-
-        // Debug: Log incoming delta
-        console.log(`[CodingAgent] Streaming delta received:`, delta);
 
         // Handle content updates
         if (delta.content) {
@@ -607,15 +567,10 @@ export class ChatService {
         // Handle thinking/reasoning updates
         const deltaReasoning = this.extractReasoning(delta);
         if (deltaReasoning) {
-          console.log(`[CodingAgent] Processing thinking delta:`, deltaReasoning);
-          this.logging.logDebug('Thinking delta received', { deltaReasoning, messageId });
-          
           accumulatedThinking += deltaReasoning;
           chatMessage.reasoning = accumulatedThinking;
           
           if (this.streamingCallback) {
-            console.log(`[CodingAgent] Sending thinking callback:`, deltaReasoning);
-            this.logging.logDebug('Sending thinking callback', { deltaReasoning, messageId, accumulatedThinking });
             this.streamingCallback({
               type: 'thinking',
               messageId,
@@ -800,6 +755,7 @@ export class ChatService {
     isStreamingMode?: boolean
   ): Promise<ChatMessage[]> {
     const results: ChatMessage[] = [];
+    const toolExecutionResults: any[] = []; // Track tool results for logging
 
     // Normalize tool calls to ensure they are complete and valid
     let normalizedToolCalls = this.normalizeToolCalls(assistantMessage.tool_calls || []);
@@ -1001,6 +957,14 @@ export class ChatService {
           const args = JSON.parse(toolCall.function.arguments);
           const toolResult = await this.tools.executeTool(toolCall.function.name, args);
           
+          // Store tool result for logging
+          toolExecutionResults.push({
+            toolCallId: toolCall.id,
+            toolName: toolCall.function.name,
+            args: args,
+            ...toolResult
+          });
+          
           // Check for interrupt after tool execution (for ask_user cancellation)
           if (this.isInterrupted) {
             console.log('[CodingAgent] Tool execution interrupted after tool completion');
@@ -1044,6 +1008,16 @@ export class ChatService {
           toolMessages.push(toolResultMessage);
 
         } catch (error) {
+          const errorMsg = `Error parsing tool arguments: ${error instanceof Error ? error.message : String(error)}`;
+          
+          // Store tool error for logging
+          toolExecutionResults.push({
+            toolCallId: toolCall.id,
+            toolName: toolCall.function.name,
+            success: false,
+            error: errorMsg
+          });
+          
           const toolResultMessage: OpenAIChatMessage = {
             role: 'tool',
             tool_call_id: toolCall.id,
@@ -1228,7 +1202,8 @@ export class ChatService {
           mode: this.openai.getCurrentMode(),
           timestamp: followUpStartTime,
           duration: followUpEndTime - followUpStartTime,
-          context: `tool-follow-up-${iterationCount}`
+          context: `tool-follow-up-${iterationCount}`,
+          toolResults: toolExecutionResults
         });
 
         // Log raw JSON for follow-up if log mode is enabled
