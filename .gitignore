@@ -51,3 +51,6 @@ yarn.lock
 
 # Ignore dist
 /dist/
+
+# Chat history (workspace-specific)
+.codingagent/

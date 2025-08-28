@@ -1,6 +1,8 @@
 // src/chatService.ts
 
 import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
 import { OpenAIService } from './openai_html_api';
 import { ToolsService } from './tools';
 import { LoggingService } from './loggingService';
@@ -32,11 +34,18 @@ export class ChatService {
   private currentAbortController: AbortController | null = null;
   private allowedIterations: number = 10; // How many iterations are currently allowed
   private currentPlanId: string | null = null; // Track the current active plan ID
+  private workspaceRoot: string | null = null; // Store workspace root for history persistence
 
   constructor(toolsService?: ToolsService) {
     this.openai = new OpenAIService();
     this.tools = toolsService || new ToolsService();
     this.logging = LoggingService.getInstance();
+    
+    // Get workspace root for history persistence
+    this.workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || null;
+    
+    // Load existing chat history
+    this.loadChatHistory();
     
     // Set up change notification callback from tools to UI
     this.tools.setChangeNotificationCallback((changeId: string) => {
@@ -280,6 +289,7 @@ export class ChatService {
     };
     
     this.messages.push(noticeMessage);
+    this.saveChatHistory(); // Save after adding notice message
     
     // Send complete notice message to UI
     if (this.streamingCallback) {
@@ -415,6 +425,7 @@ export class ChatService {
       };
 
       this.messages.push(errorMessage);
+      this.saveChatHistory(); // Save after adding error message
       return [errorMessage];
     }
   }
@@ -500,6 +511,7 @@ export class ChatService {
     };
 
     this.messages.push(chatMessage);
+    this.saveChatHistory(); // Save after adding non-streaming assistant message
     
     // Send message immediately to UI via callback
     if (callback) {
@@ -721,6 +733,7 @@ export class ChatService {
       // Update final message state
       chatMessage.isStreaming = false;
       chatMessage.isAlreadyDisplayed = true; // Mark as already displayed via streaming
+      this.saveChatHistory(); // Save after completing streaming message
 
       // Send end event
       if (this.streamingCallback) {
@@ -804,6 +817,7 @@ export class ChatService {
       };
       
       this.messages.push(assistantChatMessage);
+      this.saveChatHistory(); // Save after adding assistant message
       results.push(assistantChatMessage);
       
       // Send assistant message immediately to UI via callback (only if not already displayed via streaming)
@@ -1306,6 +1320,7 @@ export class ChatService {
         };
 
         this.messages.push(errorMessage);
+        this.saveChatHistory(); // Save after adding error message
         results.push(errorMessage);
         
         // Error messages are not streamed, so always send via callback
@@ -1334,6 +1349,7 @@ export class ChatService {
       };
 
       this.messages.push(finalChatMessage);
+      this.saveChatHistory(); // Save after adding final chat message
       results.push(finalChatMessage);
       
       // In streaming mode, the message was already displayed via streaming callbacks
@@ -1374,6 +1390,7 @@ export class ChatService {
     };
     
     this.messages.push(userMessage);
+    this.saveChatHistory(); // Save after adding user message
     return userMessage;
   }
 
@@ -1407,6 +1424,183 @@ export class ChatService {
 
   clearMessages(): void {
     this.messages = [];
+    this.saveChatHistory(); // Save empty history when clearing
+  }
+
+  /**
+   * Get the path to the chat history file for the current workspace
+   */
+  private getChatHistoryPath(): string | null {
+    if (!this.workspaceRoot) {
+      return null;
+    }
+    
+    const codingAgentDir = path.join(this.workspaceRoot, '.codingagent');
+    const historyFile = path.join(codingAgentDir, 'chat-history.json');
+    
+    return historyFile;
+  }
+
+  /**
+   * Ensure the .codingagent directory exists
+   */
+  private ensureCodingAgentDir(): boolean {
+    if (!this.workspaceRoot) {
+      return false;
+    }
+    
+    const codingAgentDir = path.join(this.workspaceRoot, '.codingagent');
+    
+    try {
+      if (!fs.existsSync(codingAgentDir)) {
+        fs.mkdirSync(codingAgentDir, { recursive: true });
+      }
+      return true;
+    } catch (error) {
+      console.error('Failed to create .codingagent directory:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Load chat history from workspace
+   */
+  private loadChatHistory(): void {
+    const historyPath = this.getChatHistoryPath();
+    if (!historyPath) {
+      console.log('No workspace found, skipping chat history load');
+      return;
+    }
+
+    try {
+      if (fs.existsSync(historyPath)) {
+        const historyData = fs.readFileSync(historyPath, 'utf8');
+        const parsedHistory = JSON.parse(historyData);
+        
+        // Validate and restore messages with all their properties
+        if (Array.isArray(parsedHistory.messages)) {
+          this.messages = parsedHistory.messages
+            .filter(this.isValidChatMessage.bind(this))
+            .map((msg: any) => {
+              // Ensure all optional properties are properly restored
+              const restoredMessage: ChatMessage = {
+                id: msg.id,
+                role: msg.role,
+                content: msg.content,
+                timestamp: msg.timestamp
+              };
+
+              // Restore optional properties if they exist
+              if (msg.toolCalls) {
+                restoredMessage.toolCalls = msg.toolCalls;
+              }
+              if (msg.reasoning) {
+                restoredMessage.reasoning = msg.reasoning;
+              }
+              if (msg.model) {
+                restoredMessage.model = msg.model;
+              }
+              if (msg.raw) {
+                restoredMessage.raw = msg.raw;
+              }
+              if (msg.changeIds) {
+                restoredMessage.changeIds = msg.changeIds;
+              }
+              if (msg.displayRole) {
+                restoredMessage.displayRole = msg.displayRole;
+              }
+              
+              // Reset streaming flags (these shouldn't persist)
+              restoredMessage.isStreaming = false;
+              restoredMessage.isAlreadyDisplayed = false;
+
+              return restoredMessage;
+            });
+          
+          console.log(`Loaded ${this.messages.length} messages from chat history`);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load chat history:', error);
+      // Reset to empty messages on error
+      this.messages = [];
+    }
+  }
+
+  /**
+   * Save current chat history to workspace
+   */
+  private saveChatHistory(): void {
+    const historyPath = this.getChatHistoryPath();
+    if (!historyPath) {
+      console.log('No workspace found, skipping chat history save');
+      return;
+    }
+
+    if (!this.ensureCodingAgentDir()) {
+      console.error('Failed to create .codingagent directory');
+      return;
+    }
+
+    try {
+      const historyData = {
+        version: '1.0',
+        timestamp: Date.now(),
+        messages: this.messages
+      };
+      
+      console.log(`Saving ${this.messages.length} messages to chat history`);
+      fs.writeFileSync(historyPath, JSON.stringify(historyData, null, 2), 'utf8');
+      console.log('Chat history saved successfully');
+    } catch (error) {
+      console.error('Failed to save chat history:', error);
+    }
+  }
+
+  /**
+   * Validate that an object is a valid ChatMessage
+   */
+  private isValidChatMessage(message: any): message is ChatMessage {
+    const isBasicValid = (
+      message &&
+      typeof message.id === 'string' &&
+      typeof message.role === 'string' &&
+      ['user', 'assistant', 'error', 'notice'].includes(message.role) &&
+      typeof message.content === 'string' &&
+      typeof message.timestamp === 'number'
+    );
+
+    if (!isBasicValid) {
+      return false;
+    }
+
+    // Validate optional properties if they exist
+    if (message.toolCalls !== undefined && !Array.isArray(message.toolCalls)) {
+      console.warn('Invalid toolCalls in message:', message.id);
+      return false;
+    }
+
+    if (message.reasoning !== undefined && typeof message.reasoning !== 'string') {
+      console.warn('Invalid reasoning in message:', message.id);
+      return false;
+    }
+
+    if (message.model !== undefined && typeof message.model !== 'string') {
+      console.warn('Invalid model in message:', message.id);
+      return false;
+    }
+
+    if (message.changeIds !== undefined && !Array.isArray(message.changeIds)) {
+      console.warn('Invalid changeIds in message:', message.id);
+      return false;
+    }
+
+    if (message.displayRole !== undefined && typeof message.displayRole !== 'string') {
+      console.warn('Invalid displayRole in message:', message.id);
+      return false;
+    }
+
+    return true;
   }
 
   private generateId(): string {
