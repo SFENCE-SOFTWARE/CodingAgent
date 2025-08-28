@@ -177,17 +177,17 @@ export class OpenAIService {
     const config = vscode.workspace.getConfiguration('codingagent');
     return config.get<AgentModes>('modes', {
       Coder: {
-        systemMessage: "You are an expert programming assistant. You can read, write, and execute code. Use the available tools to help with coding tasks.",
+        systemMessage: "Reasoning: high\nYou are an expert programming assistant. You can read, write, and execute code. Use the available tools to help with coding tasks.",
         allowedTools: ["read_file", "write_file", "list_files", "get_file_size", "execute_terminal"],
         fallbackMessage: "I'm ready to help with your coding tasks. What would you like me to do?"
       },
       Ask: {
-        systemMessage: "You are a helpful AI assistant. Answer questions clearly and concisely.",
+        systemMessage: "Reasoning: high\nYou are a helpful AI assistant. Answer questions clearly and concisely.",
         allowedTools: ["read_file", "read_webpage"],
         fallbackMessage: "I'm here to answer your questions. What would you like to know?"
       },
       Architect: {
-        systemMessage: "You are a software architect assistant. Help design systems, review architecture, and provide technical guidance.",
+        systemMessage: "Reasoning: high\nYou are a software architect assistant. Help design systems, review architecture, and provide technical guidance.",
         allowedTools: ["read_file", "list_files", "read_webpage", "read_pdf"],
         fallbackMessage: "I'm ready to help with architecture and design decisions. What system are you working on?"
       }
