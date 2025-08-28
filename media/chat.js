@@ -194,10 +194,11 @@
       console.error('copyAllBtn element not found!');
     }
     
-    // Copy all conversation with thinking button
+    // Copy all conversation with options button
     if (copyAllWithThinkingBtn) {
       copyAllWithThinkingBtn.addEventListener('click', () => {
-        copyAllConversationWithThinkingAsMarkdown();
+        // Show dialog to pick which sections to include
+        showCopyOptionsDialog();
       });
     } else {
       console.error('copyAllWithThinkingBtn element not found!');
@@ -1841,6 +1842,185 @@
     const fullMarkdown = `# CodingAgent Conversation (with Thinking)\n\n${conversationMarkdown.join('\n---\n\n')}`;
     copyToClipboard(fullMarkdown);
     showCopyNotification('Full conversation with thinking copied as markdown!');
+  }
+
+  // New: interactive copy dialog to choose which parts to include
+  function showCopyOptionsDialog() {
+    // If dialog already exists, just show it
+    let existing = document.getElementById('copyOptionsDialog');
+    if (existing) {
+      existing.style.display = 'flex';
+      return;
+    }
+
+    const dialog = document.createElement('div');
+    dialog.id = 'copyOptionsDialog';
+    dialog.style.position = 'fixed';
+    dialog.style.left = '0';
+    dialog.style.top = '0';
+    dialog.style.width = '100%';
+    dialog.style.height = '100%';
+    dialog.style.display = 'flex';
+    dialog.style.alignItems = 'center';
+    dialog.style.justifyContent = 'center';
+    dialog.style.background = 'rgba(0,0,0,0.4)';
+    dialog.style.zIndex = 9999;
+
+    const box = document.createElement('div');
+    box.style.background = '#1e1e1e';
+    box.style.color = '#ddd';
+    box.style.padding = '18px';
+    box.style.borderRadius = '8px';
+    box.style.width = '420px';
+    box.style.boxShadow = '0 10px 30px rgba(0,0,0,0.6)';
+
+    const title = document.createElement('div');
+    title.textContent = 'Copy conversation - select parts to include';
+    title.style.fontWeight = '600';
+    title.style.marginBottom = '12px';
+    box.appendChild(title);
+
+    const form = document.createElement('div');
+    form.style.display = 'flex';
+    form.style.flexDirection = 'column';
+    form.style.gap = '8px';
+
+    const items = [
+      { id: 'copyPrompts', label: 'Prompts', default: true },
+      { id: 'copyAnswers', label: 'Answers', default: true },
+      { id: 'copyThinking', label: 'Thinking', default: true },
+      { id: 'copyToolCalls', label: 'Tool calls', default: true }
+    ];
+
+    items.forEach(it => {
+      const row = document.createElement('label');
+      row.style.display = 'flex';
+      row.style.alignItems = 'center';
+      row.style.gap = '10px';
+
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.id = it.id;
+      cb.checked = !!it.default;
+      cb.style.width = '16px';
+      cb.style.height = '16px';
+
+      const lbl = document.createElement('span');
+      lbl.textContent = it.label;
+
+      row.appendChild(cb);
+      row.appendChild(lbl);
+      form.appendChild(row);
+    });
+
+    box.appendChild(form);
+
+    const actions = document.createElement('div');
+    actions.style.display = 'flex';
+    actions.style.justifyContent = 'flex-end';
+    actions.style.gap = '8px';
+    actions.style.marginTop = '14px';
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.style.padding = '6px 10px';
+    cancelBtn.onclick = () => { dialog.style.display = 'none'; };
+
+    const confirmBtn = document.createElement('button');
+    confirmBtn.textContent = 'Copy';
+    confirmBtn.style.padding = '6px 12px';
+    confirmBtn.style.background = '#0e639c';
+    confirmBtn.style.border = 'none';
+    confirmBtn.style.color = '#fff';
+    confirmBtn.style.borderRadius = '4px';
+    confirmBtn.onclick = () => {
+      const includePrompts = document.getElementById('copyPrompts').checked;
+      const includeAnswers = document.getElementById('copyAnswers').checked;
+      const includeThinking = document.getElementById('copyThinking').checked;
+      const includeToolCalls = document.getElementById('copyToolCalls').checked;
+
+      // Build markdown based on selection
+      const messages = document.querySelectorAll('.message:not(.system)');
+      const conversationMarkdown = [];
+
+      messages.forEach(messageEl => {
+        const isUser = messageEl.classList.contains('user');
+        const isAssistant = messageEl.classList.contains('assistant');
+        const role = isUser ? 'User' : (isAssistant ? 'Assistant' : 'Other');
+        const timestamp = (messageEl.querySelector('.message-timestamp') || {}).textContent || '';
+        const originalContent = messageEl.getAttribute('data-original-content') || '';
+
+        let sectionParts = [];
+
+        if (isUser && includePrompts) {
+          sectionParts.push(originalContent);
+        }
+
+        if (isAssistant && includeThinking) {
+          const thinkingContainer = messageEl.querySelector('.thinking-container');
+          if (thinkingContainer) {
+            const thinkingContent = thinkingContainer.querySelector('.thinking-content');
+            if (thinkingContent && thinkingContent.textContent.trim()) {
+              sectionParts.push('```\n' + thinkingContent.textContent.trim() + '\n```');
+            }
+          }
+        }
+
+        if (isAssistant && includeAnswers) {
+          sectionParts.push(originalContent);
+        }
+
+        if (isAssistant && includeToolCalls) {
+          const toolEntries = [];
+
+          // Collect tool sections created by createToolCallsElement (final, non-streaming)
+          const toolSections = messageEl.querySelectorAll('.tool-call-section');
+          toolSections.forEach(section => {
+            const nameEl = section.querySelector('.tool-calls-header-left');
+            const argsEl = section.querySelector('.tool-call-args');
+            const name = nameEl ? nameEl.textContent.trim().replace(/^\s*\u25A1?\s*/, '') : '';
+            const args = argsEl ? argsEl.textContent.trim() : '';
+            if (name || args) toolEntries.push({ name: name || 'tool', args });
+          });
+
+          // Collect streaming tool calls (created during streaming)
+          const streamingToolCalls = messageEl.querySelectorAll('.tool-call');
+          streamingToolCalls.forEach(tc => {
+            const nameEl = tc.querySelector('.tool-call-name');
+            const argsEl = tc.querySelector('.tool-call-args');
+            const name = nameEl ? nameEl.textContent.trim().replace(/^\s*\u25A1?\s*/, '') : '';
+            const args = argsEl ? argsEl.textContent.trim() : '';
+            if (name || args) toolEntries.push({ name: name || 'tool', args });
+          });
+
+          if (toolEntries.length > 0) {
+            const formatted = toolEntries.map(te => {
+              const header = te.name ? `**Tool: ${te.name}**\n\n` : '';
+              const argsBlock = te.args ? '```\n' + te.args + '\n```' : '```\n(no args)\n```';
+              return header + argsBlock;
+            }).join('\n\n');
+
+            sectionParts.push('**Tool calls:**\n\n' + formatted);
+          }
+        }
+
+        if (sectionParts.length > 0) {
+          const header = `## ${role} (${timestamp})\n\n`;
+          conversationMarkdown.push(header + sectionParts.join('\n\n'));
+        }
+      });
+
+      const fullMarkdown = `# CodingAgent Conversation (custom export)\n\n${conversationMarkdown.join('\n---\n\n')}`;
+      copyToClipboard(fullMarkdown);
+      showCopyNotification('Conversation copied as markdown');
+      dialog.style.display = 'none';
+    };
+
+    actions.appendChild(cancelBtn);
+    actions.appendChild(confirmBtn);
+    box.appendChild(actions);
+    dialog.appendChild(box);
+    document.body.appendChild(dialog);
   }
   
   function copyToClipboard(text) {
