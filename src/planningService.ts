@@ -52,6 +52,14 @@ export interface PlanState {
   pendingPoints: string[];
 }
 
+export interface PlanEvaluationResult {
+  isDone: boolean;
+  nextStepPrompt?: string;
+  failedStep?: 'plan_review' | 'implementation' | 'code_review' | 'testing' | 'acceptance';
+  failedPoints?: string[];
+  reason?: string;
+}
+
 export class PlanningService {
   private static instance: PlanningService;
   private plans: Map<string, Plan> = new Map();
@@ -714,5 +722,120 @@ export class PlanningService {
     this.savePlan(plan);
 
     return { success: true, removedPoints };
+  }
+
+  /**
+   * Evaluates plan completion status and generates corrective prompts if needed
+   * Checks in order: plan reviewed -> points implemented -> points reviewed -> points tested -> plan accepted
+   */
+  public evaluatePlanCompletion(planId: string): { success: boolean; result?: PlanEvaluationResult; error?: string } {
+    const plan = this.plans.get(planId);
+    if (!plan) {
+      return { success: false, error: `Plan with ID '${planId}' not found` };
+    }
+
+    // Step 1: Check if plan is reviewed
+    if (!plan.reviewed) {
+      return {
+        success: true,
+        result: {
+          isDone: false,
+          nextStepPrompt: this.generateCorrectionPrompt('plan_review', [], 'Plan has not been reviewed yet'),
+          failedStep: 'plan_review',
+          reason: 'Plan has not been reviewed yet'
+        }
+      };
+    }
+
+    // Step 2: Check if all points are implemented
+    const unimplementedPoints = plan.points.filter(p => !p.implemented).map(p => p.id);
+    if (unimplementedPoints.length > 0) {
+      return {
+        success: true,
+        result: {
+          isDone: false,
+          nextStepPrompt: this.generateCorrectionPrompt('implementation', unimplementedPoints, 'Some plan points are not implemented'),
+          failedStep: 'implementation',
+          failedPoints: unimplementedPoints,
+          reason: 'Some plan points are not implemented'
+        }
+      };
+    }
+
+    // Step 3: Check if all points are reviewed
+    const unreviewedPoints = plan.points.filter(p => !p.reviewed).map(p => p.id);
+    if (unreviewedPoints.length > 0) {
+      return {
+        success: true,
+        result: {
+          isDone: false,
+          nextStepPrompt: this.generateCorrectionPrompt('code_review', unreviewedPoints, 'Some plan points are not reviewed'),
+          failedStep: 'code_review',
+          failedPoints: unreviewedPoints,
+          reason: 'Some plan points are not reviewed'
+        }
+      };
+    }
+
+    // Step 4: Check if all points are tested
+    const untestedPoints = plan.points.filter(p => !p.tested).map(p => p.id);
+    if (untestedPoints.length > 0) {
+      return {
+        success: true,
+        result: {
+          isDone: false,
+          nextStepPrompt: this.generateCorrectionPrompt('testing', untestedPoints, 'Some plan points are not tested'),
+          failedStep: 'testing',
+          failedPoints: untestedPoints,
+          reason: 'Some plan points are not tested'
+        }
+      };
+    }
+
+    // Step 5: Check if plan is accepted
+    if (!plan.accepted) {
+      return {
+        success: true,
+        result: {
+          isDone: false,
+          nextStepPrompt: this.generateCorrectionPrompt('acceptance', [], 'Plan has not been accepted yet'),
+          failedStep: 'acceptance',
+          reason: 'Plan has not been accepted yet'
+        }
+      };
+    }
+
+    // All checks passed - plan is complete
+    return {
+      success: true,
+      result: {
+        isDone: true
+      }
+    };
+  }
+
+  /**
+   * Generates corrective prompts with configurable templates
+   */
+  private generateCorrectionPrompt(step: string, pointIds: string[], reason: string): string {
+    const config = vscode.workspace.getConfiguration('codingagent.plan');
+    
+    const templates = {
+      plan_review: config.get('promptPlanReview', 'Plan needs to be reviewed.'),
+      implementation: config.get('promptImplementation', 'Please implement the following plan points: <ids>'),
+      code_review: config.get('promptCodeReview', 'Please review the following plan points: <ids>'),
+      testing: config.get('promptTesting', 'Please test the following plan points: <ids>'),
+      acceptance: config.get('promptAcceptance', 'Please request Approver mode to perform a final acceptance check for the plan.')
+    };
+
+    let template = templates[step as keyof typeof templates] || `Please address the issue: <reason>`;
+    
+    // Replace placeholders where present
+    template = template.replace(/<ids>/g, pointIds.join(', '));
+    if (template.indexOf('<reason>') !== -1) {
+      template = template.replace(/<reason>/g, reason);
+    }
+    
+    return template;
   }
 }

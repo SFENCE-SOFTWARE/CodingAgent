@@ -451,7 +451,7 @@
                 "llmDescription": "Final approval specialist who performs comprehensive validation of completed projects. Reviews all implementation, testing, and review comments to make final acceptance decisions. Can mark entire plans as accepted using plan_accepted with detailed acceptance comment, or reject specific points using plan_point_need_rework if acceptance criteria are not met. Has final authority on project approval and evaluates holistic project completion. Use for final quality validation, comprehensive acceptance reviews, and making final approval decisions. Available tools: <tools>"
               },
               "Orchestrator": {
-                "systemMessage": "Reasoning: high\nYou are an AI project orchestrator responsible for comprehensive project planning and execution management. You coordinate specialized modes to ensure successful project completion. You delegate all specialized work while maintaining oversight and progress tracking.\n\nWorkflow:\n1. Plan Management: Either open existing plan using plan_open (to continue user's work) OR delegate new plan creation to Architect mode - you cannot create plans yourself\n2. Plan Review: Before any implementation, ensure plan is reviewed by Plan Reviewer mode and has 'reviewed' status\n3. Implementation Strategy: Decide who should perform implementation work and coordinate collaboration (e.g., Ask + Coder for research-based tasks)\n4. Task Delegation: Delegate implementation to Coder mode (\"implement point N from plan\")\n5. Quality Assurance: Delegate testing to Tester mode (\"test point N from plan\")\n6. Code Review: Delegate review to Reviewer mode (\"review point N from plan\")\n7. Final Acceptance: Delegate approval to Approver mode (\"review plan for final acceptance\")\n8. Research Tasks: Delegate information gathering to Ask mode\n9. Creative Tasks: Delegate creative work to Artist mode (stories, scenarios, sounds, images, textures)\n10. Plan Modifications: Delegate plan changes to Architect mode\n11. Progress Tracking: Monitor all point statuses and coordinate next steps\n12. Completion Verification: Ensure all points are properly executed and accepted\n13. Data Coordination: Share project coordination data with modes using memory_store (inform them of keys for access)\n\nRemember: You coordinate and delegate - specialized modes perform the actual work. Plans must be reviewed before implementation begins.",
+                "systemMessage": "Reasoning: high\nYou are an AI project orchestrator. Your role is coordination: ensure a plan exists, then drive its completion by repeatedly asking the plan evaluator and following its guidance. Do not perform independent implementation, review, or testing work.\n\nWorkflow:\n1. Open or ensure a plan exists (use plan_open). If none exists, request Architect to create one.\n2. Call the tool 'plan_evaluate' for the plan.\n3. Inspect the evaluation result and perform only the actions it specifies (for example: delegate tasks via call_under_mode, request reviews, mark points as needing rework, add comments, or change plan state).\n4. Repeat steps 2-3 until 'plan_evaluate' reports the plan is complete.\n5. When complete, mark the plan done (plan_done) and provide a concise final status.\nKeep responses concise and use tool calls to make changes or delegate work.\n\nData Coordination: Share project coordination data with modes using memory_store (inform them of keys for access)\nRemember: You coordinate and delegate - specialized modes perform the actual work.",
                 "allowedTools": [
                   "call_under_mode",
                   "memory_store",
@@ -470,6 +470,7 @@
                   "plan_point_comment",
                   "plan_state",
                   "plan_done",
+                  "plan_evaluate",
                   "plan_delete"
                 ],
                 "fallbackMessage": "I'm ready to orchestrate tasks by delegating to specialized modes. What would you like me to coordinate?",
@@ -565,6 +566,68 @@
             "minimum": 5000,
             "maximum": 50000,
             "description": "Threshold above which values are considered 'large' and safety limits apply (in characters)",
+            "scope": "window"
+          }
+        }
+      },
+      {
+        "title": "CodingAgent - Plan",
+        "properties": {
+          "codingagent.plan.autoEvaluationEnabled": {
+            "type": "boolean",
+            "default": true,
+            "description": "Enable automatic plan evaluation after LLM responses (not from call_under_mode)",
+            "scope": "window"
+          },
+          "codingagent.plan.autoEvaluationModes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": ["Orchestrator"],
+            "description": "List of modes for which automatic plan evaluation is enabled",
+            "scope": "window"
+          },
+          "codingagent.plan.promptPlanRework": {
+            "type": "string",
+            "default": "Plan requires rework. Architect must revise the plan because: <reason>.",
+            "description": "Template instructing Architect to rework the plan and include a justification. Use <planId> and <reason> placeholders.",
+            "scope": "window"
+          },
+          "codingagent.plan.promptPlanReview": {
+            "type": "string",
+            "default": "Plan has not been reviewed. Request Plan Reviewer mode to review the plan.",
+            "description": "Template used when plan lacks a review; instructs to ask Plan Reviewer to perform a review.",
+            "scope": "window"
+          },
+          "codingagent.plan.promptPointsRework": {
+            "type": "string",
+            "default": "Please request proper mode to rework the following plan points: <ids>",
+            "description": "Template for implementation prompt. Provides only a comma-separated list of plan point IDs via the <ids> placeholder.",
+            "scope": "window"
+          },
+          "codingagent.plan.promptPointsImplementation": {
+            "type": "string",
+            "default": "Please request proper mode to implement the following plan points: <ids>",
+            "description": "Template for implementation prompt. Instructs Coder mode to implement specified point IDs. Use <ids> placeholder.",
+            "scope": "window"
+          },
+          "codingagent.plan.promptPointsReview": {
+            "type": "string",
+            "default": "Please request Reviewer mode to review the following plan points: <ids>",
+            "description": "Template for code review prompt. Instructs Reviewer mode to review specified point IDs. Use <ids> placeholder.",
+            "scope": "window"
+          },
+          "codingagent.plan.promptPointsTesting": {
+            "type": "string",
+            "default": "Please request Tester mode to test the following plan points: <ids>",
+            "description": "Template for testing prompt. Instructs Tester mode to test specified point IDs. Use <ids> placeholder.",
+            "scope": "window"
+          },
+          "codingagent.plan.promptPlanAcceptance": {
+            "type": "string",
+            "default": "Please request Approver mode to perform a final acceptance check for the plan.",
+            "description": "Template for acceptance prompt; instructs requesting Approver mode for final validation.",
             "scope": "window"
           }
         }

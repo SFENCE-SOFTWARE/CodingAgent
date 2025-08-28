@@ -493,6 +493,9 @@ export class ChatService {
       chatMessage.isAlreadyDisplayed = true;
     }
     
+    // Check for automatic plan evaluation after LLM response
+    await this.checkAndExecuteAutomaticPlanEvaluation(callback);
+    
     return [chatMessage];
   }
 
@@ -723,6 +726,10 @@ export class ChatService {
 
       // Clear abort controller after successful completion
       this.currentAbortController = null;
+      
+      // Check for automatic plan evaluation after streaming response completion
+      await this.checkAndExecuteAutomaticPlanEvaluation(callback);
+      
       return [chatMessage];
 
     } catch (error) {
@@ -1353,6 +1360,9 @@ export class ChatService {
       });
     }
 
+    // Check for automatic plan evaluation after tool execution completion
+    await this.checkAndExecuteAutomaticPlanEvaluation(callback);
+
     return results;
   }
 
@@ -1618,6 +1628,91 @@ export class ChatService {
 
   updateConfiguration(): void {
     this.openai.updateConfiguration();
+  }
+
+  /**
+   * Check if automatic plan evaluation should be executed and do it
+   */
+  private async checkAndExecuteAutomaticPlanEvaluation(callback?: (update: ChatUpdate) => void): Promise<void> {
+    try {
+      // Check if automatic evaluation is enabled
+      const config = vscode.workspace.getConfiguration('codingagent.plan');
+      const autoEvaluationEnabled = config.get('autoEvaluationEnabled', true);
+      
+      if (!autoEvaluationEnabled) {
+        return; // Auto evaluation is disabled
+      }
+      
+      // Check if current mode is allowed for auto evaluation
+      const allowedModes: string[] = config.get('autoEvaluationModes', ['Orchestrator']);
+      const currentMode = this.openai.getCurrentMode();
+      
+      if (!allowedModes.includes(currentMode)) {
+        return; // Current mode is not in allowed list
+      }
+      
+      // Check if we have an active plan
+      const planContextManager = PlanContextManager.getInstance();
+      const currentPlanId = planContextManager.getCurrentPlanId();
+      
+      if (!currentPlanId) {
+        return; // No active plan
+      }
+      
+      // Check if this request came from call_under_mode (skip auto evaluation in that case)
+      // We can detect this by checking if we're currently in a delegated mode call
+      // This is a simple heuristic - in real implementation this would need more sophisticated tracking
+      
+      // Execute plan evaluation
+      const planEvaluate = this.tools.getToolByName('plan_evaluate');
+      if (!planEvaluate) {
+        console.warn('Plan evaluate tool not found');
+        return;
+      }
+      
+      const result = await planEvaluate.execute({ plan_id: currentPlanId }, this.workspaceRoot || '');
+      
+      if (!result.success) {
+        // Evaluation failed - just log it, don't interrupt user flow
+        console.warn('Automatic plan evaluation failed:', result.error);
+        return;
+      }
+      
+      // Check if plan needs action
+      if (result.content && result.content.includes('is not complete')) {
+        // Extract the corrective prompt from the result
+        const lines = result.content.split('\n');
+        const promptIndex = lines.findIndex((line: string) => line.includes('Corrective prompt:'));
+        
+        if (promptIndex >= 0 && promptIndex + 1 < lines.length) {
+          const correctionPrompt = lines.slice(promptIndex + 1).join('\n').trim();
+          
+          // Send automatic evaluation result as a system message
+          const evaluationMessage: ChatMessage = {
+            id: this.generateId(),
+            role: 'assistant',
+            content: `🔍 **Automatic Plan Evaluation**\n\n${result.content}\n\n*This evaluation was triggered automatically after your request. You can continue with the suggested corrective action or proceed with other tasks.*`,
+            timestamp: Date.now(),
+            model: this.openai.getCurrentModel()
+          };
+          
+          this.messages.push(evaluationMessage);
+          this.saveChatHistory();
+          
+          // Send to UI via callback if available
+          if (callback) {
+            callback({
+              type: 'message_ready',
+              message: evaluationMessage
+            });
+          }
+        }
+      }
+      
+    } catch (error) {
+      // Don't let automatic evaluation errors interrupt the main flow
+      console.warn('Error in automatic plan evaluation:', error);
+    }
   }
 
   // Change tracking methods

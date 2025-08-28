@@ -49,6 +49,7 @@ import { PlanNeedWorksTool } from './tools/planNeedWorks';
 import { PlanAcceptedTool } from './tools/planAccepted';
 import { PlanStateTool } from './tools/planState';
 import { PlanDoneTool } from './tools/planDone';
+import { PlanEvaluateTool } from './tools/planEvaluate';
 import { PlanDeleteTool } from './tools/planDelete';
 import { PlanPointRemoveTool } from './tools/planPointRemove';
 
@@ -148,6 +149,7 @@ export class ToolsService {
       new PlanAcceptedTool(),
       new PlanStateTool(),
       new PlanDoneTool(),
+      new PlanEvaluateTool(),
       new PlanDeleteTool(),
       new PlanPointRemoveTool()
     ];
@@ -260,6 +262,13 @@ export class ToolsService {
    */
   hasTool(name: string): boolean {
     return this.tools.has(name);
+  }
+
+  /**
+   * Get a tool instance by name
+   */
+  getToolByName(name: string): BaseTool | undefined {
+    return this.tools.get(name);
   }
 
   /**

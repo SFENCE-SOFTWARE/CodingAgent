@@ -179,6 +179,22 @@ export class SettingsPanel {
           autoSafetyLimit: config.get('memory.autoSafetyLimit'),
           largeValueThreshold: config.get('memory.largeValueThreshold')
         },
+        plan: {
+          autoEvaluation: {
+            enabled: config.get('plan.autoEvaluation.enabled'),
+            enabledModes: config.get('plan.autoEvaluation.enabledModes'),
+            skipCallUnderMode: config.get('plan.autoEvaluation.skipCallUnderMode'),
+            autoSendCorrection: config.get('plan.autoEvaluation.autoSendCorrection'),
+            evaluationDelay: config.get('plan.autoEvaluation.evaluationDelay')
+          },
+          prompts: {
+            planReview: config.get('plan.prompts.planReview'),
+            implementation: config.get('plan.prompts.implementation'),
+            codeReview: config.get('plan.prompts.codeReview'),
+            testing: config.get('plan.prompts.testing'),
+            acceptance: config.get('plan.prompts.acceptance')
+          }
+        },
         logging: {
           enabled: config.get('logging.enabled'),
           filePath: config.get('logging.filePath'),
@@ -248,6 +264,16 @@ export class SettingsPanel {
         await config.update('memory.maxChars', undefined, vscode.ConfigurationTarget.Global);
         await config.update('memory.autoSafetyLimit', undefined, vscode.ConfigurationTarget.Global);
         await config.update('memory.largeValueThreshold', undefined, vscode.ConfigurationTarget.Global);
+        await config.update('plan.autoEvaluation.enabled', undefined, vscode.ConfigurationTarget.Global);
+        await config.update('plan.autoEvaluation.enabledModes', undefined, vscode.ConfigurationTarget.Global);
+        await config.update('plan.autoEvaluation.skipCallUnderMode', undefined, vscode.ConfigurationTarget.Global);
+        await config.update('plan.autoEvaluation.autoSendCorrection', undefined, vscode.ConfigurationTarget.Global);
+        await config.update('plan.autoEvaluation.evaluationDelay', undefined, vscode.ConfigurationTarget.Global);
+        await config.update('plan.prompts.planReview', undefined, vscode.ConfigurationTarget.Global);
+        await config.update('plan.prompts.implementation', undefined, vscode.ConfigurationTarget.Global);
+        await config.update('plan.prompts.codeReview', undefined, vscode.ConfigurationTarget.Global);
+        await config.update('plan.prompts.testing', undefined, vscode.ConfigurationTarget.Global);
+        await config.update('plan.prompts.acceptance', undefined, vscode.ConfigurationTarget.Global);
 
         this._sendConfiguration();
         
@@ -541,6 +567,22 @@ export class SettingsPanel {
           logMode: config.get('logging.logMode'),
           logModeFilePath: config.get('logging.logModeFilePath')
         },
+        plan: {
+          autoEvaluation: {
+            enabled: config.get('plan.autoEvaluation.enabled'),
+            enabledModes: config.get('plan.autoEvaluation.enabledModes'),
+            skipCallUnderMode: config.get('plan.autoEvaluation.skipCallUnderMode'),
+            autoSendCorrection: config.get('plan.autoEvaluation.autoSendCorrection'),
+            evaluationDelay: config.get('plan.autoEvaluation.evaluationDelay')
+          },
+          prompts: {
+            planReview: config.get('plan.prompts.planReview'),
+            implementation: config.get('plan.prompts.implementation'),
+            codeReview: config.get('plan.prompts.codeReview'),
+            testing: config.get('plan.prompts.testing'),
+            acceptance: config.get('plan.prompts.acceptance')
+          }
+        },
         savedAt: new Date().toISOString()
       };
 
@@ -624,6 +666,23 @@ export class SettingsPanel {
         await config.update('logging.verbosity', profileData.logging.verbosity, vscode.ConfigurationTarget.Global);
         await config.update('logging.logMode', profileData.logging.logMode, vscode.ConfigurationTarget.Global);
         await config.update('logging.logModeFilePath', profileData.logging.logModeFilePath, vscode.ConfigurationTarget.Global);
+      }
+      
+      if (profileData.plan) {
+        if (profileData.plan.autoEvaluation) {
+          await config.update('plan.autoEvaluation.enabled', profileData.plan.autoEvaluation.enabled, vscode.ConfigurationTarget.Global);
+          await config.update('plan.autoEvaluation.enabledModes', profileData.plan.autoEvaluation.enabledModes, vscode.ConfigurationTarget.Global);
+          await config.update('plan.autoEvaluation.skipCallUnderMode', profileData.plan.autoEvaluation.skipCallUnderMode, vscode.ConfigurationTarget.Global);
+          await config.update('plan.autoEvaluation.autoSendCorrection', profileData.plan.autoEvaluation.autoSendCorrection, vscode.ConfigurationTarget.Global);
+          await config.update('plan.autoEvaluation.evaluationDelay', profileData.plan.autoEvaluation.evaluationDelay, vscode.ConfigurationTarget.Global);
+        }
+        if (profileData.plan.prompts) {
+          await config.update('plan.prompts.planReview', profileData.plan.prompts.planReview, vscode.ConfigurationTarget.Global);
+          await config.update('plan.prompts.implementation', profileData.plan.prompts.implementation, vscode.ConfigurationTarget.Global);
+          await config.update('plan.prompts.codeReview', profileData.plan.prompts.codeReview, vscode.ConfigurationTarget.Global);
+          await config.update('plan.prompts.testing', profileData.plan.prompts.testing, vscode.ConfigurationTarget.Global);
+          await config.update('plan.prompts.acceptance', profileData.plan.prompts.acceptance, vscode.ConfigurationTarget.Global);
+        }
       }
 
       // Send updated configuration to frontend
@@ -815,6 +874,10 @@ export class SettingsPanel {
             <button class="tab-button" data-tab="logging" title="Logging Configuration">
               <img src="${loggingIconUri}" alt="Logging" />
               <span class="tab-label">Logging</span>
+            </button>
+            <button class="tab-button" data-tab="plan" title="Plan Evaluation Settings">
+              <img src="${settingsIconUri}" alt="Plan" />
+              <span class="tab-label">Plan</span>
             </button>
             <button class="tab-button" data-tab="advanced" title="Advanced Settings">
               <img src="${advancedIconUri}" alt="Advanced" />
@@ -1106,6 +1169,106 @@ export class SettingsPanel {
                     <button id="selectLogModeFileBtn" class="secondary-button">Browse</button>
                   </div>
                   <small class="form-hint">Location for raw API communication logs</small>
+                </div>
+              </section>
+            </div>
+
+            <!-- Plan Tab -->
+            <div id="plan-tab" class="tab-content">
+              <section class="settings-section">
+                <h2>📋 Plan Evaluation</h2>
+                <p class="section-description">Configure automatic plan evaluation after LLM responses</p>
+                
+                <div class="form-group">
+                  <label>
+                    <input type="checkbox" id="planEvaluationEnabled" />
+                    <span class="checkbox-label">Enable Automatic Plan Evaluation</span>
+                  </label>
+                  <small class="form-hint">Automatically evaluate plan completion after LLM responses (enabled by default for Orchestrator mode)</small>
+                </div>
+                
+                <div class="form-group">
+                  <label for="planEvaluationModes">Enabled Modes:</label>
+                  <select id="planEvaluationModes" multiple size="5">
+                    <option value="Orchestrator" selected>Orchestrator - Project planning</option>
+                    <option value="Coder">Coder - Programming assistant</option>
+                    <option value="Ask">Ask - General Q&A</option>
+                    <option value="Architect">Architect - System design</option>
+                  </select>
+                  <small class="form-hint">Select modes where plan evaluation should run automatically</small>
+                </div>
+              </section>
+
+              <section class="settings-section">
+                <h2>💬 Correction Prompts</h2>
+                <p class="section-description">Customize prompts for each plan evaluation step</p>
+                
+                <div class="prompt-templates">
+                  <div class="form-group">
+                    <label for="planReviewPrompt">Plan Review Prompt:</label>
+                    <textarea id="planReviewPrompt" rows="3" placeholder="Plan needs to be reviewed. Please review the overall plan structure, goals, and approach. Use 'plan_reviewed' tool when done.">Plan needs to be reviewed before implementation can begin. Please review the overall plan structure, goals, and approach to ensure they align with the requirements. Once you're satisfied with the plan, use the 'plan_reviewed' tool to mark it as reviewed.</textarea>
+                    <small class="form-hint">Prompt when plan hasn't been reviewed yet</small>
+                  </div>
+                  
+                  <div class="form-group">
+                    <label for="implementationPrompt">Implementation Prompt:</label>
+                    <textarea id="implementationPrompt" rows="3" placeholder="Some plan points need implementation. Points to implement: {{points}}">The following plan points still need to be implemented: {{points}}. Please implement the code for these points and mark them as implemented using the 'plan_point_implemented' tool.</textarea>
+                    <small class="form-hint">Prompt when points need implementation. Use {{points}} to include point IDs</small>
+                  </div>
+                  
+                  <div class="form-group">
+                    <label for="codeReviewPrompt">Code Review Prompt:</label>
+                    <textarea id="codeReviewPrompt" rows="3" placeholder="Some plan points need code review. Points to review: {{points}}">The following plan points have been implemented but need code review: {{points}}. Please review the implementation and mark them as reviewed using the 'plan_point_reviewed' tool.</textarea>
+                    <small class="form-hint">Prompt when implemented points need review. Use {{points}} to include point IDs</small>
+                  </div>
+                  
+                  <div class="form-group">
+                    <label for="testingPrompt">Testing Prompt:</label>
+                    <textarea id="testingPrompt" rows="3" placeholder="Some plan points need testing. Points to test: {{points}}">The following plan points have been reviewed but need testing: {{points}}. Please create and run tests for these implementations and mark them as tested using the 'plan_point_tested' tool.</textarea>
+                    <small class="form-hint">Prompt when reviewed points need testing. Use {{points}} to include point IDs</small>
+                  </div>
+                  
+                  <div class="form-group">
+                    <label for="acceptancePrompt">Acceptance Prompt:</label>
+                    <textarea id="acceptancePrompt" rows="3" placeholder="Plan is ready for acceptance. Please verify all requirements are met and accept the plan.">All plan points have been implemented, reviewed, and tested. The plan is now ready for final acceptance. Please verify that all requirements have been met and use the 'plan_accepted' tool to mark the plan as complete.</textarea>
+                    <small class="form-hint">Prompt when plan is ready for final acceptance</small>
+                  </div>
+                </div>
+                
+                <div class="prompt-help">
+                  <h3>Template Variables</h3>
+                  <ul>
+                    <li><code>{{points}}</code> - List of point IDs that need attention</li>
+                    <li><code>{{planId}}</code> - Current plan ID</li>
+                    <li><code>{{reason}}</code> - Detailed reason why the step failed</li>
+                  </ul>
+                </div>
+              </section>
+
+              <section class="settings-section">
+                <h2>🔄 Evaluation Behavior</h2>
+                <p class="section-description">Configure when and how plan evaluation runs</p>
+                
+                <div class="form-group">
+                  <label>
+                    <input type="checkbox" id="skipCallUnderMode" checked />
+                    <span class="checkbox-label">Skip evaluation for call_under_mode responses</span>
+                  </label>
+                  <small class="form-hint">Don't evaluate plans after responses from call_under_mode tool (recommended)</small>
+                </div>
+                
+                <div class="form-group">
+                  <label>
+                    <input type="checkbox" id="autoSendCorrection" checked />
+                    <span class="checkbox-label">Automatically send correction prompts</span>
+                  </label>
+                  <small class="form-hint">Automatically send corrective prompts when plan evaluation fails</small>
+                </div>
+                
+                <div class="form-group">
+                  <label for="evaluationDelay">Evaluation Delay (ms):</label>
+                  <input type="number" id="evaluationDelay" value="1000" min="0" max="10000" step="100" />
+                  <small class="form-hint">Delay before running plan evaluation after LLM response (0-10000ms)</small>
                 </div>
               </section>
             </div>
