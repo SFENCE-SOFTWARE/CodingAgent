@@ -38,7 +38,7 @@ import { PlanAddPointsTool } from './tools/planAddPoints';
 import { PlanChangePointTool } from './tools/planChangePoint';
 import { PlanShowTool } from './tools/planShow';
 import { PlanPointCareOnTool } from './tools/planPointCareOn';
-import { PlanShowPointTool } from './tools/planShowPoint';
+import { PlanPointShowTool } from './tools/planPointShow';
 import { PlanPointCommentTool } from './tools/planPointComment';
 import { PlanPointImplementedTool } from './tools/planPointImplemented';
 import { PlanPointReviewedTool } from './tools/planPointReviewed';
@@ -138,7 +138,7 @@ export class ToolsService {
       new PlanChangePointTool(),
       new PlanShowTool(),
       new PlanPointCareOnTool(),
-      new PlanShowPointTool(),
+      new PlanPointShowTool(),
       new PlanPointCommentTool(),
       new PlanPointImplementedTool(),
       new PlanPointReviewedTool(),

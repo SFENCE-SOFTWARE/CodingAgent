@@ -48,9 +48,13 @@ export class PlanAddPointsTool implements BaseTool {
                   acceptance_criteria: {
                     type: 'string',
                     description: 'Acceptance criteria for the point'
+                  },
+                  expected_outputs: {
+                    type: 'string',
+                    description: 'Expected outputs and deliverables. For analysis tasks, specify memory keys or files to be created. Example: "Analysis stored in memory key \'user-research-2024\'" or "Updated config.json file" or "Documentation in docs/api.md"'
                   }
                 },
-                required: ['short_name', 'short_description', 'detailed_description', 'acceptance_criteria'],
+                required: ['short_name', 'short_description', 'detailed_description', 'acceptance_criteria', 'expected_outputs'],
                 additionalProperties: false
               },
               minItems: 1

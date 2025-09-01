@@ -12,7 +12,7 @@ import { PlanAddPointsTool } from '../src/tools/planAddPoints';
 import { PlanChangePointTool } from '../src/tools/planChangePoint';
 import { PlanShowTool } from '../src/tools/planShow';
 import { PlanPointCareOnTool } from '../src/tools/planPointCareOn';
-import { PlanShowPointTool } from '../src/tools/planShowPoint';
+import { PlanPointShowTool } from '../src/tools/planPointShow';
 import { PlanPointCommentTool } from '../src/tools/planPointComment';
 import { PlanPointImplementedTool } from '../src/tools/planPointImplemented';
 import { PlanPointReviewedTool } from '../src/tools/planPointReviewed';
@@ -39,7 +39,7 @@ suite('Planning Tools Test Suite', () => {
   let planChangePointTool: PlanChangePointTool;
   let planShowTool: PlanShowTool;
   let planPointCareOnTool: PlanPointCareOnTool;
-  let planShowPointTool: PlanShowPointTool;
+  let planPointShowTool: PlanPointShowTool;
   let planPointCommentTool: PlanPointCommentTool;
   let planPointImplementedTool: PlanPointImplementedTool;
   let planPointReviewedTool: PlanPointReviewedTool;
@@ -72,7 +72,7 @@ suite('Planning Tools Test Suite', () => {
     planChangePointTool = new PlanChangePointTool();
     planShowTool = new PlanShowTool();
     planPointCareOnTool = new PlanPointCareOnTool();
-    planShowPointTool = new PlanShowPointTool();
+    planPointShowTool = new PlanPointShowTool();
     planPointCommentTool = new PlanPointCommentTool();
     planPointImplementedTool = new PlanPointImplementedTool();
     planPointReviewedTool = new PlanPointReviewedTool();
@@ -120,7 +120,7 @@ suite('Planning Tools Test Suite', () => {
     test('All tools have proper info', () => {
       const tools = [
         planNewTool, planListTool, planAddPointsTool, planChangePointTool,
-        planShowTool, planPointCareOnTool, planShowPointTool, planPointCommentTool,
+        planShowTool, planPointCareOnTool, planPointShowTool, planPointCommentTool,
         planPointImplementedTool, planPointReviewedTool, planPointTestedTool,
         planPointNeedReworkTool, planReviewedTool,
         planNeedWorksTool, planAcceptedTool, planStateTool, planDoneTool, planDeleteTool
@@ -336,8 +336,9 @@ suite('Planning Tools Test Suite', () => {
         testPointId = match[1].split(', ')[0];
       }
 
-      const result = await planShowPointTool.execute({
-        point_id: testPointId
+      const result = await planPointShowTool.execute({
+        point_id: testPointId,
+        sections: ['short_description', 'long_description', 'state']
       }, testWorkspaceRoot);
 
       assert.strictEqual(result.success, true, 'Point show should succeed');
@@ -823,8 +824,9 @@ suite('Planning Tools Test Suite', () => {
         long_description: 'A comprehensive test plan used for validating the planning system functionality'
       }, testWorkspaceRoot);
 
-      const result = await planShowPointTool.execute({
-        point_id: 'non-existent-point'
+      const result = await planPointShowTool.execute({
+        point_id: 'non-existent-point',
+        sections: ['short_description']
       }, testWorkspaceRoot);
 
       assert.strictEqual(result.success, false, 'Should fail for non-existent point');

@@ -310,6 +310,7 @@ export class SettingsPanel {
         top_p: mode.top_p,
         presence_penalty: mode.presence_penalty,
         frequency_penalty: mode.frequency_penalty,
+        autoEvaluation: mode.autoEvaluation,
         description: mode.description
       };
 
@@ -348,6 +349,7 @@ export class SettingsPanel {
         top_p: mode.top_p,
         presence_penalty: mode.presence_penalty,
         frequency_penalty: mode.frequency_penalty,
+        autoEvaluation: mode.autoEvaluation,
         description: mode.description
       };
 
@@ -829,6 +831,9 @@ export class SettingsPanel {
     const settingsIconUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this._extensionUri, 'media', 'settings-icon.svg')
     );
+    const planIconUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this._extensionUri, 'media', 'plan-icon.svg')
+    );
 
     return `<!DOCTYPE html>
     <html lang="en">
@@ -880,7 +885,7 @@ export class SettingsPanel {
               <span class="tab-label">Logging</span>
             </button>
             <button class="tab-button" data-tab="plan" title="Plan Evaluation Settings">
-              <img src="${settingsIconUri}" alt="Plan" />
+              <img src="${planIconUri}" alt="Plan" />
               <span class="tab-label">Plan</span>
             </button>
             <button class="tab-button" data-tab="advanced" title="Advanced Settings">
@@ -1182,25 +1187,7 @@ export class SettingsPanel {
               <section class="settings-section">
                 <h2>📋 Plan Evaluation</h2>
                 <p class="section-description">Configure automatic plan evaluation after LLM responses</p>
-                
-                <div class="form-group">
-                  <label>
-                    <input type="checkbox" id="planEvaluationEnabled" />
-                    <span class="checkbox-label">Enable Automatic Plan Evaluation</span>
-                  </label>
-                  <small class="form-hint">Automatically evaluate plan completion after LLM responses (enabled by default for Orchestrator mode)</small>
-                </div>
-                
-                <div class="form-group">
-                  <label for="planEvaluationModes">Enabled Modes:</label>
-                  <select id="planEvaluationModes" multiple size="5">
-                    <option value="Orchestrator" selected>Orchestrator - Project planning</option>
-                    <option value="Coder">Coder - Programming assistant</option>
-                    <option value="Ask">Ask - General Q&A</option>
-                    <option value="Architect">Architect - System design</option>
-                  </select>
-                  <small class="form-hint">Select modes where plan evaluation should run automatically</small>
-                </div>
+                <p class="section-description"><strong>Note:</strong> Plan evaluation is now configured per-mode. Edit individual modes in "AI Modes Management" to enable/disable plan evaluation for specific modes.</p>
               </section>
 
               <section class="settings-section">
@@ -1367,6 +1354,13 @@ export class SettingsPanel {
                   <div id="modeToolsContainer" class="tools-container">
                     <!-- Tools checkboxes will be populated here -->
                   </div>
+                </div>
+                <div class="form-group">
+                  <label>
+                    <input type="checkbox" id="modeAutoEvaluation" />
+                    <span class="checkbox-label">Enable Automatic Plan Evaluation</span>
+                  </label>
+                  <small class="form-hint">Automatically evaluate plan completion after LLM responses in this mode</small>
                 </div>
               </form>
             </div>

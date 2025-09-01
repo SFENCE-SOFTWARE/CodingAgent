@@ -10,6 +10,7 @@ export interface PlanPoint {
   shortDescription: string;
   detailedDescription: string;
   acceptanceCriteria: string;
+  expectedOutputs: string;
   careOnPoints: string[]; // IDs of points to consider
   implemented: boolean;
   reviewed: boolean;
@@ -197,7 +198,8 @@ export class PlanningService {
     shortName: string,
     shortDescription: string,
     detailedDescription: string,
-    acceptanceCriteria: string
+    acceptanceCriteria: string,
+    expectedOutputs: string = ''
   ): { success: boolean; pointId?: string; error?: string } {
     const plan = this.plans.get(planId);
     if (!plan) {
@@ -216,6 +218,7 @@ export class PlanningService {
       shortDescription,
       detailedDescription,
       acceptanceCriteria,
+      expectedOutputs,
       careOnPoints: [],
       implemented: false,
       reviewed: false,
@@ -249,6 +252,7 @@ export class PlanningService {
       short_description: string;
       detailed_description: string;
       acceptance_criteria: string;
+      expected_outputs: string;
     }>
   ): { success: boolean; pointIds?: string[]; error?: string } {
     const plan = this.plans.get(planId);
@@ -277,6 +281,7 @@ export class PlanningService {
         shortDescription: pointData.short_description,
         detailedDescription: pointData.detailed_description,
         acceptanceCriteria: pointData.acceptance_criteria,
+        expectedOutputs: pointData.expected_outputs,
         careOnPoints: [],
         implemented: false,
         reviewed: false,
@@ -310,7 +315,7 @@ export class PlanningService {
   public changePoint(
     planId: string,
     pointId: string,
-    updates: Partial<Pick<PlanPoint, 'shortName' | 'shortDescription' | 'detailedDescription' | 'acceptanceCriteria'>>
+    updates: Partial<Pick<PlanPoint, 'shortName' | 'shortDescription' | 'detailedDescription' | 'acceptanceCriteria' | 'expectedOutputs'>>
   ): { success: boolean; error?: string } {
     const plan = this.plans.get(planId);
     if (!plan) {
@@ -329,6 +334,7 @@ export class PlanningService {
     if (updates.shortDescription !== undefined) point.shortDescription = updates.shortDescription;
     if (updates.detailedDescription !== undefined) point.detailedDescription = updates.detailedDescription;
     if (updates.acceptanceCriteria !== undefined) point.acceptanceCriteria = updates.acceptanceCriteria;
+    if (updates.expectedOutputs !== undefined) point.expectedOutputs = updates.expectedOutputs;
 
     point.updatedAt = Date.now();
     plan.updatedAt = Date.now();

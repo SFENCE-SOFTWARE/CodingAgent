@@ -66,6 +66,7 @@
     modeTopP: document.getElementById('modeTopP'),
     modePresencePenalty: document.getElementById('modePresencePenalty'),
     modeFrequencyPenalty: document.getElementById('modeFrequencyPenalty'),
+    modeAutoEvaluation: document.getElementById('modeAutoEvaluation'),
     modeToolsContainer: document.getElementById('modeToolsContainer'),
     saveModeBtn: document.getElementById('saveModeBtn'),
     cancelModeBtn: document.getElementById('cancelModeBtn')
@@ -347,6 +348,7 @@
       elements.modeTopP.value = modeConfig.top_p !== undefined ? modeConfig.top_p : '';
       elements.modePresencePenalty.value = modeConfig.presence_penalty !== undefined ? modeConfig.presence_penalty : '';
       elements.modeFrequencyPenalty.value = modeConfig.frequency_penalty !== undefined ? modeConfig.frequency_penalty : '';
+      elements.modeAutoEvaluation.checked = modeConfig.autoEvaluation || false;
       
       // Set tool checkboxes
       const allowedTools = modeConfig.allowedTools || [];
@@ -364,6 +366,7 @@
       elements.modeTopP.value = '';
       elements.modePresencePenalty.value = '';
       elements.modeFrequencyPenalty.value = '';
+      elements.modeAutoEvaluation.checked = false;
       
       // Uncheck all tools
       availableTools.forEach(toolInfo => {
@@ -409,6 +412,7 @@
       top_p: elements.modeTopP.value ? parseFloat(elements.modeTopP.value) : undefined,
       presence_penalty: elements.modePresencePenalty.value ? parseFloat(elements.modePresencePenalty.value) : undefined,
       frequency_penalty: elements.modeFrequencyPenalty.value ? parseFloat(elements.modeFrequencyPenalty.value) : undefined,
+      autoEvaluation: elements.modeAutoEvaluation.checked,
       allowedTools: availableTools.filter(toolInfo => {
         const checkbox = document.getElementById(`tool-${toolInfo.name}`);
         return checkbox && checkbox.checked;

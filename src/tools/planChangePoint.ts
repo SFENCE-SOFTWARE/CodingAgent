@@ -42,6 +42,10 @@ export class PlanChangePointTool implements BaseTool {
             acceptance_criteria: {
               type: ['string', 'null'],
               description: 'New acceptance criteria for the point (null to keep current)'
+            },
+            expected_outputs: {
+              type: ['string', 'null'],
+              description: 'New expected outputs and deliverables (null to keep current). For analysis tasks, specify memory keys or files to be created. Example: "Analysis stored in memory key \'user-research-2024\'" or "Updated config.json file"'
             }
           },
           required: ['point_id'],
@@ -52,7 +56,7 @@ export class PlanChangePointTool implements BaseTool {
   }
 
   async execute(args: any, workspaceRoot: string): Promise<ToolResult> {
-    const { point_id, short_name, short_description, detailed_description, acceptance_criteria } = args;
+    const { point_id, short_name, short_description, detailed_description, acceptance_criteria, expected_outputs } = args;
 
     // Get current plan from context
     const planContextManager = PlanContextManager.getInstance();
@@ -83,6 +87,7 @@ export class PlanChangePointTool implements BaseTool {
       if (short_description !== null && short_description !== undefined) updates.shortDescription = short_description;
       if (detailed_description !== null && detailed_description !== undefined) updates.detailedDescription = detailed_description;
       if (acceptance_criteria !== null && acceptance_criteria !== undefined) updates.acceptanceCriteria = acceptance_criteria;
+      if (expected_outputs !== null && expected_outputs !== undefined) updates.expectedOutputs = expected_outputs;
 
       if (Object.keys(updates).length === 0) {
         return {

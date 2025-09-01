@@ -247,7 +247,7 @@
                   "memory_search",
                   "memory_list",
                   "memory_export",
-                  "plan_show_point",
+                  "plan_point_show",
                   "plan_point_implemented"
                 ],
                 "fallbackMessage": "I'm ready to help with your coding tasks. What would you like me to do?",
@@ -256,7 +256,7 @@
                 "llmDescription": "Expert programmer who can read, write, and modify files, execute terminal commands, and perform complex coding tasks. Can view specific plan points for context. Use for code generation, debugging, file operations, project setup, and any technical implementation work. Available tools: <tools>"
               },
               "Tester": {
-                "systemMessage": "Reasoning: high\nYou are an expert software testing specialist who creates comprehensive test suites, validates code quality, and ensures software reliability. You mark plan points as tested after successful validation or flag them for rework if issues are found.\n\nWorkflow:\n- Use plan_show_point to view specific plan points for testing context\n- Review implementations thoroughly and create appropriate tests\n- Execute tests and verify functionality meets acceptance criteria\n- Mark completed points as tested using plan_point_tested\n- Flag problematic points for rework using plan_point_need_rework with detailed feedback\n- Focus on test-driven development and comprehensive coverage\n- Share test results and data with other modes using memory_store (inform them of keys for access)",
+                "systemMessage": "Reasoning: high\nYou are an expert software testing specialist who creates comprehensive test suites, validates code quality, and ensures software reliability. You mark plan points as tested after successful validation or flag them for rework if issues are found.\n\nWorkflow:\n- Use plan_point_show to view specific plan points for testing context\n- Review implementations thoroughly and create appropriate tests\n- Execute tests and verify functionality meets acceptance criteria\n- Mark completed points as tested using plan_point_tested\n- Flag problematic points for rework using plan_point_need_rework with detailed feedback\n- Focus on test-driven development and comprehensive coverage\n- Share test results and data with other modes using memory_store (inform them of keys for access)",
                 "allowedTools": [
                   "read_file",
                   "write_file",
@@ -276,7 +276,7 @@
                   "memory_search",
                   "memory_list",
                   "memory_export",
-                  "plan_show_point",
+                  "plan_point_show",
                   "plan_point_tested",
                   "plan_point_need_rework"
                 ],
@@ -286,7 +286,7 @@
                 "llmDescription": "Testing expert who validates code quality and marks plan points as tested after successful validation. Specializes in test creation, test automation, and comprehensive coverage analysis. Can mark points as tested or needing rework with detailed feedback. Available tools: <tools>"
               },
               "Reviewer": {
-                "systemMessage": "Reasoning: high\nYou are an expert code reviewer who analyzes implementation quality, identifies issues, and ensures adherence to best practices. You focus exclusively on code quality within individual plan points, not plan structures.\n\nWorkflow:\n- Use plan_show_point to view specific plan points for code review context\n- Thoroughly analyze implemented code for quality, security, and performance\n- Verify adherence to coding standards and best practices\n- Mark completed reviews using plan_point_reviewed with detailed comment\n- Flag problematic code for rework using plan_point_need_rework with specific feedback\n- Provide constructive improvement suggestions for code enhancement\n- Share review findings with other modes using memory_store (inform them of keys for access)",
+                "systemMessage": "Reasoning: high\nYou are an expert code reviewer who analyzes implementation quality, identifies issues, and ensures adherence to best practices. You focus exclusively on code quality within individual plan points, not plan structures.\n\nWorkflow:\n- Use plan_point_show to view specific plan points for code review context\n- Thoroughly analyze implemented code for quality, security, and performance\n- Verify adherence to coding standards and best practices\n- Mark completed reviews using plan_point_reviewed with detailed comment\n- Flag problematic code for rework using plan_point_need_rework with specific feedback\n- Provide constructive improvement suggestions for code enhancement\n- Share review findings with other modes using memory_store (inform them of keys for access)",
                 "allowedTools": [
                   "read_file",
                   "list_files",
@@ -300,7 +300,7 @@
                   "memory_search",
                   "memory_list",
                   "memory_export",
-                  "plan_show_point",
+                  "plan_point_show",
                   "plan_point_reviewed",
                   "plan_point_need_rework"
                 ],
@@ -360,7 +360,7 @@
                 "llmDescription": "Research assistant who answers questions and gathers information from files, webpages, and documents. Provides clear explanations and analysis to support project work. Available tools: <tools>"
               },
               "Architect": {
-                "systemMessage": "Reasoning: high\nYou are a software architect who creates detailed implementation plans exclusively. You design and modify plans but do NOT implement code or execute tasks - only plan them with clear testability indicators.\n\nWorkflow:\n- Use plan_show and plan_show_point to review existing plan structures\n- Create new plans using plan_new or add points to existing plans with plan_add_points\n- Modify existing points using plan_change_point for refinement\n- Mark points as \"NOT TESTABLE\" for documentation, design decisions, or research tasks\n- Ensure testable points have clear acceptance criteria and testable outcomes\n- Focus on well-structured plans with proper dependencies and detailed descriptions\n- Share architectural decisions with other modes using memory_store (inform them of keys for access)",
+                "systemMessage": "Reasoning: high\nYou are a software architect who creates detailed implementation plans exclusively. You design and modify plans but do NOT implement code or execute tasks - only plan them with clear testability indicators.\n\nWorkflow:\n- Use plan_show and plan_point_show to review existing plan structures\n- Create new plans using plan_new or add points to existing plans with plan_add_points\n- Modify existing points using plan_change_point for refinement\n- Mark points as \"NOT TESTABLE\" for documentation, design decisions, or research tasks\n- Ensure testable points have clear acceptance criteria and testable outcomes\n- Focus on well-structured plans with proper dependencies and detailed descriptions\n- Share architectural decisions with other modes using memory_store (inform them of keys for access)",
                 "allowedTools": [
                   "read_file",
                   "list_files",
@@ -381,7 +381,7 @@
                   "plan_new",
                   "plan_list",
                   "plan_show",
-                  "plan_show_point",
+                  "plan_point_show",
                   "plan_add_points",
                   "plan_change_point",
                   "plan_point_care_on",
@@ -393,7 +393,7 @@
                 "llmDescription": "Planning specialist who creates and modifies implementation plans exclusively. Designs detailed plans with testability indicators but does NOT implement code. Available tools: <tools>"
               },
               "Plan Reviewer": {
-                "systemMessage": "Reasoning: high\nYou are a specialized plan review expert who evaluates plan structures, dependencies, and overall quality. You focus exclusively on plan organization and logical flow, not code implementation quality.\n\nWorkflow:\n- Use plan_show and plan_show_point to examine plan structure and dependencies\n- Analyze care_on relationships between points for logical sequencing\n- Evaluate plan completeness, feasibility, and proper granularity\n- Check for missing dependencies that could cause implementation issues\n- Mark sound plans as reviewed using plan_reviewed with detailed assessment\n- Flag problematic plans for improvement using plan_need_works with specific requirements\n- Suggest better dependency relationships and point ordering optimization\n- Share plan analysis with other modes using memory_store (inform them of keys for access)",
+                "systemMessage": "Reasoning: high\nYou are a specialized plan review expert who evaluates plan structures, dependencies, and overall quality. You focus exclusively on plan organization and logical flow, not code implementation quality.\n\nWorkflow:\n- Use plan_show and plan_point_show to examine plan structure and dependencies\n- Analyze care_on relationships between points for logical sequencing\n- Evaluate plan completeness, feasibility, and proper granularity\n- Check for missing dependencies that could cause implementation issues\n- Mark sound plans as reviewed using plan_reviewed with detailed assessment\n- Flag problematic plans for improvement using plan_need_works with specific requirements\n- Suggest better dependency relationships and point ordering optimization\n- Share plan analysis with other modes using memory_store (inform them of keys for access)",
                 "allowedTools": [
                   "read_file",
                   "list_files",
@@ -408,7 +408,7 @@
                   "memory_list",
                   "memory_export",
                   "plan_show",
-                  "plan_show_point",
+                  "plan_point_show",
                   "plan_reviewed",
                   "plan_need_works"
                 ],
@@ -433,7 +433,7 @@
                   "memory_list",
                   "memory_export",
                   "plan_show",
-                  "plan_show_point",
+                  "plan_point_show",
                   "plan_accepted",
                   "plan_point_need_rework"
                 ],
@@ -457,7 +457,7 @@
                   "plan_list",
                   "plan_open",
                   "plan_show",
-                  "plan_show_point",
+                  "plan_point_show",
                   "plan_point_need_rework",
                   "plan_point_comment",
                   "plan_state",
@@ -467,6 +467,7 @@
                 ],
                 "fallbackMessage": "I'm ready to orchestrate tasks by delegating to specialized modes. What would you like me to coordinate?",
                 "temperature": 0.15,
+                "autoEvaluation": true,
                 "description": "Task orchestrator that delegates work to specialized modes",
                 "llmDescription": "Master project coordinator responsible for comprehensive execution oversight. Opens existing plans or delegates new plan creation to Architect. Ensures plans are reviewed before implementation. Decides implementation strategy and coordinates collaboration between modes. Delegates all specialized work to appropriate modes. Available tools: <tools>"
               }
@@ -581,44 +582,44 @@
           },
           "codingagent.plan.promptPlanRework": {
             "type": "string",
-            "default": "Plan requires rework. Architect must revise the plan because: <reason>.",
-            "description": "Template instructing Architect to rework the plan and include a justification. Use <planId> and <reason> placeholders.",
+            "default": "Use call_under_mode to delegate to Architect: \"Revise the plan because: <reason>\"",
+            "description": "Template instructing Architect to rework the plan via call_under_mode. Use <reason> placeholder.",
             "scope": "window"
           },
           "codingagent.plan.promptPlanReview": {
             "type": "string",
-            "default": "Plan has not been reviewed. Request Plan Reviewer mode to review the plan.",
-            "description": "Template used when plan lacks a review; instructs to ask Plan Reviewer to perform a review.",
+            "default": "Use call_under_mode to delegate to Plan Reviewer: \"Review the current plan for quality and completeness\"",
+            "description": "Template used when plan lacks a review; delegates to Plan Reviewer via call_under_mode.",
             "scope": "window"
           },
           "codingagent.plan.promptPointsRework": {
             "type": "string",
-            "default": "Please request proper mode to rework the following plan points: <ids>",
-            "description": "Template for implementation prompt. Provides only a comma-separated list of plan point IDs via the <ids> placeholder.",
+            "default": "Use call_under_mode to delegate rework of plan points <ids> to appropriate mode based on point requirements",
+            "description": "Template for rework prompt. Use <ids> placeholder for comma-separated plan point IDs.",
             "scope": "window"
           },
           "codingagent.plan.promptPointsImplementation": {
             "type": "string",
-            "default": "Please request proper mode to implement the following plan points: <ids>",
-            "description": "Template for implementation prompt. Instructs Coder mode to implement specified point IDs. Use <ids> placeholder.",
+            "default": "Use call_under_mode to delegate to Coder: \"Implement plan points <ids>\"",
+            "description": "Template for implementation prompt. Delegates to Coder mode via call_under_mode. Use <ids> placeholder.",
             "scope": "window"
           },
           "codingagent.plan.promptPointsReview": {
             "type": "string",
-            "default": "Please request Reviewer mode to review the following plan points: <ids>",
-            "description": "Template for code review prompt. Instructs Reviewer mode to review specified point IDs. Use <ids> placeholder.",
+            "default": "Use call_under_mode to delegate to Reviewer: \"Review implementation of plan points <ids>\"",
+            "description": "Template for code review prompt. Delegates to Reviewer mode via call_under_mode. Use <ids> placeholder.",
             "scope": "window"
           },
           "codingagent.plan.promptPointsTesting": {
             "type": "string",
-            "default": "Please request Tester mode to test the following plan points: <ids>",
-            "description": "Template for testing prompt. Instructs Tester mode to test specified point IDs. Use <ids> placeholder.",
+            "default": "Use call_under_mode to delegate to Tester: \"Test implementation of plan points <ids>\"",
+            "description": "Template for testing prompt. Delegates to Tester mode via call_under_mode. Use <ids> placeholder.",
             "scope": "window"
           },
           "codingagent.plan.promptPlanAcceptance": {
             "type": "string",
-            "default": "Please request Approver mode to perform a final acceptance check for the plan.",
-            "description": "Template for acceptance prompt; instructs requesting Approver mode for final validation.",
+            "default": "Use call_under_mode to delegate to Approver: \"Perform final acceptance check for the plan\"",
+            "description": "Template for acceptance prompt. Delegates to Approver mode via call_under_mode.",
             "scope": "window"
           }
         }

@@ -111,6 +111,8 @@ export interface AgentMode {
   top_p?: number;
   presence_penalty?: number;
   frequency_penalty?: number;
+  // Plan evaluation setting per mode
+  autoEvaluation?: boolean;
   // Additional descriptive fields may exist in configuration but are not required for request building
   description?: string;
   llmDescription?: string;
