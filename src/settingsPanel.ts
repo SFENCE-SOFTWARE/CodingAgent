@@ -307,7 +307,9 @@ export class SettingsPanel {
         allowedTools: mode.allowedTools,
         fallbackMessage: mode.fallbackMessage,
         temperature: mode.temperature,
-        topP: mode.topP,
+        top_p: mode.top_p,
+        presence_penalty: mode.presence_penalty,
+        frequency_penalty: mode.frequency_penalty,
         description: mode.description
       };
 
@@ -343,7 +345,9 @@ export class SettingsPanel {
         allowedTools: mode.allowedTools,
         fallbackMessage: mode.fallbackMessage,
         temperature: mode.temperature,
-        topP: mode.topP,
+        top_p: mode.top_p,
+        presence_penalty: mode.presence_penalty,
+        frequency_penalty: mode.frequency_penalty,
         description: mode.description
       };
 
@@ -1341,11 +1345,21 @@ export class SettingsPanel {
                 <div class="form-row">
                   <div class="form-group">
                     <label for="modeTemperature">Temperature:</label>
-                    <input type="number" id="modeTemperature" min="0" max="2" step="0.1" />
+                    <input type="number" id="modeTemperature" min="0" max="2" step="0.1" placeholder="Leave empty for null" />
                   </div>
                   <div class="form-group">
                     <label for="modeTopP">Top P:</label>
-                    <input type="number" id="modeTopP" min="0" max="1" step="0.05" />
+                    <input type="number" id="modeTopP" min="0" max="1" step="0.05" placeholder="Leave empty for null" />
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="modePresencePenalty">Presence Penalty:</label>
+                    <input type="number" id="modePresencePenalty" min="-2" max="2" step="0.1" placeholder="Leave empty for null" />
+                  </div>
+                  <div class="form-group">
+                    <label for="modeFrequencyPenalty">Frequency Penalty:</label>
+                    <input type="number" id="modeFrequencyPenalty" min="-2" max="2" step="0.1" placeholder="Leave empty for null" />
                   </div>
                 </div>
                 <div class="form-group">

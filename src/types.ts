@@ -59,7 +59,10 @@ export interface ToolDefinition {
 export interface OpenAIChatRequest {
   model: string;
   messages: OpenAIChatMessage[];
-  temperature?: number;
+  temperature?: number | null;
+  top_p?: number | null;
+  presence_penalty?: number | null;
+  frequency_penalty?: number | null;
   tools?: ToolDefinition[];
   stream?: boolean;
 }
@@ -103,6 +106,14 @@ export interface AgentMode {
   systemMessage: string;
   allowedTools: string[];
   fallbackMessage: string;
+  // Optional parameters that can be provided per-mode and propagated to model requests
+  temperature?: number;
+  top_p?: number;
+  presence_penalty?: number;
+  frequency_penalty?: number;
+  // Additional descriptive fields may exist in configuration but are not required for request building
+  description?: string;
+  llmDescription?: string;
 }
 
 export interface AgentModes {

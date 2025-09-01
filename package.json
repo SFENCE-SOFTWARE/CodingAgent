@@ -252,7 +252,6 @@
                 ],
                 "fallbackMessage": "I'm ready to help with your coding tasks. What would you like me to do?",
                 "temperature": 0.1,
-                "topP": 0.9,
                 "description": "Expert coding assistant with file and terminal access",
                 "llmDescription": "Expert programmer who can read, write, and modify files, execute terminal commands, and perform complex coding tasks. Can view specific plan points for context. Use for code generation, debugging, file operations, project setup, and any technical implementation work. Available tools: <tools>"
               },
@@ -283,7 +282,6 @@
                 ],
                 "fallbackMessage": "I'm ready to help with testing tasks and validate implementations. What would you like me to test?",
                 "temperature": 0.1,
-                "topP": 0.9,
                 "description": "Software testing specialist who validates code quality and marks points as tested",
                 "llmDescription": "Testing expert who validates code quality and marks plan points as tested after successful validation. Specializes in test creation, test automation, and comprehensive coverage analysis. Can mark points as tested or needing rework with detailed feedback. Available tools: <tools>"
               },
@@ -308,7 +306,6 @@
                 ],
                 "fallbackMessage": "I'm ready to review your code and provide quality feedback. What code would you like me to review?",
                 "temperature": 0.2,
-                "topP": 0.85,
                 "description": "Code review specialist focused on implementation quality",
                 "llmDescription": "Code review expert who analyzes implementation quality and marks plan points as reviewed with detailed comments. Focuses exclusively on code quality, security, and best practices within individual points. Available tools: <tools>"
               },
@@ -335,7 +332,6 @@
                 ],
                 "fallbackMessage": "I'm ready to create imaginative content and artistic concepts. What creative work would you like me to develop?",
                 "temperature": 0.8,
-                "topP": 0.95,
                 "description": "Creative content generator for stories, visuals, and audio concepts",
                 "llmDescription": "Creative specialist who generates imaginative content including stories, scenarios, visual concepts, textures, and sound descriptions. Provides detailed artistic specifications and creative vision for projects. Available tools: <tools>"
               },
@@ -360,7 +356,6 @@
                 ],
                 "fallbackMessage": "I'm here to answer your questions. What would you like to know?",
                 "temperature": 0.3,
-                "topP": 0.9,
                 "description": "Research assistant for questions and information gathering",
                 "llmDescription": "Research assistant who answers questions and gathers information from files, webpages, and documents. Provides clear explanations and analysis to support project work. Available tools: <tools>"
               },
@@ -394,7 +389,6 @@
                 ],
                 "fallbackMessage": "I'm ready to create and refine implementation plans. What project needs detailed planning?",
                 "temperature": 0.2,
-                "topP": 0.85,
                 "description": "Plan creation specialist who designs implementation strategies",
                 "llmDescription": "Planning specialist who creates and modifies implementation plans exclusively. Designs detailed plans with testability indicators but does NOT implement code. Available tools: <tools>"
               },
@@ -420,7 +414,6 @@
                 ],
                 "fallbackMessage": "I'm ready to review plan structures and dependencies. What plan would you like me to evaluate?",
                 "temperature": 0.2,
-                "topP": 0.85,
                 "description": "Plan structure and dependency evaluation specialist",
                 "llmDescription": "Plan structure expert who evaluates organization, dependencies, and quality. Marks plans as reviewed or needing structural improvements. Focuses exclusively on plan logic, not code implementation. Available tools: <tools>"
               },
@@ -446,12 +439,11 @@
                 ],
                 "fallbackMessage": "I'm ready to perform final acceptance review of completed work. What plan would you like me to evaluate for acceptance?",
                 "temperature": 0.15,
-                "topP": 0.8,
                 "description": "Final project approval and validation specialist",
                 "llmDescription": "Final approval specialist who performs comprehensive validation of completed projects. Reviews all implementation, testing, and review comments to make final acceptance decisions. Can mark entire plans as accepted using plan_accepted with detailed acceptance comment, or reject specific points using plan_point_need_rework if acceptance criteria are not met. Has final authority on project approval and evaluates holistic project completion. Use for final quality validation, comprehensive acceptance reviews, and making final approval decisions. Available tools: <tools>"
               },
               "Orchestrator": {
-                "systemMessage": "Reasoning: high\nYou are an AI project orchestrator. Your role is coordination: ensure a plan exists, then drive its completion by repeatedly asking the plan evaluator and following its guidance. Do not perform independent implementation, review, or testing work.\n\nWorkflow:\n1. Open or ensure a plan exists (use plan_open). If none exists, request Architect to create one.\n2. Call the tool 'plan_evaluate' for the plan.\n3. Inspect the evaluation result and perform only the actions it specifies (for example: delegate tasks via call_under_mode, request reviews, mark points as needing rework, add comments, or change plan state).\n4. Repeat steps 2-3 until 'plan_evaluate' reports the plan is complete.\n5. When complete, mark the plan done (plan_done) and provide a concise final status.\nKeep responses concise and use tool calls to make changes or delegate work.\n\nData Coordination: Share project coordination data with modes using memory_store (inform them of keys for access)\nRemember: You coordinate and delegate - specialized modes perform the actual work.",
+                "systemMessage": "Reasoning: high\nYou are an AI project orchestrator. Your role is coordination: ensure a plan exists, then drive its completion by repeatedly asking the plan evaluator and following its guidance. Do not perform independent implementation, review, or testing work.\n\nWorkflow:\n1. Open or ensure a plan exists (use plan_open). If none exists, request Architect to create one.\n2. Call the tool 'plan_evaluate' for the plan.\n3. Inspect the evaluation result and **select only the highest-priority unresolved point** (normally the first in the list) to act on. Do not delegate or process multiple points at once unless explicitly instructed by the evaluation result.\n4. Perform only the actions specified for that single point (for example: delegate tasks via call_under_mode, request reviews, mark points as needing rework, add comments, or change plan state).\n5. After completing actions for that point, return to step 2 to re-evaluate the updated plan.\n6. Repeat until 'plan_evaluate' reports the plan is complete.\n7. When complete, mark the plan done (plan_done) and provide a concise final status.\n\nKeep responses concise and use tool calls to make changes or delegate work.\n\nData Coordination: Share project coordination data with modes using memory_store (inform them of keys for access)\n\nRemember: You coordinate and delegate - specialized modes perform the actual work.",
                 "allowedTools": [
                   "call_under_mode",
                   "memory_store",
@@ -475,7 +467,6 @@
                 ],
                 "fallbackMessage": "I'm ready to orchestrate tasks by delegating to specialized modes. What would you like me to coordinate?",
                 "temperature": 0.15,
-                "topP": 0.9,
                 "description": "Task orchestrator that delegates work to specialized modes",
                 "llmDescription": "Master project coordinator responsible for comprehensive execution oversight. Opens existing plans or delegates new plan creation to Architect. Ensures plans are reviewed before implementation. Decides implementation strategy and coordinates collaboration between modes. Delegates all specialized work to appropriate modes. Available tools: <tools>"
               }

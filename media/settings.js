@@ -64,6 +64,8 @@
     modeFallbackMessage: document.getElementById('modeFallbackMessage'),
     modeTemperature: document.getElementById('modeTemperature'),
     modeTopP: document.getElementById('modeTopP'),
+    modePresencePenalty: document.getElementById('modePresencePenalty'),
+    modeFrequencyPenalty: document.getElementById('modeFrequencyPenalty'),
     modeToolsContainer: document.getElementById('modeToolsContainer'),
     saveModeBtn: document.getElementById('saveModeBtn'),
     cancelModeBtn: document.getElementById('cancelModeBtn')
@@ -295,7 +297,7 @@
     
     const details = document.createElement('div');
     details.className = 'mode-details';
-    details.textContent = `Temperature: ${modeConfig.temperature || 0.1}, Tools: ${(modeConfig.allowedTools || []).length}`;
+    details.textContent = `Temperature: ${modeConfig.temperature !== undefined ? modeConfig.temperature : 'null'}, Tools: ${(modeConfig.allowedTools || []).length}`;
     
     info.appendChild(name);
     info.appendChild(description);
@@ -341,8 +343,10 @@
       elements.modeLlmDescription.value = modeConfig.llmDescription || '';
       elements.modeSystemMessage.value = modeConfig.systemMessage || '';
       elements.modeFallbackMessage.value = modeConfig.fallbackMessage || '';
-      elements.modeTemperature.value = modeConfig.temperature || 0.1;
-      elements.modeTopP.value = modeConfig.topP || 0.9;
+      elements.modeTemperature.value = modeConfig.temperature !== undefined ? modeConfig.temperature : '';
+      elements.modeTopP.value = modeConfig.top_p !== undefined ? modeConfig.top_p : '';
+      elements.modePresencePenalty.value = modeConfig.presence_penalty !== undefined ? modeConfig.presence_penalty : '';
+      elements.modeFrequencyPenalty.value = modeConfig.frequency_penalty !== undefined ? modeConfig.frequency_penalty : '';
       
       // Set tool checkboxes
       const allowedTools = modeConfig.allowedTools || [];
@@ -356,8 +360,10 @@
       // Reset form for new mode
       elements.modeEditorForm.reset();
       elements.modeName.disabled = false;
-      elements.modeTemperature.value = 0.1;
-      elements.modeTopP.value = 0.9;
+      elements.modeTemperature.value = '';
+      elements.modeTopP.value = '';
+      elements.modePresencePenalty.value = '';
+      elements.modeFrequencyPenalty.value = '';
       
       // Uncheck all tools
       availableTools.forEach(toolInfo => {
@@ -399,8 +405,10 @@
       llmDescription: elements.modeLlmDescription.value.trim(),
       systemMessage: elements.modeSystemMessage.value.trim(),
       fallbackMessage: elements.modeFallbackMessage.value.trim(),
-      temperature: parseFloat(elements.modeTemperature.value) || 0.1,
-      topP: parseFloat(elements.modeTopP.value) || 0.9,
+      temperature: elements.modeTemperature.value ? parseFloat(elements.modeTemperature.value) : undefined,
+      top_p: elements.modeTopP.value ? parseFloat(elements.modeTopP.value) : undefined,
+      presence_penalty: elements.modePresencePenalty.value ? parseFloat(elements.modePresencePenalty.value) : undefined,
+      frequency_penalty: elements.modeFrequencyPenalty.value ? parseFloat(elements.modeFrequencyPenalty.value) : undefined,
       allowedTools: availableTools.filter(toolInfo => {
         const checkbox = document.getElementById(`tool-${toolInfo.name}`);
         return checkbox && checkbox.checked;

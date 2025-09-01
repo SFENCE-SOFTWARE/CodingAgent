@@ -360,10 +360,14 @@ export class ChatService {
         }
       }
 
+      // Propagate per-mode model parameters to the request when available, pass null if not configured
       const request: OpenAIChatRequest = {
         model: currentModel,
         messages: openaiMessages,
-        temperature: 0.0,
+        temperature: typeof modeConfig.temperature === 'number' ? modeConfig.temperature : null,
+        top_p: typeof modeConfig.top_p === 'number' ? modeConfig.top_p : null,
+        presence_penalty: typeof modeConfig.presence_penalty === 'number' ? modeConfig.presence_penalty : null,
+        frequency_penalty: typeof modeConfig.frequency_penalty === 'number' ? modeConfig.frequency_penalty : null,
         tools: allowedTools.length > 0 ? allowedTools : undefined
       };
 
