@@ -61,6 +61,7 @@
     modeDescription: document.getElementById('modeDescription'),
     modeLlmDescription: document.getElementById('modeLlmDescription'),
     modeSystemMessage: document.getElementById('modeSystemMessage'),
+    modeOrchestrationMessage: document.getElementById('modeOrchestrationMessage'),
     modeFallbackMessage: document.getElementById('modeFallbackMessage'),
     modeTemperature: document.getElementById('modeTemperature'),
     modeTopP: document.getElementById('modeTopP'),
@@ -118,6 +119,7 @@
     // Form validation
     elements.modeName.addEventListener('input', validateModeForm);
     elements.modeSystemMessage.addEventListener('input', validateModeForm);
+    elements.modeOrchestrationMessage.addEventListener('input', validateModeForm);
   }
 
   function setupToolsCheckboxes() {
@@ -343,6 +345,7 @@
       elements.modeDescription.value = modeConfig.description || '';
       elements.modeLlmDescription.value = modeConfig.llmDescription || '';
       elements.modeSystemMessage.value = modeConfig.systemMessage || '';
+      elements.modeOrchestrationMessage.value = modeConfig.orchestrationMessage || '';
       elements.modeFallbackMessage.value = modeConfig.fallbackMessage || '';
       elements.modeTemperature.value = modeConfig.temperature !== undefined ? modeConfig.temperature : '';
       elements.modeTopP.value = modeConfig.top_p !== undefined ? modeConfig.top_p : '';
@@ -407,6 +410,7 @@
       description: elements.modeDescription.value.trim(),
       llmDescription: elements.modeLlmDescription.value.trim(),
       systemMessage: elements.modeSystemMessage.value.trim(),
+      orchestrationMessage: elements.modeOrchestrationMessage.value.trim(),
       fallbackMessage: elements.modeFallbackMessage.value.trim(),
       temperature: elements.modeTemperature.value ? parseFloat(elements.modeTemperature.value) : undefined,
       top_p: elements.modeTopP.value ? parseFloat(elements.modeTopP.value) : undefined,

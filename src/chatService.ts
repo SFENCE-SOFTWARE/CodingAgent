@@ -35,6 +35,7 @@ export class ChatService {
   private allowedIterations: number = 10; // How many iterations are currently allowed
   private currentPlanId: string | null = null; // Track the current active plan ID
   private workspaceRoot: string | null = null; // Store workspace root for history persistence
+  private isOrchestrated: boolean = false; // Track if we're in orchestrated mode
 
   constructor(toolsService?: ToolsService) {
     this.openai = new OpenAIService();
@@ -129,6 +130,18 @@ export class ChatService {
   }
 
   /**
+   * Get the appropriate system message for current context
+   */
+  private getSystemMessage(modeConfig: any, isOrchestrated: boolean = false): string {
+    // Use orchestrationMessage when called under mode delegation, fallback to systemMessage
+    const baseMessage = isOrchestrated && modeConfig.orchestrationMessage 
+      ? modeConfig.orchestrationMessage 
+      : modeConfig.systemMessage;
+    
+    return this.processSystemMessage(baseMessage);
+  }
+
+  /**
    * Set the current active plan ID for context in system messages
    */
   public setCurrentPlanId(planId: string | null): void {
@@ -180,6 +193,9 @@ export class ChatService {
   }
 
   private async handleModeChange(targetMode: string, task: string, originalMode: string): Promise<string> {
+    // Store original orchestrated state
+    const wasOrchestrated = this.isOrchestrated;
+    
     try {
       // Get current configuration
       const config = vscode.workspace.getConfiguration('codingagent');
@@ -189,6 +205,9 @@ export class ChatService {
       
       // Temporarily switch to target mode
       await config.update('currentMode', targetMode, vscode.ConfigurationTarget.Global);
+      
+      // Set orchestrated flag to use orchestrationMessage
+      this.isOrchestrated = true;
       
       // Create and send task message from the orchestrator
       const taskMessage = this.addTaskMessage(task, 'LLM ORCHESTRATOR MODE');
@@ -247,11 +266,15 @@ export class ChatService {
       // Switch back to original mode
       await config.update('currentMode', originalMode, vscode.ConfigurationTarget.Global);
       
+      // Restore orchestrated flag
+      this.isOrchestrated = wasOrchestrated;
+      
       return finalResponse;
     } catch (error) {
-      // Ensure we switch back to original mode even on error
+      // Ensure we switch back to original mode and restore flag even on error
       const config = vscode.workspace.getConfiguration('codingagent');
       await config.update('currentMode', originalMode, vscode.ConfigurationTarget.Global);
+      this.isOrchestrated = wasOrchestrated;
       
       throw error;
     }
@@ -335,7 +358,7 @@ export class ChatService {
       const openaiMessages: OpenAIChatMessage[] = [
         {
           role: 'system',
-          content: this.processSystemMessage(modeConfig.systemMessage)
+          content: this.getSystemMessage(modeConfig, this.isOrchestrated)
         }
       ];
 

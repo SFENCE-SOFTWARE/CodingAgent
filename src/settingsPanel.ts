@@ -304,6 +304,7 @@ export class SettingsPanel {
 
       modes[mode.name] = {
         systemMessage: mode.systemMessage,
+        orchestrationMessage: mode.orchestrationMessage,
         allowedTools: mode.allowedTools,
         fallbackMessage: mode.fallbackMessage,
         temperature: mode.temperature,
@@ -343,6 +344,7 @@ export class SettingsPanel {
 
       modes[modeName] = {
         systemMessage: mode.systemMessage,
+        orchestrationMessage: mode.orchestrationMessage,
         allowedTools: mode.allowedTools,
         fallbackMessage: mode.fallbackMessage,
         temperature: mode.temperature,
@@ -1322,8 +1324,12 @@ export class SettingsPanel {
                   <input type="text" id="modeLlmDescription" placeholder="Description for LLM context (e.g., role, capabilities)" />
                 </div>
                 <div class="form-group">
-                  <label for="modeSystemMessage">System Message:</label>
-                  <textarea id="modeSystemMessage" rows="20" required placeholder="System prompt for this mode"></textarea>
+                  <label for="modeSystemMessage">System Message (User Interaction):</label>
+                  <textarea id="modeSystemMessage" rows="20" required placeholder="System prompt for direct user interaction"></textarea>
+                </div>
+                <div class="form-group">
+                  <label for="modeOrchestrationMessage">Orchestration Message (call_under_mode):</label>
+                  <textarea id="modeOrchestrationMessage" rows="20" placeholder="System prompt when called via call_under_mode (leave empty to use system message)"></textarea>
                 </div>
                 <div class="form-group">
                   <label for="modeFallbackMessage">Fallback Message:</label>
