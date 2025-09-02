@@ -768,63 +768,68 @@ export class PlanningService {
     }
 
     // Step 3: Check if any points need rework (third priority)
-    const reworkPoints = plan.points.filter(p => p.needRework).map(p => p.id);
+    const reworkPoints = plan.points.filter(p => p.needRework);
     if (reworkPoints.length > 0) {
+      // Return only the first point that needs rework
+      const firstPoint = reworkPoints[0];
       return {
         success: true,
         result: {
           isDone: false,
-          nextStepPrompt: this.generateCorrectionPrompt('rework', reworkPoints, 'Some plan points need rework'),
+          nextStepPrompt: this.generateCorrectionPrompt('rework', [firstPoint.id], 'Plan point needs rework'),
           failedStep: 'rework',
-          failedPoints: reworkPoints,
-          reason: 'Some plan points need rework'
+          failedPoints: [firstPoint.id],
+          reason: `Plan point ${firstPoint.id} needs rework`
         }
       };
     }
 
     // Step 4: Check if all implemented points are reviewed (fourth priority)
     // Note: Only implemented points can be reviewed
-    const unreviewedPoints = plan.points.filter(p => p.implemented && !p.reviewed).map(p => p.id);
+    const unreviewedPoints = plan.points.filter(p => p.implemented && !p.reviewed);
     if (unreviewedPoints.length > 0) {
+      // Return only the first point that needs review
+      const firstPoint = unreviewedPoints[0];
       return {
         success: true,
         result: {
           isDone: false,
-          nextStepPrompt: this.generateCorrectionPrompt('code_review', unreviewedPoints, 'Some plan points are not reviewed'),
+          nextStepPrompt: this.generateCorrectionPrompt('code_review', [firstPoint.id], 'Plan point is not reviewed'),
           failedStep: 'code_review',
-          failedPoints: unreviewedPoints,
-          reason: 'Some plan points are not reviewed'
+          failedPoints: [firstPoint.id],
+          reason: `Plan point ${firstPoint.id} is not reviewed`
         }
       };
     }
 
-    // Step 5: Check if all implemented points are tested (fifth priority)
-    // Note: Only implemented points can be tested
-    const untestedPoints = plan.points.filter(p => p.implemented && !p.tested).map(p => p.id);
-    if (untestedPoints.length > 0) {
+    // Step 5: Check if any implemented point needs testing (fifth priority)
+    // Note: Only implemented points can be tested, return just the first untested point
+    const firstUntestedPoint = plan.points.find(p => p.implemented && !p.tested);
+    if (firstUntestedPoint) {
       return {
         success: true,
         result: {
           isDone: false,
-          nextStepPrompt: this.generateCorrectionPrompt('testing', untestedPoints, 'Some plan points are not tested'),
+          nextStepPrompt: this.generateCorrectionPrompt('testing', [firstUntestedPoint.id], `Plan point ${firstUntestedPoint.id} is not tested`),
           failedStep: 'testing',
-          failedPoints: untestedPoints,
-          reason: 'Some plan points are not tested'
+          failedPoints: [firstUntestedPoint.id],
+          reason: `Plan point ${firstUntestedPoint.id} is not tested`
         }
       };
     }
 
-    // Step 6: Check if all points are implemented (sixth priority)
-    const unimplementedPoints = plan.points.filter(p => !p.implemented).map(p => p.id);
-    if (unimplementedPoints.length > 0) {
+    // Step 6: Check if any point needs implementation (sixth priority)
+    // Return just the first unimplemented point
+    const firstUnimplementedPoint = plan.points.find(p => !p.implemented);
+    if (firstUnimplementedPoint) {
       return {
         success: true,
         result: {
           isDone: false,
-          nextStepPrompt: this.generateCorrectionPrompt('implementation', unimplementedPoints, 'Some plan points are not implemented'),
+          nextStepPrompt: this.generateCorrectionPrompt('implementation', [firstUnimplementedPoint.id], `Plan point ${firstUnimplementedPoint.id} is not implemented`),
           failedStep: 'implementation',
-          failedPoints: unimplementedPoints,
-          reason: 'Some plan points are not implemented'
+          failedPoints: [firstUnimplementedPoint.id],
+          reason: `Plan point ${firstUnimplementedPoint.id} is not implemented`
         }
       };
     }

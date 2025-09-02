@@ -99,7 +99,7 @@ suite('Plan Evaluation Tests', () => {
     assert.strictEqual(result.success, true);
     assert.strictEqual(result.result?.isDone, false);
     assert.strictEqual(result.result?.failedStep, 'rework');
-    assert.strictEqual(result.result?.reason, 'Some plan points need rework');
+    assert.strictEqual(result.result?.reason, `Plan point ${pointId} needs rework`);
     assert.ok(result.result?.failedPoints?.includes(pointId));
     assert.ok(result.result?.nextStepPrompt?.includes('rework'));
   });
@@ -122,7 +122,7 @@ suite('Plan Evaluation Tests', () => {
     assert.strictEqual(result.success, true);
     assert.strictEqual(result.result?.isDone, false);
     assert.strictEqual(result.result?.failedStep, 'implementation');
-    assert.strictEqual(result.result?.reason, 'Some plan points are not implemented');
+    assert.strictEqual(result.result?.reason, `Plan point ${pointId} is not implemented`);
   assert.ok(result.result?.failedPoints?.includes(pointId));
   assert.ok(result.result?.nextStepPrompt?.includes('Coder') || result.result?.nextStepPrompt?.includes('implement'));
   });
@@ -148,7 +148,7 @@ suite('Plan Evaluation Tests', () => {
     assert.strictEqual(result.success, true);
     assert.strictEqual(result.result?.isDone, false);
     assert.strictEqual(result.result?.failedStep, 'code_review');
-    assert.strictEqual(result.result?.reason, 'Some plan points are not reviewed');
+    assert.strictEqual(result.result?.reason, `Plan point ${pointId} is not reviewed`);
   assert.ok(result.result?.failedPoints?.includes(pointId));
   assert.ok(result.result?.nextStepPrompt?.includes('Reviewer') || result.result?.nextStepPrompt?.includes('review'));
   });
@@ -177,7 +177,7 @@ suite('Plan Evaluation Tests', () => {
     assert.strictEqual(result.success, true);
     assert.strictEqual(result.result?.isDone, false);
     assert.strictEqual(result.result?.failedStep, 'testing');
-    assert.strictEqual(result.result?.reason, 'Some plan points are not tested');
+    assert.strictEqual(result.result?.reason, `Plan point ${pointId} is not tested`);
   assert.ok(result.result?.failedPoints?.includes(pointId));
   assert.ok(result.result?.nextStepPrompt?.includes('Tester') || result.result?.nextStepPrompt?.includes('test'));
   });
@@ -306,10 +306,9 @@ suite('Plan Evaluation Tests', () => {
     assert.strictEqual(result.result?.isDone, false);
     assert.strictEqual(result.result?.failedStep, 'implementation');
     
-    // Check that prompt contains both point IDs
+    // Check that prompt contains only the first point ID (new behavior)
     const prompt = result.result?.nextStepPrompt || '';
-    assert.ok(prompt.includes(pointId1));
-    assert.ok(prompt.includes(pointId2));
+    assert.ok(prompt.includes(pointId1)); // Should contain the first unimplemented point
   assert.ok(prompt.includes('implement'));
   });
 

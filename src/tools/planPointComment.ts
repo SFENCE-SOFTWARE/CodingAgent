@@ -9,7 +9,7 @@ export class PlanPointCommentTool implements BaseTool {
     return {
       name: 'plan_point_comment',
       displayName: 'Add Plan Point Comment',
-      description: 'Add a comment to a specific point in the current active plan',
+      description: 'Add a comment to a specific point in the current active plan. This tool only adds comments and does NOT change point status.',
       category: 'other'
     };
   }
@@ -19,7 +19,7 @@ export class PlanPointCommentTool implements BaseTool {
       type: 'function',
       function: {
         name: 'plan_point_comment',
-        description: 'Add a timestamped comment to a specific point in the current active plan for tracking progress, notes, or discussion',
+        description: 'Add a timestamped comment to a specific point in the current active plan for tracking progress, notes, or discussion. IMPORTANT: This tool is only for adding comments and does NOT change point status (implemented, tested, reviewed, etc.). Use other plan tools like plan_point_implemented, plan_point_tested, plan_point_reviewed to change status.',
         parameters: {
           type: 'object',
           properties: {
@@ -29,7 +29,7 @@ export class PlanPointCommentTool implements BaseTool {
             },
             comment: {
               type: 'string',
-              description: 'Comment text to add'
+              description: 'Comment text to add (for notes, progress updates, or discussion only - does not change status)'
             }
           },
           required: ['point_id', 'comment'],
