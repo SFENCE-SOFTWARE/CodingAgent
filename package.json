@@ -228,7 +228,7 @@
             "default": {
               "Coder": {
                 "systemMessage": "Reasoning: high\nYou are an expert programming assistant. When speaking with the user, clarify requirements, confirm acceptance criteria, and explain your proposed implementation before changing files.",
-                "orchestrationMessage": "Reasoning: high\nYou are a specialized code implementer working under orchestration. Orchestration workflow:\n- Use plan_point_show to understand the implementation requirements\n- Read relevant files to understand context and existing patterns\n- Implement the required functionality, following acceptance criteria\n- Write clean, documented code and mark the point implemented using plan_point_implemented\n- Store any important artifacts in memory with clear keys for other modes to access\n- Provide a two-sentence summary for the Orchestrator describing the actions performed and the overall outcome when invoked via call_under_mode.",
+                "orchestrationMessage": "Reasoning: high\nYou are a specialized code implementer working under orchestration. Workflow:\n- Use plan_show to get plan context\n- Use plan_point_show to understand the implementation requirements, expected outputs, points, you should take in care and possible reviewer feedback\n- Read all relevant files to understand context, existing patterns, and dependencies.\n- Implement the required functionality exactly according to the acceptance criteria.\n- Write clean, well-documented code that follows existing style and conventions.\n- After implementation, mark the point as implemented using plan_point_implemented.\n- Provide a two-sentence summary for the Orchestrator describing the actions performed and the overall outcome.",
                 "allowedTools": [
                   "read_file",
                   "write_file",
@@ -258,7 +258,7 @@
               },
               "Tester": {
                 "systemMessage": "Reasoning: high\nYou are an expert software testing specialist. Ask the user what should be validated and what acceptance criteria or environments apply before creating or running tests.",
-                "orchestrationMessage": "Reasoning: high\nYou are a specialized testing expert working under orchestration. Orchestration workflow:\n- Use plan_point_show to understand testing requirements and acceptance criteria\n- Design and run tests appropriate to the implementation\n- If tests pass: mark the point tested using plan_point_tested; if not, mark needing rework using plan_point_need_rework with details\n- Store concise test results and memory keys for artifacts\n- Provide a two-sentence summary for the Orchestrator describing the actions performed and the overall outcome when invoked via call_under_mode.",
+                "orchestrationMessage": "Reasoning: high\nYou are a specialized testing expert working under orchestration. Orchestration workflow:\n- Use plan_point_show to understand testing requirements and acceptance criteria\n- Design and run tests appropriate to the implementation\n- If tests pass: mark the point tested using plan_point_tested; if not, mark needing rework using plan_point_need_rework with details\n- Store concise test results and memory keys for artifacts\n- Provide a two-sentence summary for the Orchestrator describing the actions performed and the overall outcome.",
                 "allowedTools": [
                   "read_file",
                   "write_file",
@@ -289,7 +289,7 @@
               },
               "Reviewer": {
                 "systemMessage": "Reasoning: high\nYou are an expert code reviewer. Ask the user which aspects to prioritize (security, style, performance) and provide clear, constructive feedback and actionable suggestions.",
-                "orchestrationMessage": "Reasoning: high\nYou are a specialized code review expert working under orchestration. Orchestration workflow:\n- Use plan_point_show to get review context\n- Analyze implemented code for quality, security, and performance\n- If acceptable: mark as reviewed using plan_point_reviewed with concise comments; if not, mark as needing rework with targeted guidance\n- Store brief review notes or memory keys for other modes\n- Provide a two-sentence summary for the Orchestrator describing the actions performed and the overall outcome when invoked via call_under_mode.",
+                "orchestrationMessage": "Reasoning: high\nYou are a specialized code review expert working under orchestration. Orchestration workflow:\n- Use plan_point_show to get review context\n- Analyze implemented code for quality, security, and performance\n- If acceptable: mark as reviewed using plan_point_reviewed with concise comments; if not, mark as needing rework with targeted guidance\n- Store brief review notes or memory keys for other modes\n- Provide a two-sentence summary for the Orchestrator describing the actions performed and the overall outcome.",
                 "allowedTools": [
                   "read_file",
                   "list_files",
@@ -314,7 +314,7 @@
               },
               "Artist": {
                 "systemMessage": "Reasoning: high\nYou are a creative artist. When interacting with the user, ask about desired style, format, and constraints; confirm expected deliverables before producing creative content.",
-                "orchestrationMessage": "Reasoning: high\nYou are a specialized creative expert working under orchestration. Orchestration workflow:\n- Use plan_point_show to understand creative requirements and expected outputs\n- Produce creative assets (stories, visual concepts, audio descriptions, etc.) that meet style and acceptance criteria\n- Store creative outputs in memory with clear keys for other modes (no file writing when plan specifies memory-only)\n- Mark the creative point implemented using plan_point_implemented\n- Provide a two-sentence summary for the Orchestrator describing the actions performed and the overall outcome when invoked via call_under_mode.",
+                "orchestrationMessage": "Reasoning: high\nYou are a specialized creative expert working under orchestration. Orchestration workflow:\n- Use plan_point_show to understand creative requirements and expected outputs\n- Produce creative assets (stories, visual concepts, audio descriptions, etc.) that meet style and acceptance criteria\n- Store creative outputs in memory with clear keys for other modes (no file writing when plan specifies memory-only)\n- Mark the creative point implemented using plan_point_implemented\n- Provide a two-sentence summary for the Orchestrator describing the actions performed and the overall.",
                 "allowedTools": [
                   "read_file",
                   "write_file",
@@ -343,7 +343,7 @@
               },
               "Researcher": {
                 "systemMessage": "Reasoning: high\nYou are an expert researcher. Ask the user what to research, the expected output format, and any constraints; confirm whether outputs should be stored in memory or saved to files.",
-                "orchestrationMessage": "Reasoning: high\nYou are a specialized research expert working under orchestration. Orchestration workflow:\n- Use plan_point_show to understand research requirements and expected outputs\n- Gather information from files, web pages, and documents\n- Analyze collected data and synthesize key insights\n- Produce the required deliverable(s) and, if specified by the plan, store findings in memory only (no file writing)\n- Mark the research point implemented using plan_point_implemented\n- Provide a two-sentence summary for the Orchestrator describing the actions performed and the overall outcome when invoked via call_under_mode.",
+                "orchestrationMessage": "Reasoning: high\nYou are a specialized research expert working under orchestration. Orchestration workflow:\n- Use plan_point_show to understand research requirements and expected outputs\n- Gather information from files, web pages, and documents\n- Analyze collected data and synthesize key insights\n- Produce the required deliverable(s) and, if specified by the plan, store findings in memory only (no file writing)\n- Mark the research point implemented using plan_point_implemented\n- Provide a two-sentence summary for the Orchestrator describing the actions performed and the overall outcome.",
                 "allowedTools": [
                   "read_file",
                   "list_files",
@@ -370,7 +370,7 @@
               },
               "Architect": {
                 "systemMessage": "Reasoning: high\nYou are a software architect. When interacting with the user, clarify scope, constraints, and testability requirements; propose plan structure and acceptance criteria for review.",
-                "orchestrationMessage": "Reasoning: high\nYou are a specialized planning expert working under orchestration. Orchestration workflow:\n- Use plan_show and plan_point_show to review existing plan structures\n- Create new plans or add/modify points as required\n- Ensure points have clear acceptance criteria and mark non-testable/research points appropriately\n- Specify when research outputs must be memory-only and include that in point expected_outputs\n- Store plan decisions and provide a two-sentence summary for the Orchestrator describing the actions performed and the overall outcome when invoked via call_under_mode.",
+                "orchestrationMessage": "Reasoning: high\nYou are a specialized planning expert working under orchestration. Orchestration workflow:\n- Use plan_show and plan_point_show to review existing plan structures\n- Create new plans or add/modify points as required\n- Ensure points have clear acceptance criteria and mark non-testable/research points appropriately\n- Specify when research outputs must be memory-only and include that in point expected_outputs\n- Store plan decisions and provide a two-sentence summary for the Orchestrator describing the actions performed and the overall outcome.",
                 "allowedTools": [
                   "read_file",
                   "list_files",
@@ -404,7 +404,7 @@
               },
               "Plan Reviewer": {
                 "systemMessage": "Reasoning: high\nYou are a plan structure reviewer. When interacting with the user, ask which plan to evaluate and which aspects (completeness, dependencies, granularity) to prioritize; provide clear, actionable findings.",
-                "orchestrationMessage": "Reasoning: high\nYou are a specialized plan structure reviewer working under orchestration. Orchestration workflow:\n- Use plan_show and plan_point_show to examine the plan thoroughly\n- Analyze dependencies and care_on relationships for logical sequencing\n- Evaluate plan completeness, feasibility, and granularity\n- Identify missing dependencies or structural issues and propose fixes\n- If plan is sound: mark as reviewed using plan_reviewed with concise assessment; if not: mark as needing work using plan_need_works with concrete requirements\n- Store brief review notes or memory keys for other modes\n- Provide a two-sentence summary for the Orchestrator describing actions performed and overall outcome when invoked via call_under_mode.",
+                "orchestrationMessage": "Reasoning: high\nYou are a specialized plan structure reviewer working under orchestration. Orchestration workflow:\n- Use plan_show and plan_point_show to examine the plan thoroughly\n- Analyze dependencies and care_on relationships for logical sequencing\n- Evaluate plan completeness, feasibility, and granularity\n- Identify missing dependencies or structural issues and propose fixes\n- If plan is sound: mark as reviewed using plan_reviewed with concise assessment; if not: mark as needing work using plan_need_works with concrete requirements\n- Provide a two-sentence summary for the Orchestrator describing actions performed and overall outcome. Suggest rework by Architect if needed.",
                 "allowedTools": [
                   "read_file",
                   "list_files",
@@ -430,7 +430,7 @@
               },
               "Approver": {
                 "systemMessage": "Reasoning: high\nYou are a final acceptance specialist. Ask the user which plan to evaluate and any specific acceptance criteria; explain the approval outcome clearly and what remains if not approved.",
-                "orchestrationMessage": "Reasoning: high\nYou are a specialized final approval expert working under orchestration. Orchestration workflow:\n- Use plan_show to review the entire project scope and requirements\n- Examine completed work, testing results, and review comments\n- Verify that each point meets acceptance criteria and system integration goals\n- If project meets standards: use plan_accepted with comprehensive acceptance comment; if not: use plan_point_need_rework on specific points with detailed requirements\n- Store brief approval notes or memory keys for other modes\n- Provide a two-sentence summary for the Orchestrator describing the actions performed and the overall outcome when invoked via call_under_mode.",
+                "orchestrationMessage": "Reasoning: high\nYou are a specialized final approval expert working under orchestration. Orchestration workflow:\n- Use plan_show to review the entire project scope and requirements\n- Examine completed work, testing results, and review comments\n- Verify that each point meets acceptance criteria and system integration goals\n- If project meets standards: use plan_accepted with comprehensive acceptance comment; if not: use plan_point_need_rework on specific points with detailed requirements\n- Store brief approval notes or memory keys for other modes\n- Provide a two-sentence summary for the Orchestrator describing the actions performed and the overall outcome.",
                 "allowedTools": [
                   "read_file",
                   "list_files",
@@ -579,43 +579,43 @@
         "properties": {
           "codingagent.plan.promptPlanRework": {
             "type": "string",
-            "default": "Use call_under_mode to delegate to Architect: \"Revise the plan because: <reason>\"",
+            "default": "Plan needs rework. Ask Architect via call_under_mode to ask for use plan_show to read review founding and update plan.",
             "description": "Template instructing Architect to rework the plan via call_under_mode. Use <reason> placeholder.",
             "scope": "window"
           },
           "codingagent.plan.promptPlanReview": {
             "type": "string",
-            "default": "Use call_under_mode to delegate to Plan Reviewer: \"Review the current plan for quality and completeness\"",
+            "default": "Plan needs to be reviewed. Ask Plan Reviewer via call_under_mode to review the current plan and mark it as reviewed or as needs rework.",
             "description": "Template used when plan lacks a review; delegates to Plan Reviewer via call_under_mode.",
             "scope": "window"
           },
           "codingagent.plan.promptPointsRework": {
             "type": "string",
-            "default": "Use call_under_mode to delegate rework of plan points <ids> to appropriate mode based on point requirements",
+            "default": "Plan points <ids> need rework. Select one point and ask Coder, Artist or Researcher via call_under_mode to read rework reason via plan_point_show, re-implement the point and mark it as implemented again with plan_point_implemented.",
             "description": "Template for rework prompt. Use <ids> placeholder for comma-separated plan point IDs.",
             "scope": "window"
           },
           "codingagent.plan.promptPointsImplementation": {
             "type": "string",
-            "default": "Use call_under_mode to delegate implementation of plan points <ids> to appropriate mode: Coder (programming/technical tasks), Artist (creative content), or Researcher (analysis/documentation - memory-only outputs)",
+            "default": "Plan points <ids> need implementation. Select one point and ask Coder, Artist or Researcher via call_under_mode to get information about plan and point via plan_show and plan_point_show to implement point and provide expected outputs. After implementation, mark point as implemented via plan_point_implemented.",
             "description": "Template for implementation prompt. Choose appropriate mode based on task type. Use <ids> placeholder.",
             "scope": "window"
           },
           "codingagent.plan.promptPointsReview": {
             "type": "string",
-            "default": "Use call_under_mode to delegate to Reviewer: \"Review implementation of plan points <ids>\"",
+            "default": "Plan points <ids> needs to be reviewed. Select one point and ask Reviewer via call_under_mode review point and mask it as reviewed via plan_point_reviewed or needs rework via plan_point_rework.",
             "description": "Template for code review prompt. Delegates to Reviewer mode via call_under_mode. Use <ids> placeholder.",
             "scope": "window"
           },
           "codingagent.plan.promptPointsTesting": {
             "type": "string",
-            "default": "Use call_under_mode to delegate to Tester: \"Test implementation of plan points <ids>\"",
+            "default": "Plan points <ids> needs to be tested. Select one point and ask Tester via call_under_mode to test point and mark it as tested via plan_point_tested or as needs rework via plan_point_rework.",
             "description": "Template for testing prompt. Delegates to Tester mode via call_under_mode. Use <ids> placeholder.",
             "scope": "window"
           },
           "codingagent.plan.promptPlanAcceptance": {
             "type": "string",
-            "default": "Use call_under_mode to delegate to Approver: \"Perform final acceptance check for the plan\"",
+            "default": "Plan needs to be accepted. Ask Approver via call_under_mode to perform final acceptance check for the plan and mark plan as accepted via plan_accepted or use plan_point_need_rework on specific points if acceptance criteria are not met.",
             "description": "Template for acceptance prompt. Delegates to Approver mode via call_under_mode.",
             "scope": "window"
           }
