@@ -40,6 +40,35 @@ suite('Plan Evaluation Tests', () => {
   assert.ok(result.result?.nextStepPrompt?.includes('Plan Reviewer') || result.result?.nextStepPrompt?.includes('review the plan'));
   });
 
+  test('should detect incomplete plan - points need rework', async () => {
+    // Create a test plan
+    const planId = 'test-plan-rework';
+    planningService.createPlan(planId, 'Test Plan', 'Short desc', 'Long desc');
+    
+    // Add a point
+    const addResult = planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria');
+    const pointId = addResult.pointId!;
+    
+    // Review the plan
+    planningService.setPlanReviewed(planId, 'Plan looks good');
+    
+    // Implement the point
+    planningService.setImplemented(planId, pointId);
+    
+    // Mark point as needing rework
+    planningService.setNeedRework(planId, pointId, 'Implementation needs improvement');
+    
+    // Evaluate the plan (should fail on points needing rework)
+    const result = planningService.evaluatePlanCompletion(planId);
+    
+    assert.strictEqual(result.success, true);
+    assert.strictEqual(result.result?.isDone, false);
+    assert.strictEqual(result.result?.failedStep, 'rework');
+    assert.strictEqual(result.result?.reason, 'Some plan points need rework');
+    assert.ok(result.result?.failedPoints?.includes(pointId));
+    assert.ok(result.result?.nextStepPrompt?.includes('rework'));
+  });
+
   test('should detect incomplete plan - points not implemented', async () => {
     // Create a test plan
     const planId = 'test-plan-2';
@@ -181,6 +210,44 @@ suite('Plan Evaluation Tests', () => {
     assert.strictEqual(result.result?.failedStep, undefined);
     assert.strictEqual(result.result?.failedPoints, undefined);
     assert.strictEqual(result.result?.nextStepPrompt, undefined);
+  });
+
+  test('should prioritize implementation over review/testing for non-implemented points', async () => {
+    // Create a test plan with mixed implementation status
+    const planId = 'test-plan-priority';
+    planningService.createPlan(planId, 'Test Plan', 'Short desc', 'Long desc');
+    
+    // Add two points
+    const addResult1 = planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria');
+    const addResult2 = planningService.addPoint(planId, addResult1.pointId!, 'Point 2', 'Short desc', 'Detailed desc', 'Acceptance criteria');
+    const pointId1 = addResult1.pointId!;
+    const pointId2 = addResult2.pointId!;
+    
+    // Review the plan
+    planningService.setPlanReviewed(planId, 'Plan looks good');
+    
+    // Implement only the first point
+    planningService.setImplemented(planId, pointId1);
+    
+    // The second point is not implemented, but let's say it needs review (hypothetically)
+    // In the new priority system, unimplemented points should be prioritized for implementation
+    // before checking if they need review or testing
+    
+    // Evaluate the plan
+    const result = planningService.evaluatePlanCompletion(planId);
+    
+    assert.strictEqual(result.success, true);
+    assert.strictEqual(result.result?.isDone, false);
+    
+    // Should prioritize implementation of unimplemented points
+    // Point 1 is implemented but not reviewed/tested, Point 2 is not implemented
+    // But according to new rules, only implemented points can be checked for review/testing
+    // So it should check Point 1 for review first, then Point 2 for implementation
+    
+    // Based on new priority: review of implemented points comes before implementation of unimplemented points
+    assert.strictEqual(result.result?.failedStep, 'code_review');
+    assert.ok(result.result?.failedPoints?.includes(pointId1));
+    assert.ok(!result.result?.failedPoints?.includes(pointId2)); // Point 2 should not be in review list since it's not implemented
   });
 
   test('should generate correct prompts with placeholders replaced', async () => {

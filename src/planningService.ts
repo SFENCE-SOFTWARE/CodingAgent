@@ -56,7 +56,7 @@ export interface PlanState {
 export interface PlanEvaluationResult {
   isDone: boolean;
   nextStepPrompt?: string;
-  failedStep?: 'plan_review' | 'implementation' | 'code_review' | 'testing' | 'acceptance';
+  failedStep?: 'plan_review' | 'rework' | 'implementation' | 'code_review' | 'testing' | 'acceptance';
   failedPoints?: string[];
   reason?: string;
 }
@@ -732,7 +732,8 @@ export class PlanningService {
 
   /**
    * Evaluates plan completion status and generates corrective prompts if needed
-   * Checks in order: plan reviewed -> points implemented -> points reviewed -> points tested -> plan accepted
+   * New priority order: plan not reviewed -> points need rework -> points not reviewed -> points not tested -> points not implemented -> plan accepted
+   * Rule: Points which are not implemented cannot be marked as not reviewed or not tested
    */
   public evaluatePlanCompletion(planId: string): { success: boolean; result?: PlanEvaluationResult; error?: string } {
     const plan = this.plans.get(planId);
@@ -740,7 +741,7 @@ export class PlanningService {
       return { success: false, error: `Plan with ID '${planId}' not found` };
     }
 
-    // Step 1: Check if plan is reviewed
+    // Step 1: Check if plan is reviewed (highest priority)
     if (!plan.reviewed) {
       return {
         success: true,
@@ -753,7 +754,54 @@ export class PlanningService {
       };
     }
 
-    // Step 2: Check if all points are implemented
+    // Step 2: Check if any points need rework (second highest priority)
+    const reworkPoints = plan.points.filter(p => p.needRework).map(p => p.id);
+    if (reworkPoints.length > 0) {
+      return {
+        success: true,
+        result: {
+          isDone: false,
+          nextStepPrompt: this.generateCorrectionPrompt('rework', reworkPoints, 'Some plan points need rework'),
+          failedStep: 'rework',
+          failedPoints: reworkPoints,
+          reason: 'Some plan points need rework'
+        }
+      };
+    }
+
+    // Step 3: Check if all implemented points are reviewed (third priority)
+    // Note: Only implemented points can be reviewed
+    const unreviewedPoints = plan.points.filter(p => p.implemented && !p.reviewed).map(p => p.id);
+    if (unreviewedPoints.length > 0) {
+      return {
+        success: true,
+        result: {
+          isDone: false,
+          nextStepPrompt: this.generateCorrectionPrompt('code_review', unreviewedPoints, 'Some plan points are not reviewed'),
+          failedStep: 'code_review',
+          failedPoints: unreviewedPoints,
+          reason: 'Some plan points are not reviewed'
+        }
+      };
+    }
+
+    // Step 4: Check if all implemented points are tested (fourth priority)
+    // Note: Only implemented points can be tested
+    const untestedPoints = plan.points.filter(p => p.implemented && !p.tested).map(p => p.id);
+    if (untestedPoints.length > 0) {
+      return {
+        success: true,
+        result: {
+          isDone: false,
+          nextStepPrompt: this.generateCorrectionPrompt('testing', untestedPoints, 'Some plan points are not tested'),
+          failedStep: 'testing',
+          failedPoints: untestedPoints,
+          reason: 'Some plan points are not tested'
+        }
+      };
+    }
+
+    // Step 5: Check if all points are implemented (fifth priority)
     const unimplementedPoints = plan.points.filter(p => !p.implemented).map(p => p.id);
     if (unimplementedPoints.length > 0) {
       return {
@@ -768,37 +816,7 @@ export class PlanningService {
       };
     }
 
-    // Step 3: Check if all points are reviewed
-    const unreviewedPoints = plan.points.filter(p => !p.reviewed).map(p => p.id);
-    if (unreviewedPoints.length > 0) {
-      return {
-        success: true,
-        result: {
-          isDone: false,
-          nextStepPrompt: this.generateCorrectionPrompt('code_review', unreviewedPoints, 'Some plan points are not reviewed'),
-          failedStep: 'code_review',
-          failedPoints: unreviewedPoints,
-          reason: 'Some plan points are not reviewed'
-        }
-      };
-    }
-
-    // Step 4: Check if all points are tested
-    const untestedPoints = plan.points.filter(p => !p.tested).map(p => p.id);
-    if (untestedPoints.length > 0) {
-      return {
-        success: true,
-        result: {
-          isDone: false,
-          nextStepPrompt: this.generateCorrectionPrompt('testing', untestedPoints, 'Some plan points are not tested'),
-          failedStep: 'testing',
-          failedPoints: untestedPoints,
-          reason: 'Some plan points are not tested'
-        }
-      };
-    }
-
-    // Step 5: Check if plan is accepted
+    // Step 6: Check if plan is accepted (lowest priority)
     if (!plan.accepted) {
       return {
         success: true,
@@ -828,6 +846,7 @@ export class PlanningService {
     
     const templates = {
       plan_review: config.get('promptPlanReview', 'Plan needs to be reviewed.'),
+      rework: config.get('promptPointsRework', 'Please rework the following plan points: <ids>'),
       implementation: config.get('promptImplementation', 'Please implement the following plan points: <ids>'),
       code_review: config.get('promptCodeReview', 'Please review the following plan points: <ids>'),
       testing: config.get('promptTesting', 'Please test the following plan points: <ids>'),

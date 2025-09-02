@@ -23,7 +23,7 @@ export class PlanEvaluateTool implements BaseTool {
       type: 'function',
       function: {
         name: 'plan_evaluate',
-        description: 'Evaluates plan completion status and generates corrective prompts if needed. Checks in order: plan reviewed -> points implemented -> points reviewed -> points tested -> plan accepted.',
+        description: 'Evaluates plan completion status and generates corrective prompts if needed. Checks in order: plan not reviewed -> points need rework -> points not reviewed -> points not tested -> points not implemented -> plan accepted. Note: Points which are not implemented cannot be marked as not reviewed or not tested.',
         parameters: {
           type: 'object',
           properties: {

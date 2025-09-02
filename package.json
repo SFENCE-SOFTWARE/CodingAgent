@@ -248,6 +248,7 @@
                   "memory_search",
                   "memory_list",
                   "memory_export",
+                  "plan_show",
                   "plan_point_show",
                   "plan_point_implemented"
                 ],
@@ -278,6 +279,7 @@
                   "memory_search",
                   "memory_list",
                   "memory_export",
+                  "plan_show",
                   "plan_point_show",
                   "plan_point_tested",
                   "plan_point_need_rework"
@@ -303,6 +305,7 @@
                   "memory_search",
                   "memory_list",
                   "memory_export",
+                  "plan_show",
                   "plan_point_show",
                   "plan_point_reviewed",
                   "plan_point_need_rework"
@@ -333,6 +336,7 @@
                   "memory_search",
                   "memory_list",
                   "memory_export",
+                  "plan_show",
                   "plan_point_show",
                   "plan_point_implemented"
                 ],
@@ -360,6 +364,7 @@
                   "memory_search",
                   "memory_list",
                   "memory_export",
+                  "plan_show",
                   "plan_point_show",
                   "plan_point_implemented"
                 ],
@@ -577,12 +582,6 @@
       {
         "title": "CodingAgent - Plan",
         "properties": {
-          "codingagent.plan.promptPlanRework": {
-            "type": "string",
-            "default": "Plan needs rework. Ask Architect via call_under_mode to ask for use plan_show to read review founding and update plan.",
-            "description": "Template instructing Architect to rework the plan via call_under_mode. Use <reason> placeholder.",
-            "scope": "window"
-          },
           "codingagent.plan.promptPlanReview": {
             "type": "string",
             "default": "Plan needs to be reviewed. Ask Plan Reviewer via call_under_mode to review the current plan and mark it as reviewed or as needs rework.",
@@ -593,12 +592,6 @@
             "type": "string",
             "default": "Plan points <ids> need rework. Select one point and ask Coder, Artist or Researcher via call_under_mode to read rework reason via plan_point_show, re-implement the point and mark it as implemented again with plan_point_implemented.",
             "description": "Template for rework prompt. Use <ids> placeholder for comma-separated plan point IDs.",
-            "scope": "window"
-          },
-          "codingagent.plan.promptPointsImplementation": {
-            "type": "string",
-            "default": "Plan points <ids> need implementation. Select one point and ask Coder, Artist or Researcher via call_under_mode to get information about plan and point via plan_show and plan_point_show to implement point and provide expected outputs. After implementation, mark point as implemented via plan_point_implemented.",
-            "description": "Template for implementation prompt. Choose appropriate mode based on task type. Use <ids> placeholder.",
             "scope": "window"
           },
           "codingagent.plan.promptPointsReview": {
@@ -613,10 +606,22 @@
             "description": "Template for testing prompt. Delegates to Tester mode via call_under_mode. Use <ids> placeholder.",
             "scope": "window"
           },
+          "codingagent.plan.promptPointsImplementation": {
+            "type": "string",
+            "default": "Plan points <ids> need implementation. Select one point and ask Coder, Artist or Researcher via call_under_mode to get information about plan and point via plan_show and plan_point_show to implement point and provide expected outputs. After implementation, mark point as implemented via plan_point_implemented.",
+            "description": "Template for implementation prompt. Choose appropriate mode based on task type. Use <ids> placeholder.",
+            "scope": "window"
+          },
           "codingagent.plan.promptPlanAcceptance": {
             "type": "string",
             "default": "Plan needs to be accepted. Ask Approver via call_under_mode to perform final acceptance check for the plan and mark plan as accepted via plan_accepted or use plan_point_need_rework on specific points if acceptance criteria are not met.",
             "description": "Template for acceptance prompt. Delegates to Approver mode via call_under_mode.",
+            "scope": "window"
+          },
+          "codingagent.plan.promptPlanRework": {
+            "type": "string",
+            "default": "Plan needs rework. Ask Architect via call_under_mode to ask for use plan_show to read review founding and update plan.",
+            "description": "Template instructing Architect to rework the plan via call_under_mode. Use <reason> placeholder.",
             "scope": "window"
           }
         }

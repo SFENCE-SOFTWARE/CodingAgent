@@ -31,6 +31,16 @@
     memoryMaxChars: document.getElementById('memoryMaxChars'),
     memoryAutoSafetyLimit: document.getElementById('memoryAutoSafetyLimit'),
     memoryLargeValueThreshold: document.getElementById('memoryLargeValueThreshold'),
+    
+    // Plan prompt elements
+    planReviewPrompt: document.getElementById('planReviewPrompt'),
+    pointsReworkPrompt: document.getElementById('pointsReworkPrompt'),
+    pointsReviewPrompt: document.getElementById('pointsReviewPrompt'),
+    pointsTestingPrompt: document.getElementById('pointsTestingPrompt'),
+    pointsImplementationPrompt: document.getElementById('pointsImplementationPrompt'),
+    planAcceptancePrompt: document.getElementById('planAcceptancePrompt'),
+    planReworkPrompt: document.getElementById('planReworkPrompt'),
+    
     toolsGrid: document.getElementById('tools-grid'),
     modesList: document.getElementById('modesList'),
     resetBtn: document.getElementById('resetBtn'),
@@ -242,6 +252,15 @@
     elements.memoryMaxChars.value = config.memory?.maxChars || 50000;
     elements.memoryAutoSafetyLimit.value = config.memory?.autoSafetyLimit || 5000;
     elements.memoryLargeValueThreshold.value = config.memory?.largeValueThreshold || 10000;
+    
+    // Plan prompts settings
+    if (elements.planReviewPrompt) elements.planReviewPrompt.value = config.plan?.prompts?.planReview || '';
+    if (elements.pointsReworkPrompt) elements.pointsReworkPrompt.value = config.plan?.prompts?.pointsRework || '';
+    if (elements.pointsReviewPrompt) elements.pointsReviewPrompt.value = config.plan?.prompts?.pointsReview || '';
+    if (elements.pointsTestingPrompt) elements.pointsTestingPrompt.value = config.plan?.prompts?.pointsTesting || '';
+    if (elements.pointsImplementationPrompt) elements.pointsImplementationPrompt.value = config.plan?.prompts?.pointsImplementation || '';
+    if (elements.planAcceptancePrompt) elements.planAcceptancePrompt.value = config.plan?.prompts?.planAcceptance || '';
+    if (elements.planReworkPrompt) elements.planReworkPrompt.value = config.plan?.prompts?.planRework || '';
     
     // Update modes dropdown
     updateModeDropdown(config.modes || {});
@@ -479,6 +498,15 @@
       'memory.autoSafetyLimit': parseInt(elements.memoryAutoSafetyLimit.value) || 5000,
       'memory.largeValueThreshold': parseInt(elements.memoryLargeValueThreshold.value) || 10000
     };
+    
+    // Add plan prompts if elements exist
+    if (elements.planReviewPrompt) config['plan.promptPlanReview'] = elements.planReviewPrompt.value;
+    if (elements.pointsReworkPrompt) config['plan.promptPointsRework'] = elements.pointsReworkPrompt.value;
+    if (elements.pointsReviewPrompt) config['plan.promptPointsReview'] = elements.pointsReviewPrompt.value;
+    if (elements.pointsTestingPrompt) config['plan.promptPointsTesting'] = elements.pointsTestingPrompt.value;
+    if (elements.pointsImplementationPrompt) config['plan.promptPointsImplementation'] = elements.pointsImplementationPrompt.value;
+    if (elements.planAcceptancePrompt) config['plan.promptPlanAcceptance'] = elements.planAcceptancePrompt.value;
+    if (elements.planReworkPrompt) config['plan.promptPlanRework'] = elements.planReworkPrompt.value;
     
     showSaveStatus('Saving...', 'pending');
     

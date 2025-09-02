@@ -188,11 +188,13 @@ export class SettingsPanel {
             evaluationDelay: config.get('plan.autoEvaluation.evaluationDelay')
           },
           prompts: {
-            planReview: config.get('plan.prompts.planReview'),
-            implementation: config.get('plan.prompts.implementation'),
-            codeReview: config.get('plan.prompts.codeReview'),
-            testing: config.get('plan.prompts.testing'),
-            acceptance: config.get('plan.prompts.acceptance')
+            planReview: config.get('plan.promptPlanReview'),
+            pointsRework: config.get('plan.promptPointsRework'),
+            pointsReview: config.get('plan.promptPointsReview'),
+            pointsTesting: config.get('plan.promptPointsTesting'),
+            pointsImplementation: config.get('plan.promptPointsImplementation'),
+            planAcceptance: config.get('plan.promptPlanAcceptance'),
+            planRework: config.get('plan.promptPlanRework')
           }
         },
         logging: {
@@ -269,11 +271,13 @@ export class SettingsPanel {
         await config.update('plan.autoEvaluation.skipCallUnderMode', undefined, vscode.ConfigurationTarget.Global);
         await config.update('plan.autoEvaluation.autoSendCorrection', undefined, vscode.ConfigurationTarget.Global);
         await config.update('plan.autoEvaluation.evaluationDelay', undefined, vscode.ConfigurationTarget.Global);
-        await config.update('plan.prompts.planReview', undefined, vscode.ConfigurationTarget.Global);
-        await config.update('plan.prompts.implementation', undefined, vscode.ConfigurationTarget.Global);
-        await config.update('plan.prompts.codeReview', undefined, vscode.ConfigurationTarget.Global);
-        await config.update('plan.prompts.testing', undefined, vscode.ConfigurationTarget.Global);
-        await config.update('plan.prompts.acceptance', undefined, vscode.ConfigurationTarget.Global);
+        await config.update('plan.promptPlanReview', undefined, vscode.ConfigurationTarget.Global);
+        await config.update('plan.promptPointsRework', undefined, vscode.ConfigurationTarget.Global);
+        await config.update('plan.promptPointsReview', undefined, vscode.ConfigurationTarget.Global);
+        await config.update('plan.promptPointsTesting', undefined, vscode.ConfigurationTarget.Global);
+        await config.update('plan.promptPointsImplementation', undefined, vscode.ConfigurationTarget.Global);
+        await config.update('plan.promptPlanAcceptance', undefined, vscode.ConfigurationTarget.Global);
+        await config.update('plan.promptPlanRework', undefined, vscode.ConfigurationTarget.Global);
 
         this._sendConfiguration();
         
@@ -584,11 +588,13 @@ export class SettingsPanel {
             evaluationDelay: config.get('plan.autoEvaluation.evaluationDelay')
           },
           prompts: {
-            planReview: config.get('plan.prompts.planReview'),
-            implementation: config.get('plan.prompts.implementation'),
-            codeReview: config.get('plan.prompts.codeReview'),
-            testing: config.get('plan.prompts.testing'),
-            acceptance: config.get('plan.prompts.acceptance')
+            planReview: config.get('plan.promptPlanReview'),
+            pointsRework: config.get('plan.promptPointsRework'),
+            pointsReview: config.get('plan.promptPointsReview'),
+            pointsTesting: config.get('plan.promptPointsTesting'),
+            pointsImplementation: config.get('plan.promptPointsImplementation'),
+            planAcceptance: config.get('plan.promptPlanAcceptance'),
+            planRework: config.get('plan.promptPlanRework')
           }
         },
         savedAt: new Date().toISOString()
@@ -685,11 +691,13 @@ export class SettingsPanel {
           await config.update('plan.autoEvaluation.evaluationDelay', profileData.plan.autoEvaluation.evaluationDelay, vscode.ConfigurationTarget.Global);
         }
         if (profileData.plan.prompts) {
-          await config.update('plan.prompts.planReview', profileData.plan.prompts.planReview, vscode.ConfigurationTarget.Global);
-          await config.update('plan.prompts.implementation', profileData.plan.prompts.implementation, vscode.ConfigurationTarget.Global);
-          await config.update('plan.prompts.codeReview', profileData.plan.prompts.codeReview, vscode.ConfigurationTarget.Global);
-          await config.update('plan.prompts.testing', profileData.plan.prompts.testing, vscode.ConfigurationTarget.Global);
-          await config.update('plan.prompts.acceptance', profileData.plan.prompts.acceptance, vscode.ConfigurationTarget.Global);
+          await config.update('plan.promptPlanReview', profileData.plan.prompts.planReview, vscode.ConfigurationTarget.Global);
+          await config.update('plan.promptPointsRework', profileData.plan.prompts.pointsRework, vscode.ConfigurationTarget.Global);
+          await config.update('plan.promptPointsReview', profileData.plan.prompts.pointsReview, vscode.ConfigurationTarget.Global);
+          await config.update('plan.promptPointsTesting', profileData.plan.prompts.pointsTesting, vscode.ConfigurationTarget.Global);
+          await config.update('plan.promptPointsImplementation', profileData.plan.prompts.pointsImplementation, vscode.ConfigurationTarget.Global);
+          await config.update('plan.promptPlanAcceptance', profileData.plan.prompts.planAcceptance, vscode.ConfigurationTarget.Global);
+          await config.update('plan.promptPlanRework', profileData.plan.prompts.planRework, vscode.ConfigurationTarget.Global);
         }
       }
 
@@ -1198,43 +1206,63 @@ export class SettingsPanel {
                 
                 <div class="prompt-templates">
                   <div class="form-group">
-                    <label for="planReviewPrompt">Plan Review Prompt:</label>
-                    <textarea id="planReviewPrompt" rows="3" placeholder="Plan needs to be reviewed. Please review the overall plan structure, goals, and approach. Use 'plan_reviewed' tool when done.">Plan needs to be reviewed before implementation can begin. Please review the overall plan structure, goals, and approach to ensure they align with the requirements. Once you're satisfied with the plan, use the 'plan_reviewed' tool to mark it as reviewed.</textarea>
-                    <small class="form-hint">Prompt when plan hasn't been reviewed yet</small>
+                    <label for="planReviewPrompt">Plan Review Prompt (Highest Priority):</label>
+                    <textarea id="planReviewPrompt" rows="3" placeholder="Plan needs to be reviewed...">Plan needs to be reviewed. Ask Plan Reviewer via call_under_mode to review the current plan and mark it as reviewed or as needs rework.</textarea>
+                    <small class="form-hint">Template used when plan lacks a review; delegates to Plan Reviewer via call_under_mode.</small>
                   </div>
                   
                   <div class="form-group">
-                    <label for="implementationPrompt">Implementation Prompt:</label>
-                    <textarea id="implementationPrompt" rows="3" placeholder="Some plan points need implementation. Points to implement: {{points}}">The following plan points still need to be implemented: {{points}}. Please implement the code for these points and mark them as implemented using the 'plan_point_implemented' tool.</textarea>
-                    <small class="form-hint">Prompt when points need implementation. Use {{points}} to include point IDs</small>
+                    <label for="pointsReworkPrompt">Points Rework Prompt:</label>
+                    <textarea id="pointsReworkPrompt" rows="3" placeholder="Plan points need rework...">Plan points &lt;ids&gt; need rework. Select one point and ask Coder, Artist or Researcher via call_under_mode to read rework reason via plan_point_show, re-implement the point and mark it as implemented again with plan_point_implemented.</textarea>
+                    <small class="form-hint">Template for rework prompt. Use &lt;ids&gt; placeholder for comma-separated plan point IDs.</small>
                   </div>
                   
                   <div class="form-group">
-                    <label for="codeReviewPrompt">Code Review Prompt:</label>
-                    <textarea id="codeReviewPrompt" rows="3" placeholder="Some plan points need code review. Points to review: {{points}}">The following plan points have been implemented but need code review: {{points}}. Please review the implementation and mark them as reviewed using the 'plan_point_reviewed' tool.</textarea>
-                    <small class="form-hint">Prompt when implemented points need review. Use {{points}} to include point IDs</small>
+                    <label for="pointsReviewPrompt">Points Review Prompt:</label>
+                    <textarea id="pointsReviewPrompt" rows="3" placeholder="Plan points need review...">Plan points &lt;ids&gt; needs to be reviewed. Select one point and ask Reviewer via call_under_mode review point and mask it as reviewed via plan_point_reviewed or needs rework via plan_point_rework.</textarea>
+                    <small class="form-hint">Template for code review prompt. Delegates to Reviewer mode via call_under_mode. Use &lt;ids&gt; placeholder.</small>
                   </div>
                   
                   <div class="form-group">
-                    <label for="testingPrompt">Testing Prompt:</label>
-                    <textarea id="testingPrompt" rows="3" placeholder="Some plan points need testing. Points to test: {{points}}">The following plan points have been reviewed but need testing: {{points}}. Please create and run tests for these implementations and mark them as tested using the 'plan_point_tested' tool.</textarea>
-                    <small class="form-hint">Prompt when reviewed points need testing. Use {{points}} to include point IDs</small>
+                    <label for="pointsTestingPrompt">Points Testing Prompt:</label>
+                    <textarea id="pointsTestingPrompt" rows="3" placeholder="Plan points need testing...">Plan points &lt;ids&gt; needs to be tested. Select one point and ask Tester via call_under_mode to test point and mark it as tested via plan_point_tested or as needs rework via plan_point_rework.</textarea>
+                    <small class="form-hint">Template for testing prompt. Delegates to Tester mode via call_under_mode. Use &lt;ids&gt; placeholder.</small>
                   </div>
                   
                   <div class="form-group">
-                    <label for="acceptancePrompt">Acceptance Prompt:</label>
-                    <textarea id="acceptancePrompt" rows="3" placeholder="Plan is ready for acceptance. Please verify all requirements are met and accept the plan.">All plan points have been implemented, reviewed, and tested. The plan is now ready for final acceptance. Please verify that all requirements have been met and use the 'plan_accepted' tool to mark the plan as complete.</textarea>
-                    <small class="form-hint">Prompt when plan is ready for final acceptance</small>
+                    <label for="pointsImplementationPrompt">Points Implementation Prompt:</label>
+                    <textarea id="pointsImplementationPrompt" rows="3" placeholder="Plan points need implementation...">Plan points &lt;ids&gt; need implementation. Select one point and ask Coder, Artist or Researcher via call_under_mode to get information about plan and point via plan_show and plan_point_show to implement point and provide expected outputs. After implementation, mark point as implemented via plan_point_implemented.</textarea>
+                    <small class="form-hint">Template for implementation prompt. Choose appropriate mode based on task type. Use &lt;ids&gt; placeholder.</small>
+                  </div>
+                  
+                  <div class="form-group">
+                    <label for="planAcceptancePrompt">Plan Acceptance Prompt (Lowest Priority):</label>
+                    <textarea id="planAcceptancePrompt" rows="3" placeholder="Plan needs acceptance...">Plan needs to be accepted. Ask Approver via call_under_mode to perform final acceptance check for the plan and mark plan as accepted via plan_accepted or use plan_point_need_rework on specific points if acceptance criteria are not met.</textarea>
+                    <small class="form-hint">Template for acceptance prompt. Delegates to Approver mode via call_under_mode.</small>
+                  </div>
+                  
+                  <div class="form-group">
+                    <label for="planReworkPrompt">Plan Rework Prompt:</label>
+                    <textarea id="planReworkPrompt" rows="3" placeholder="Plan needs rework...">Plan needs rework. Ask Architect via call_under_mode to ask for use plan_show to read review founding and update plan.</textarea>
+                    <small class="form-hint">Template instructing Architect to rework the plan via call_under_mode. Use &lt;reason&gt; placeholder.</small>
                   </div>
                 </div>
                 
                 <div class="prompt-help">
                   <h3>Template Variables</h3>
                   <ul>
-                    <li><code>{{points}}</code> - List of point IDs that need attention</li>
-                    <li><code>{{planId}}</code> - Current plan ID</li>
-                    <li><code>{{reason}}</code> - Detailed reason why the step failed</li>
+                    <li><code>&lt;ids&gt;</code> - List of point IDs that need attention (comma-separated)</li>
+                    <li><code>&lt;reason&gt;</code> - Detailed reason why rework is needed</li>
                   </ul>
+                  <h3>Priority Order (Highest to Lowest)</h3>
+                  <ol>
+                    <li><strong>Plan Review</strong> - Plan must be reviewed first</li>
+                    <li><strong>Points Rework</strong> - Handle rework requests before new work</li>
+                    <li><strong>Points Review</strong> - Review implemented code</li>
+                    <li><strong>Points Testing</strong> - Test reviewed code</li>
+                    <li><strong>Points Implementation</strong> - Implement new features</li>
+                    <li><strong>Plan Acceptance</strong> - Final acceptance when all done</li>
+                  </ol>
                 </div>
               </section>
 
