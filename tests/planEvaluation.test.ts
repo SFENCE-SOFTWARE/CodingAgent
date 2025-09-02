@@ -21,6 +21,41 @@ suite('Plan Evaluation Tests', () => {
     PlanningService.resetInstance();
   });
 
+  test('should detect plan rework as highest priority', async () => {
+    // Create a test plan
+    const planId = 'test-plan-rework';
+    planningService.createPlan(planId, 'Test Plan', 'Short desc', 'Long desc');
+    
+    // Add a point
+    planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria');
+    
+    // Review the plan
+    planningService.setPlanReviewed(planId, 'Plan looks good');
+    
+    // Set plan to need rework (highest priority)
+    planningService.setPlanNeedsWork(planId, 'Architecture needs major revision');
+    
+    // Evaluate the plan
+    const result = planningService.evaluatePlanCompletion(planId);
+    
+    assert.strictEqual(result.success, true);
+    assert.strictEqual(result.result?.isDone, false);
+    assert.strictEqual(result.result?.failedStep, 'plan_rework');
+    assert.strictEqual(result.result?.reason, 'Architecture needs major revision');
+    assert.ok(result.result?.nextStepPrompt?.includes('Plan needs rework'));
+  });
+
+  test('should detect incomplete plan - plan not reviewed', async () => {
+    // Reset instances
+    PlanningService.resetInstance();
+    planningService = PlanningService.getInstance(testWorkspaceRoot);
+    planEvaluateTool = new PlanEvaluateTool();
+  });
+
+  teardown(() => {
+    PlanningService.resetInstance();
+  });
+
   test('should detect incomplete plan - plan not reviewed', async () => {
     // Create a test plan
     const planId = 'test-plan-1';

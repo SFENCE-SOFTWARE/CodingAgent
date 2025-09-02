@@ -188,13 +188,13 @@ export class SettingsPanel {
             evaluationDelay: config.get('plan.autoEvaluation.evaluationDelay')
           },
           prompts: {
+            planRework: config.get('plan.promptPlanRework'),
             planReview: config.get('plan.promptPlanReview'),
             pointsRework: config.get('plan.promptPointsRework'),
             pointsReview: config.get('plan.promptPointsReview'),
             pointsTesting: config.get('plan.promptPointsTesting'),
             pointsImplementation: config.get('plan.promptPointsImplementation'),
-            planAcceptance: config.get('plan.promptPlanAcceptance'),
-            planRework: config.get('plan.promptPlanRework')
+            planAcceptance: config.get('plan.promptPlanAcceptance')
           }
         },
         logging: {
@@ -271,13 +271,13 @@ export class SettingsPanel {
         await config.update('plan.autoEvaluation.skipCallUnderMode', undefined, vscode.ConfigurationTarget.Global);
         await config.update('plan.autoEvaluation.autoSendCorrection', undefined, vscode.ConfigurationTarget.Global);
         await config.update('plan.autoEvaluation.evaluationDelay', undefined, vscode.ConfigurationTarget.Global);
+        await config.update('plan.promptPlanRework', undefined, vscode.ConfigurationTarget.Global);
         await config.update('plan.promptPlanReview', undefined, vscode.ConfigurationTarget.Global);
         await config.update('plan.promptPointsRework', undefined, vscode.ConfigurationTarget.Global);
         await config.update('plan.promptPointsReview', undefined, vscode.ConfigurationTarget.Global);
         await config.update('plan.promptPointsTesting', undefined, vscode.ConfigurationTarget.Global);
         await config.update('plan.promptPointsImplementation', undefined, vscode.ConfigurationTarget.Global);
         await config.update('plan.promptPlanAcceptance', undefined, vscode.ConfigurationTarget.Global);
-        await config.update('plan.promptPlanRework', undefined, vscode.ConfigurationTarget.Global);
 
         this._sendConfiguration();
         
@@ -588,13 +588,13 @@ export class SettingsPanel {
             evaluationDelay: config.get('plan.autoEvaluation.evaluationDelay')
           },
           prompts: {
+            planRework: config.get('plan.promptPlanRework'),
             planReview: config.get('plan.promptPlanReview'),
             pointsRework: config.get('plan.promptPointsRework'),
             pointsReview: config.get('plan.promptPointsReview'),
             pointsTesting: config.get('plan.promptPointsTesting'),
             pointsImplementation: config.get('plan.promptPointsImplementation'),
-            planAcceptance: config.get('plan.promptPlanAcceptance'),
-            planRework: config.get('plan.promptPlanRework')
+            planAcceptance: config.get('plan.promptPlanAcceptance')
           }
         },
         savedAt: new Date().toISOString()
@@ -691,13 +691,13 @@ export class SettingsPanel {
           await config.update('plan.autoEvaluation.evaluationDelay', profileData.plan.autoEvaluation.evaluationDelay, vscode.ConfigurationTarget.Global);
         }
         if (profileData.plan.prompts) {
+          await config.update('plan.promptPlanRework', profileData.plan.prompts.planRework, vscode.ConfigurationTarget.Global);
           await config.update('plan.promptPlanReview', profileData.plan.prompts.planReview, vscode.ConfigurationTarget.Global);
           await config.update('plan.promptPointsRework', profileData.plan.prompts.pointsRework, vscode.ConfigurationTarget.Global);
           await config.update('plan.promptPointsReview', profileData.plan.prompts.pointsReview, vscode.ConfigurationTarget.Global);
           await config.update('plan.promptPointsTesting', profileData.plan.prompts.pointsTesting, vscode.ConfigurationTarget.Global);
           await config.update('plan.promptPointsImplementation', profileData.plan.prompts.pointsImplementation, vscode.ConfigurationTarget.Global);
           await config.update('plan.promptPlanAcceptance', profileData.plan.prompts.planAcceptance, vscode.ConfigurationTarget.Global);
-          await config.update('plan.promptPlanRework', profileData.plan.prompts.planRework, vscode.ConfigurationTarget.Global);
         }
       }
 
@@ -1206,7 +1206,13 @@ export class SettingsPanel {
                 
                 <div class="prompt-templates">
                   <div class="form-group">
-                    <label for="planReviewPrompt">Plan Review Prompt (Highest Priority):</label>
+                    <label for="planReworkPrompt">Plan Rework Prompt (Highest Priority):</label>
+                    <textarea id="planReworkPrompt" rows="3" placeholder="Plan needs rework...">Plan needs rework. Ask Architect via call_under_mode to use plan_show to read review findings and update plan.</textarea>
+                    <small class="form-hint">Template instructing Architect to rework the plan via call_under_mode when plan.needsWork is true. Use &lt;reason&gt; placeholder.</small>
+                  </div>
+                  
+                  <div class="form-group">
+                    <label for="planReviewPrompt">Plan Review Prompt:</label>
                     <textarea id="planReviewPrompt" rows="3" placeholder="Plan needs to be reviewed...">Plan needs to be reviewed. Ask Plan Reviewer via call_under_mode to review the current plan and mark it as reviewed or as needs rework.</textarea>
                     <small class="form-hint">Template used when plan lacks a review; delegates to Plan Reviewer via call_under_mode.</small>
                   </div>
@@ -1240,12 +1246,6 @@ export class SettingsPanel {
                     <textarea id="planAcceptancePrompt" rows="3" placeholder="Plan needs acceptance...">Plan needs to be accepted. Ask Approver via call_under_mode to perform final acceptance check for the plan and mark plan as accepted via plan_accepted or use plan_point_need_rework on specific points if acceptance criteria are not met.</textarea>
                     <small class="form-hint">Template for acceptance prompt. Delegates to Approver mode via call_under_mode.</small>
                   </div>
-                  
-                  <div class="form-group">
-                    <label for="planReworkPrompt">Plan Rework Prompt:</label>
-                    <textarea id="planReworkPrompt" rows="3" placeholder="Plan needs rework...">Plan needs rework. Ask Architect via call_under_mode to ask for use plan_show to read review founding and update plan.</textarea>
-                    <small class="form-hint">Template instructing Architect to rework the plan via call_under_mode. Use &lt;reason&gt; placeholder.</small>
-                  </div>
                 </div>
                 
                 <div class="prompt-help">
@@ -1256,7 +1256,8 @@ export class SettingsPanel {
                   </ul>
                   <h3>Priority Order (Highest to Lowest)</h3>
                   <ol>
-                    <li><strong>Plan Review</strong> - Plan must be reviewed first</li>
+                    <li><strong>Plan Rework</strong> - Plan needs restructuring (highest priority)</li>
+                    <li><strong>Plan Review</strong> - Plan must be reviewed before work begins</li>
                     <li><strong>Points Rework</strong> - Handle rework requests before new work</li>
                     <li><strong>Points Review</strong> - Review implemented code</li>
                     <li><strong>Points Testing</strong> - Test reviewed code</li>

@@ -56,7 +56,7 @@ export interface PlanState {
 export interface PlanEvaluationResult {
   isDone: boolean;
   nextStepPrompt?: string;
-  failedStep?: 'plan_review' | 'rework' | 'implementation' | 'code_review' | 'testing' | 'acceptance';
+  failedStep?: 'plan_rework' | 'plan_review' | 'rework' | 'implementation' | 'code_review' | 'testing' | 'acceptance';
   failedPoints?: string[];
   reason?: string;
 }
@@ -741,7 +741,20 @@ export class PlanningService {
       return { success: false, error: `Plan with ID '${planId}' not found` };
     }
 
-    // Step 1: Check if plan is reviewed (highest priority)
+    // Step 1: Check if plan needs rework (highest priority)
+    if (plan.needsWork) {
+      return {
+        success: true,
+        result: {
+          isDone: false,
+          nextStepPrompt: this.generateCorrectionPrompt('plan_rework', [], 'Plan needs rework'),
+          failedStep: 'plan_rework',
+          reason: plan.needsWorkComment || 'Plan needs rework'
+        }
+      };
+    }
+
+    // Step 2: Check if plan is reviewed (second priority)
     if (!plan.reviewed) {
       return {
         success: true,
@@ -754,7 +767,7 @@ export class PlanningService {
       };
     }
 
-    // Step 2: Check if any points need rework (second highest priority)
+    // Step 3: Check if any points need rework (third priority)
     const reworkPoints = plan.points.filter(p => p.needRework).map(p => p.id);
     if (reworkPoints.length > 0) {
       return {
@@ -769,7 +782,7 @@ export class PlanningService {
       };
     }
 
-    // Step 3: Check if all implemented points are reviewed (third priority)
+    // Step 4: Check if all implemented points are reviewed (fourth priority)
     // Note: Only implemented points can be reviewed
     const unreviewedPoints = plan.points.filter(p => p.implemented && !p.reviewed).map(p => p.id);
     if (unreviewedPoints.length > 0) {
@@ -785,7 +798,7 @@ export class PlanningService {
       };
     }
 
-    // Step 4: Check if all implemented points are tested (fourth priority)
+    // Step 5: Check if all implemented points are tested (fifth priority)
     // Note: Only implemented points can be tested
     const untestedPoints = plan.points.filter(p => p.implemented && !p.tested).map(p => p.id);
     if (untestedPoints.length > 0) {
@@ -801,7 +814,7 @@ export class PlanningService {
       };
     }
 
-    // Step 5: Check if all points are implemented (fifth priority)
+    // Step 6: Check if all points are implemented (sixth priority)
     const unimplementedPoints = plan.points.filter(p => !p.implemented).map(p => p.id);
     if (unimplementedPoints.length > 0) {
       return {
@@ -816,7 +829,7 @@ export class PlanningService {
       };
     }
 
-    // Step 6: Check if plan is accepted (lowest priority)
+    // Step 7: Check if plan is accepted (lowest priority)
     if (!plan.accepted) {
       return {
         success: true,
@@ -845,12 +858,13 @@ export class PlanningService {
     const config = vscode.workspace.getConfiguration('codingagent.plan');
     
     const templates = {
+      plan_rework: config.get('promptPlanRework', 'Plan needs rework. Please update the plan.'),
       plan_review: config.get('promptPlanReview', 'Plan needs to be reviewed.'),
       rework: config.get('promptPointsRework', 'Please rework the following plan points: <ids>'),
-      implementation: config.get('promptImplementation', 'Please implement the following plan points: <ids>'),
-      code_review: config.get('promptCodeReview', 'Please review the following plan points: <ids>'),
-      testing: config.get('promptTesting', 'Please test the following plan points: <ids>'),
-      acceptance: config.get('promptAcceptance', 'Please request Approver mode to perform a final acceptance check for the plan.')
+      implementation: config.get('promptPointsImplementation', 'Please implement the following plan points: <ids>'),
+      code_review: config.get('promptPointsReview', 'Please review the following plan points: <ids>'),
+      testing: config.get('promptPointsTesting', 'Please test the following plan points: <ids>'),
+      acceptance: config.get('promptPlanAcceptance', 'Please request Approver mode to perform a final acceptance check for the plan.')
     };
 
     let template = templates[step as keyof typeof templates] || `Please address the issue: <reason>`;
