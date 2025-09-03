@@ -1956,56 +1956,65 @@ export class ChatService {
   }
 
   /**
-   * Process orchestration message with full logging and UI updates
+   * Process orchestration message using the same flow as normal chat
    */
   private async processOrchestrationMessage(message: string): Promise<ChatMessage[]> {
     const config = vscode.workspace.getConfiguration('codingagent');
     const currentMode = config.get<string>('currentMode', 'Coder');
     const modes = config.get<Record<string, any>>('modes', {});
-    const modeConfig = modes[currentMode] || {};
+    const basicModeConfig = modes[currentMode] || {};
     
     // Use orchestrationMessage instead of systemMessage
-    const orchestrationMessage = modeConfig.orchestrationMessage || modeConfig.systemMessage || 'You are a helpful assistant.';
+    const orchestrationMessage = basicModeConfig.orchestrationMessage || basicModeConfig.systemMessage || 'You are a helpful assistant.';
     
-    // Create request with orchestration context
+    // Create messages array with orchestration context - fix types
+    const messages: OpenAIChatMessage[] = [
+      {
+        role: 'system' as const,
+        content: orchestrationMessage
+      },
+      {
+        role: 'user' as const, 
+        content: message
+      }
+    ];
+
+    // Get allowed tools for current mode - orchestration can use tools too!
+    const modeConfig = this.openai.getModeConfiguration(currentMode);
+    const allTools = this.tools.getToolDefinitions();
+    const allowedTools: ToolDefinition[] = [];
+    
+    for (const toolName of modeConfig.allowedTools) {
+      const toolDef = allTools[toolName];
+      if (toolDef) {
+        allowedTools.push(toolDef);
+      }
+    }
+
+    const currentModel = this.getCurrentModel();
+    const enableStreaming = this.getEnableStreaming(); // Use normal streaming settings!
+
+    // Create request exactly like normal chat flow
     const request: OpenAIChatRequest = {
-      model: this.getCurrentModel(),
-      messages: [
-        {
-          role: 'system',
-          content: orchestrationMessage
-        },
-        {
-          role: 'user', 
-          content: message
-        }
-      ],
-      stream: false, // Force non-streaming for orchestration to avoid parsing issues
-      temperature: modeConfig.temperature || 0.7
+      model: currentModel,
+      messages: messages,
+      stream: enableStreaming, // Keep streaming enabled like normal chat
+      temperature: modeConfig.temperature || 0.7,
+      top_p: typeof modeConfig.top_p === 'number' ? modeConfig.top_p : null,
+      presence_penalty: typeof modeConfig.presence_penalty === 'number' ? modeConfig.presence_penalty : null,
+      frequency_penalty: typeof modeConfig.frequency_penalty === 'number' ? modeConfig.frequency_penalty : null,
+      tools: allowedTools.length > 0 ? allowedTools : undefined
     };
 
+    const startTime = Date.now();
+
     try {
-      // Send request using normal chat flow (with logging and streaming)
-      const response = await this.openai.sendChat(request);
-      
-      if (response.choices && response.choices.length > 0) {
-        const choice = response.choices[0];
-        if (choice.message) {
-          // Create ChatMessage from OpenAIChatMessage
-          const chatMessage: ChatMessage = {
-            id: this.generateId(),
-            role: 'assistant', // Force to assistant role for ChatMessage
-            content: choice.message.content || '',
-            timestamp: Date.now()
-          };
-          
-          // Add assistant response to chat
-          this.messages.push(chatMessage);
-          return [chatMessage];
-        }
+      // Use exactly the same flow as normal chat!
+      if (enableStreaming) {
+        return await this.processStreamingMessage(request, currentModel, currentMode, startTime, undefined);
+      } else {
+        return await this.processNonStreamingMessage(request, currentModel, currentMode, startTime, undefined);
       }
-      
-      return [];
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       await this.logging.logDebug('Orchestration request failed: ' + errorMsg);
