@@ -339,8 +339,8 @@ export class AlgorithmEngine {
         return;
       }
 
-      // Send message to LLM and wait for response
-      this.chatService.sendMessageToLLM(context._llmMessage, (llmResponse: string) => {
+      // Use the standard chat flow to ensure proper logging and UI updates
+      this.chatService.sendOrchestrationRequest(context._llmMessage, (llmResponse: string) => {
         try {
           // Call the algorithm callback with LLM response
           context._llmCallback(llmResponse);

@@ -1899,6 +1899,129 @@ export class ChatService {
   }
 
   /**
+   * Send orchestration request with full chat UI integration
+   */
+  async sendOrchestrationRequest(message: string, callback: (response: string) => void, chatCallback?: (update: ChatUpdate) => void): Promise<void> {
+    try {
+      // Add orchestration prompt to chat history for visibility
+      const promptMessage = this.addUserMessage(`**[Orchestrator Query]**\n${message}`);
+      
+      // Send real-time update to show the prompt in UI
+      if (chatCallback) {
+        chatCallback({
+          type: 'message_ready',
+          message: promptMessage
+        });
+      }
+      
+      // Process with orchestration context
+      const responseMessages = await this.processOrchestrationMessage(message);
+      
+      // Extract text content from response messages
+      let response = '';
+      for (const msg of responseMessages) {
+        if (msg.role === 'assistant' && msg.content) {
+          response += msg.content + '\n';
+        }
+      }
+      
+      const finalResponse = response.trim() || 'No response received from LLM';
+      
+      // Create and add response message
+      const responseMessage: ChatMessage = {
+        id: this.generateId(),
+        role: 'assistant',
+        content: finalResponse,
+        timestamp: Date.now()
+      };
+      
+      this.messages.push(responseMessage);
+      this.saveChatHistory();
+      
+      if (chatCallback) {
+        chatCallback({
+          type: 'message_ready',
+          message: responseMessage
+        });
+      }
+      
+      // Call the callback with the response
+      callback(finalResponse);
+      
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      callback(`Error communicating with LLM: ${errorMsg}`);
+    }
+  }
+
+  /**
+   * Get the current chat update callback for orchestration
+   */
+  getCurrentChatUpdateCallback(): ((update: ChatUpdate) => void) | undefined {
+    // Check if there's an active processMessage flow
+    // For now, return undefined as we need to explore how to integrate this properly
+    return undefined;
+  }
+
+  /**
+   * Process orchestration message with full logging and UI updates
+   */
+  private async processOrchestrationMessage(message: string): Promise<ChatMessage[]> {
+    const config = vscode.workspace.getConfiguration('codingagent');
+    const currentMode = config.get<string>('currentMode', 'Coder');
+    const modes = config.get<Record<string, any>>('modes', {});
+    const modeConfig = modes[currentMode] || {};
+    
+    // Use orchestrationMessage instead of systemMessage
+    const orchestrationMessage = modeConfig.orchestrationMessage || modeConfig.systemMessage || 'You are a helpful assistant.';
+    
+    // Create request with orchestration context
+    const request: OpenAIChatRequest = {
+      model: this.getCurrentModel(),
+      messages: [
+        {
+          role: 'system',
+          content: orchestrationMessage
+        },
+        {
+          role: 'user', 
+          content: message
+        }
+      ],
+      stream: false, // Force non-streaming for orchestration to avoid parsing issues
+      temperature: modeConfig.temperature || 0.7
+    };
+
+    try {
+      // Send request using normal chat flow (with logging and streaming)
+      const response = await this.openai.sendChat(request);
+      
+      if (response.choices && response.choices.length > 0) {
+        const choice = response.choices[0];
+        if (choice.message) {
+          // Create ChatMessage from OpenAIChatMessage
+          const chatMessage: ChatMessage = {
+            id: this.generateId(),
+            role: 'assistant', // Force to assistant role for ChatMessage
+            content: choice.message.content || '',
+            timestamp: Date.now()
+          };
+          
+          // Add assistant response to chat
+          this.messages.push(chatMessage);
+          return [chatMessage];
+        }
+      }
+      
+      return [];
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      await this.logging.logDebug('Orchestration request failed: ' + errorMsg);
+      throw error;
+    }
+  }
+
+  /**
    * Send message to LLM for algorithm execution (old method)
    */
   async sendMessageToLLMOld(message: string, callback: (response: string) => void): Promise<void> {
