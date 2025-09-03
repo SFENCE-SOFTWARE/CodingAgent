@@ -45,5 +45,6 @@ function handleUserMessage(message, context) {
     // Send response back to chat
     context.sendResponse(response);
     
-    return 'Orchestrator algorithm completed';
+    // Don't return anything when using sendResponse to avoid duplication
+    return;
 }

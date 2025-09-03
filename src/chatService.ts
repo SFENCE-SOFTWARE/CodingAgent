@@ -371,6 +371,8 @@ export class ChatService {
               type: 'message_ready',
               message: assistantMessage
             });
+            // Mark as already displayed to prevent duplication
+            (assistantMessage as any).isAlreadyDisplayed = true;
           }
           
           return [assistantMessage];
