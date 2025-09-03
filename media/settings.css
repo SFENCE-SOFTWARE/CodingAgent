@@ -1308,6 +1308,15 @@ input:checked + .slider:before {
   padding-top: 10px;
 }
 
+.llm-settings {
+  transition: opacity 0.2s ease;
+}
+
+.llm-settings.hidden {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
 .script-selector {
   display: flex;
   gap: 8px;

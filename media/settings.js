@@ -85,6 +85,7 @@
     // Algorithm elements in mode editor
     modeAlgorithmEnabled: document.getElementById('modeAlgorithmEnabled'),
     algorithmSettingsContainer: document.getElementById('algorithmSettingsContainer'),
+    llmSettingsContainer: document.getElementById('llmSettingsContainer'),
     modeAlgorithmScript: document.getElementById('modeAlgorithmScript'),
     selectAlgorithmScript: document.getElementById('selectAlgorithmScript'),
     openAlgorithmScript: document.getElementById('openAlgorithmScript'),
@@ -936,6 +937,11 @@
   function toggleAlgorithmSettings() {
     const enabled = elements.modeAlgorithmEnabled.checked;
     elements.algorithmSettingsContainer.style.display = enabled ? 'block' : 'none';
+    
+    // Hide/show LLM settings based on algorithm mode
+    if (elements.llmSettingsContainer) {
+      elements.llmSettingsContainer.style.display = enabled ? 'none' : 'block';
+    }
   }
 
   function selectAlgorithmScript(modeName) {

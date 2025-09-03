@@ -28,7 +28,6 @@ import { MemorySearchTool } from './tools/memorySearch';
 import { MemoryListTool } from './tools/memoryList';
 import { MemoryExportTool } from './tools/memoryExport';
 import { AskUserTool } from './tools/askUser';
-import { CallUnderModeTool } from './tools/callUnderMode';
 
 // Planning tools
 import { PlanNewTool } from './tools/planNew';
@@ -49,7 +48,6 @@ import { PlanNeedWorksTool } from './tools/planNeedWorks';
 import { PlanAcceptedTool } from './tools/planAccepted';
 import { PlanStateTool } from './tools/planState';
 import { PlanDoneTool } from './tools/planDone';
-import { PlanEvaluateTool } from './tools/planEvaluate';
 import { PlanDeleteTool } from './tools/planDelete';
 import { PlanPointRemoveTool } from './tools/planPointRemove';
 
@@ -86,7 +84,7 @@ export class ToolsService {
 
   // Set callback for mode switching
   public setModeChangeCallback(callback: (targetMode: string, task: string, originalMode: string) => Promise<string>): void {
-    CallUnderModeTool.setModeChangeCallback(callback);
+    // CallUnderModeTool removed - logic preserved for algorithm scripts
   }
 
   // Handle terminal command approval/rejection
@@ -128,7 +126,6 @@ export class ToolsService {
       new MemoryListTool(this.memoryService),
       new MemoryExportTool(this.memoryService),
       new AskUserTool(),
-      new CallUnderModeTool(),
 
       // Planning tools
       new PlanNewTool(),
@@ -149,7 +146,6 @@ export class ToolsService {
       new PlanAcceptedTool(),
       new PlanStateTool(),
       new PlanDoneTool(),
-      new PlanEvaluateTool(),
       new PlanDeleteTool(),
       new PlanPointRemoveTool()
     ];

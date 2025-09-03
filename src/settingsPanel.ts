@@ -1404,6 +1404,42 @@ export class SettingsPanel {
                   <label for="modeDescription">Description (User-facing):</label>
                   <input type="text" id="modeDescription" placeholder="Brief description of this mode for users" />
                 </div>
+                
+                <!-- Algorithm Settings Section - Moved up -->
+                <div class="form-section">
+                  <h4>Algorithm Settings</h4>
+                  <div class="form-group">
+                    <label>
+                      <input type="checkbox" id="modeAlgorithmEnabled" />
+                      <span class="checkbox-label">Enable Algorithm Mode</span>
+                    </label>
+                    <small class="form-hint">When enabled, this mode will execute JavaScript algorithms instead of sending messages directly to LLM</small>
+                  </div>
+                  
+                  <div id="algorithmSettingsContainer" class="algorithm-settings" style="display: none;">
+                    <div class="form-group">
+                      <label for="modeAlgorithmScript">Algorithm Script:</label>
+                      <div class="script-selector">
+                        <input type="text" id="modeAlgorithmScript" placeholder="Built-in script or custom path" readonly />
+                        <button type="button" id="selectAlgorithmScript" class="secondary-button">Browse</button>
+                        <button type="button" id="openAlgorithmScript" class="secondary-button">Edit</button>
+                        <button type="button" id="resetAlgorithmScript" class="secondary-button">Reset</button>
+                      </div>
+                      <small class="form-hint">Leave empty to use built-in script for this mode</small>
+                    </div>
+                    
+                    <div class="form-group">
+                      <label for="modeAlgorithmVariables">Algorithm Variables:</label>
+                      <div id="modeAlgorithmVariables" class="variables-editor">
+                        <!-- Variables will be populated here -->
+                      </div>
+                      <button type="button" id="addAlgorithmVariable" class="secondary-button">+ Add Variable</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- LLM Settings Section - Hidden when algorithm is enabled -->
+                <div id="llmSettingsContainer" class="llm-settings">
                 <div class="form-group">
                   <label for="modeLlmDescription">Description (LLM Context):</label>
                   <input type="text" id="modeLlmDescription" placeholder="Description for LLM context (e.g., role, capabilities)" />
@@ -1453,39 +1489,9 @@ export class SettingsPanel {
                   </label>
                   <small class="form-hint">Automatically evaluate plan completion after LLM responses in this mode</small>
                 </div>
+                </div> <!-- End of llmSettingsContainer -->
                 
-                <!-- Algorithm Settings Section -->
-                <div class="form-section">
-                  <h4>Algorithm Settings</h4>
-                  <div class="form-group">
-                    <label>
-                      <input type="checkbox" id="modeAlgorithmEnabled" />
-                      <span class="checkbox-label">Enable Algorithm Mode</span>
-                    </label>
-                    <small class="form-hint">When enabled, this mode will execute JavaScript algorithms instead of sending messages directly to LLM</small>
-                  </div>
-                  
-                  <div id="algorithmSettingsContainer" class="algorithm-settings" style="display: none;">
-                    <div class="form-group">
-                      <label for="modeAlgorithmScript">Algorithm Script:</label>
-                      <div class="script-selector">
-                        <input type="text" id="modeAlgorithmScript" placeholder="Built-in script or custom path" readonly />
-                        <button type="button" id="selectAlgorithmScript" class="secondary-button">Browse</button>
-                        <button type="button" id="openAlgorithmScript" class="secondary-button">Edit</button>
-                        <button type="button" id="resetAlgorithmScript" class="secondary-button">Reset</button>
-                      </div>
-                      <small class="form-hint">Leave empty to use built-in script for this mode</small>
-                    </div>
-                    
-                    <div class="form-group">
-                      <label for="modeAlgorithmVariables">Algorithm Variables:</label>
-                      <div id="modeAlgorithmVariables" class="variables-editor">
-                        <!-- Variables will be populated here -->
-                      </div>
-                      <button type="button" id="addAlgorithmVariable" class="secondary-button">+ Add Variable</button>
-                    </div>
-                  </div>
-                </div>
+                <!-- Original Algorithm Settings Section (Removed - moved up) -->
               </form>
             </div>
             <div class="modal-footer">
