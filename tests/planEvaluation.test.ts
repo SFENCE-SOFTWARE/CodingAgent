@@ -244,7 +244,7 @@ suite('Plan Evaluation Tests', () => {
     assert.strictEqual(result.result?.isDone, true);
     assert.strictEqual(result.result?.failedStep, undefined);
     assert.strictEqual(result.result?.failedPoints, undefined);
-    assert.strictEqual(result.result?.nextStepPrompt, undefined);
+    assert.ok(result.result?.nextStepPrompt, 'nextStepPrompt should always be present now');
   });
 
   test('should prioritize implementation over review/testing for non-implemented points', async () => {
@@ -320,12 +320,11 @@ suite('Plan Evaluation Tests', () => {
     // Add a point
     planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Coder');
     
-    // Execute via tool
+    // Execute via tool - now returns just the prompt
     const result = await planEvaluateTool.execute({ plan_id: planId }, testWorkspaceRoot);
     
     assert.strictEqual(result.success, true);
-    assert.ok(result.content?.includes('is not complete'));
-    assert.ok(result.content?.includes('plan_review'));
-    assert.ok(result.content?.includes('Plan has not been reviewed yet'));
+    // New behavior: plan_evaluate returns just the prompt, so check for prompt content
+    assert.ok(result.content?.includes('Plan needs to be reviewed'));
   });
 });

@@ -66,17 +66,11 @@ export class PlanEvaluateTool implements BaseTool {
 
       const evaluation = result.result!;
       
-      if (evaluation.isDone) {
-        return {
-          success: true,
-          content: `Plan '${planId}' is complete. All requirements are satisfied: plan reviewed, all points implemented, reviewed, tested, and plan accepted.`
-        };
-      } else {
-        return {
-          success: true,
-          content: `Plan '${planId}' is not complete.\n\nFailed step: ${evaluation.failedStep}\nReason: ${evaluation.reason}\n\nCorrective prompt:\n${evaluation.nextStepPrompt}`
-        };
-      }
+      // Always return just the prompt, whether plan is done or not
+      return {
+        success: true,
+        content: evaluation.nextStepPrompt
+      };
     } catch (error) {
       return {
         success: false,

@@ -194,7 +194,8 @@ export class SettingsPanel {
             pointsReview: config.get('plan.promptPointsReview'),
             pointsTesting: config.get('plan.promptPointsTesting'),
             pointsImplementation: config.get('plan.promptPointsImplementation'),
-            planAcceptance: config.get('plan.promptPlanAcceptance')
+            planAcceptance: config.get('plan.promptPlanAcceptance'),
+            planDone: config.get('plan.promptPlanDone')
           }
         },
         logging: {
@@ -278,6 +279,7 @@ export class SettingsPanel {
         await config.update('plan.promptPointsTesting', undefined, vscode.ConfigurationTarget.Global);
         await config.update('plan.promptPointsImplementation', undefined, vscode.ConfigurationTarget.Global);
         await config.update('plan.promptPlanAcceptance', undefined, vscode.ConfigurationTarget.Global);
+        await config.update('plan.promptPlanDone', undefined, vscode.ConfigurationTarget.Global);
 
         this._sendConfiguration();
         
@@ -594,7 +596,8 @@ export class SettingsPanel {
             pointsReview: config.get('plan.promptPointsReview'),
             pointsTesting: config.get('plan.promptPointsTesting'),
             pointsImplementation: config.get('plan.promptPointsImplementation'),
-            planAcceptance: config.get('plan.promptPlanAcceptance')
+            planAcceptance: config.get('plan.promptPlanAcceptance'),
+            planDone: config.get('plan.promptPlanDone')
           }
         },
         savedAt: new Date().toISOString()
@@ -698,6 +701,7 @@ export class SettingsPanel {
           await config.update('plan.promptPointsTesting', profileData.plan.prompts.pointsTesting, vscode.ConfigurationTarget.Global);
           await config.update('plan.promptPointsImplementation', profileData.plan.prompts.pointsImplementation, vscode.ConfigurationTarget.Global);
           await config.update('plan.promptPlanAcceptance', profileData.plan.prompts.planAcceptance, vscode.ConfigurationTarget.Global);
+          await config.update('plan.promptPlanDone', profileData.plan.prompts.planDone, vscode.ConfigurationTarget.Global);
         }
       }
 

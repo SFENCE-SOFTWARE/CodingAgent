@@ -596,32 +596,38 @@
           },
           "codingagent.plan.promptPointsRework": {
             "type": "string",
-            "default": "Plan points <ids> need rework. Select one point and ask Coder, Artist or Researcher via call_under_mode to read rework reason via plan_point_show, re-implement the point and mark it as implemented again with plan_point_implemented.",
-            "description": "Template for rework prompt. Use <ids> placeholder for comma-separated plan point IDs.",
+            "default": "Plan points <id> need rework. Select one point and ask Coder, Artist or Researcher via call_under_mode to read rework reason via plan_point_show, re-implement the point and mark it as implemented again with plan_point_implemented.",
+            "description": "Template for rework prompt. Use <id> placeholder for comma-separated plan point IDs.",
             "scope": "window"
           },
           "codingagent.plan.promptPointsReview": {
             "type": "string",
-            "default": "Plan points <ids> needs to be reviewed. Select one point and ask Reviewer via call_under_mode review point and mask it as reviewed via plan_point_reviewed or needs rework via plan_point_rework.",
-            "description": "Template for code review prompt. Delegates to Reviewer mode via call_under_mode. Use <ids> placeholder.",
+            "default": "Plan points <id> needs to be reviewed. Select one point and ask Reviewer via call_under_mode review point and mask it as reviewed via plan_point_reviewed or needs rework via plan_point_rework.",
+            "description": "Template for code review prompt. Delegates to Reviewer mode via call_under_mode. Use <id> placeholder.",
             "scope": "window"
           },
           "codingagent.plan.promptPointsTesting": {
             "type": "string",
-            "default": "Plan points <ids> needs to be tested. Select one point and ask Tester via call_under_mode to test point and mark it as tested via plan_point_tested or as needs rework via plan_point_rework.",
-            "description": "Template for testing prompt. Delegates to Tester mode via call_under_mode. Use <ids> placeholder.",
+            "default": "Plan points <id> needs to be tested. Select one point and ask Tester via call_under_mode to test point and mark it as tested via plan_point_tested or as needs rework via plan_point_rework.",
+            "description": "Template for testing prompt. Delegates to Tester mode via call_under_mode. Use <id> placeholder.",
             "scope": "window"
           },
           "codingagent.plan.promptPointsImplementation": {
             "type": "string",
-            "default": "Plan points <ids> need implementation. Select one point and ask Coder, Artist or Researcher via call_under_mode to get information about plan and point via plan_show and plan_point_show to implement point and provide expected outputs. After implementation, mark point as implemented via plan_point_implemented.",
-            "description": "Template for implementation prompt. Choose appropriate mode based on task type. Use <ids> placeholder.",
+            "default": "Ask <role> via call_under_mode to implement the point <id>. <role> must first call plan_point_show to retrieve details, then implement, then call plan_point_implemented.",
+            "description": "Template for implementation prompt. Choose appropriate mode based on task type. Use <id> and <role> placeholders.",
             "scope": "window"
           },
           "codingagent.plan.promptPlanAcceptance": {
             "type": "string",
             "default": "Plan needs to be accepted. Ask Approver via call_under_mode to perform final acceptance check for the plan and mark plan as accepted via plan_accepted or use plan_point_need_rework on specific points if acceptance criteria are not met.",
             "description": "Template for acceptance prompt. Delegates to Approver mode via call_under_mode.",
+            "scope": "window"
+          },
+          "codingagent.plan.promptPlanDone": {
+            "type": "string",
+            "default": "Plan is done. Nothing has to be done.",
+            "description": "Template for done prompt.",
             "scope": "window"
           }
         }

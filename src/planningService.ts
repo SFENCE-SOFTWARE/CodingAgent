@@ -56,7 +56,7 @@ export interface PlanState {
 
 export interface PlanEvaluationResult {
   isDone: boolean;
-  nextStepPrompt?: string;
+  nextStepPrompt: string; // Always required now - even for done plans
   failedStep?: 'plan_rework' | 'plan_review' | 'rework' | 'implementation' | 'code_review' | 'testing' | 'acceptance';
   failedPoints?: string[];
   reason?: string;
@@ -753,7 +753,7 @@ export class PlanningService {
         success: true,
         result: {
           isDone: false,
-          nextStepPrompt: this.generateCorrectionPrompt('plan_rework', [], 'Plan needs rework'),
+          nextStepPrompt: this.generateCorrectionPrompt('plan_rework', [], 'Plan needs rework', planId),
           failedStep: 'plan_rework',
           reason: plan.needsWorkComment || 'Plan needs rework'
         }
@@ -766,7 +766,7 @@ export class PlanningService {
         success: true,
         result: {
           isDone: false,
-          nextStepPrompt: this.generateCorrectionPrompt('plan_review', [], 'Plan has not been reviewed yet'),
+          nextStepPrompt: this.generateCorrectionPrompt('plan_review', [], 'Plan has not been reviewed yet', planId),
           failedStep: 'plan_review',
           reason: 'Plan has not been reviewed yet'
         }
@@ -782,7 +782,7 @@ export class PlanningService {
         success: true,
         result: {
           isDone: false,
-          nextStepPrompt: this.generateCorrectionPrompt('rework', [firstPoint.id], 'Plan point needs rework'),
+          nextStepPrompt: this.generateCorrectionPrompt('rework', [firstPoint.id], 'Plan point needs rework', planId),
           failedStep: 'rework',
           failedPoints: [firstPoint.id],
           reason: `Plan point ${firstPoint.id} needs rework`
@@ -800,7 +800,7 @@ export class PlanningService {
         success: true,
         result: {
           isDone: false,
-          nextStepPrompt: this.generateCorrectionPrompt('code_review', [firstPoint.id], 'Plan point is not reviewed'),
+          nextStepPrompt: this.generateCorrectionPrompt('code_review', [firstPoint.id], 'Plan point is not reviewed', planId),
           failedStep: 'code_review',
           failedPoints: [firstPoint.id],
           reason: `Plan point ${firstPoint.id} is not reviewed`
@@ -816,7 +816,7 @@ export class PlanningService {
         success: true,
         result: {
           isDone: false,
-          nextStepPrompt: this.generateCorrectionPrompt('testing', [firstUntestedPoint.id], `Plan point ${firstUntestedPoint.id} is not tested`),
+          nextStepPrompt: this.generateCorrectionPrompt('testing', [firstUntestedPoint.id], `Plan point ${firstUntestedPoint.id} is not tested`, planId),
           failedStep: 'testing',
           failedPoints: [firstUntestedPoint.id],
           reason: `Plan point ${firstUntestedPoint.id} is not tested`
@@ -832,7 +832,7 @@ export class PlanningService {
         success: true,
         result: {
           isDone: false,
-          nextStepPrompt: this.generateCorrectionPrompt('implementation', [firstUnimplementedPoint.id], `Plan point ${firstUnimplementedPoint.id} is not implemented`),
+          nextStepPrompt: this.generateCorrectionPrompt('implementation', [firstUnimplementedPoint.id], `Plan point ${firstUnimplementedPoint.id} is not implemented`, planId),
           failedStep: 'implementation',
           failedPoints: [firstUnimplementedPoint.id],
           reason: `Plan point ${firstUnimplementedPoint.id} is not implemented`
@@ -846,7 +846,7 @@ export class PlanningService {
         success: true,
         result: {
           isDone: false,
-          nextStepPrompt: this.generateCorrectionPrompt('acceptance', [], 'Plan has not been accepted yet'),
+          nextStepPrompt: this.generateCorrectionPrompt('acceptance', [], 'Plan has not been accepted yet', planId),
           failedStep: 'acceptance',
           reason: 'Plan has not been accepted yet'
         }
@@ -857,7 +857,8 @@ export class PlanningService {
     return {
       success: true,
       result: {
-        isDone: true
+        isDone: true,
+        nextStepPrompt: this.generateCorrectionPrompt('done', [], '', planId)
       }
     };
   }
@@ -865,25 +866,39 @@ export class PlanningService {
   /**
    * Generates corrective prompts with configurable templates
    */
-  private generateCorrectionPrompt(step: string, pointIds: string[], reason: string): string {
+  private generateCorrectionPrompt(step: string, pointIds: string[], reason: string, planId?: string): string {
     const config = vscode.workspace.getConfiguration('codingagent.plan');
     
     const templates = {
       plan_rework: config.get('promptPlanRework', 'Plan needs rework. Please update the plan.'),
       plan_review: config.get('promptPlanReview', 'Plan needs to be reviewed.'),
-      rework: config.get('promptPointsRework', 'Please rework the following plan points: <ids>'),
-      implementation: config.get('promptPointsImplementation', 'Please implement the following plan points: <ids>'),
-      code_review: config.get('promptPointsReview', 'Please review the following plan points: <ids>'),
-      testing: config.get('promptPointsTesting', 'Please test the following plan points: <ids>'),
-      acceptance: config.get('promptPlanAcceptance', 'Please request Approver mode to perform a final acceptance check for the plan.')
+      rework: config.get('promptPointsRework', 'Please rework the following plan points: <id>'),
+      implementation: config.get('promptPointsImplementation', 'Please implement the following plan points: <id>'),
+      code_review: config.get('promptPointsReview', 'Please review the following plan points: <id>'),
+      testing: config.get('promptPointsTesting', 'Please test the following plan points: <id>'),
+      acceptance: config.get('promptPlanAcceptance', 'Please request Approver mode to perform a final acceptance check for the plan.'),
+      done: config.get('promptPlanDone', 'Plan is done. Nothing has to be done.')
     };
 
     let template = templates[step as keyof typeof templates] || `Please address the issue: <reason>`;
     
     // Replace placeholders where present
-    template = template.replace(/<ids>/g, pointIds.join(', '));
+    if (template.indexOf('<id>') !== -1) {
+      template = template.replace(/<id>/g, pointIds.join(', '));
+    }
     if (template.indexOf('<reason>') !== -1) {
       template = template.replace(/<reason>/g, reason);
+    }
+    
+    // For implementation, also replace <role> placeholder
+    if (step === 'implementation' && pointIds.length > 0 && planId) {
+      const plan = this.plans.get(planId);
+      if (plan) {
+        const point = plan.points.find(p => p.id === pointIds[0]);
+        if (point && point.implementerRole) {
+          template = template.replace(/<role>/g, point.implementerRole);
+        }
+      }
     }
     
     return template;
