@@ -4,6 +4,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { ToolsService } from './tools';
+import { AlgorithmEngine } from './algorithmEngine';
 
 export class SettingsPanel {
   public static currentPanel: SettingsPanel | undefined;
@@ -119,6 +120,27 @@ export class SettingsPanel {
           case 'listProfiles':
             this._listProfiles();
             break;
+          case 'selectScriptFile':
+            this._selectScriptFile(message.mode);
+            break;
+          case 'openScript':
+            this._openScript(message.mode);
+            break;
+          case 'setAlgorithmVariable':
+            this._setAlgorithmVariable(message.mode, message.key, message.value);
+            break;
+          case 'deleteAlgorithmVariable':
+            this._deleteAlgorithmVariable(message.mode, message.key);
+            break;
+          case 'updateAlgorithmConfig':
+            this._updateAlgorithmConfig(message.mode, message.enabled, message.scriptPath, message.variables);
+            break;
+          case 'selectAlgorithmScript':
+            this._selectAlgorithmScript(message.mode);
+            break;
+          case 'openAlgorithmScript':
+            this._openAlgorithmScript(message.mode);
+            break;
         }
       },
       null,
@@ -204,6 +226,11 @@ export class SettingsPanel {
           verbosity: config.get('logging.verbosity'),
           logMode: config.get('logging.logMode'),
           logModeFilePath: config.get('logging.logModeFilePath')
+        },
+        algorithm: {
+          enabled: config.get('algorithm.enabled'),
+          scriptPath: config.get('algorithm.scriptPath'),
+          variables: config.get('algorithm.variables')
         }
       },
       availableTools: availableTools
@@ -218,13 +245,38 @@ export class SettingsPanel {
       const config = vscode.workspace.getConfiguration('codingagent');
       
       for (const [key, value] of Object.entries(configUpdate)) {
-        await config.update(key, value, vscode.ConfigurationTarget.Global);
+        // Handle nested configuration keys (e.g., "algorithm.enabled.Orchestrator")
+        if (key.includes('.')) {
+          const parts = key.split('.');
+          
+          if (parts.length === 3 && parts[0] === 'algorithm') {
+            // Handle algorithm nested configuration
+            const [section, subSection, modeName] = parts;
+            const currentConfig = config.get(section, {}) as any;
+            
+            if (!currentConfig[subSection]) {
+              currentConfig[subSection] = {};
+            }
+            
+            currentConfig[subSection][modeName] = value;
+            await config.update(section, currentConfig, vscode.ConfigurationTarget.Global);
+          } else {
+            // Handle other nested keys
+            await config.update(key, value, vscode.ConfigurationTarget.Global);
+          }
+        } else {
+          // Handle simple keys
+          await config.update(key, value, vscode.ConfigurationTarget.Global);
+        }
       }
 
       this._panel.webview.postMessage({
         type: 'configurationUpdated',
         success: true
       });
+
+      // Refresh configuration to show updated values
+      this._sendConfiguration();
 
       vscode.window.showInformationMessage('Settings updated successfully');
     } catch (error) {
@@ -1401,6 +1453,39 @@ export class SettingsPanel {
                   </label>
                   <small class="form-hint">Automatically evaluate plan completion after LLM responses in this mode</small>
                 </div>
+                
+                <!-- Algorithm Settings Section -->
+                <div class="form-section">
+                  <h4>Algorithm Settings</h4>
+                  <div class="form-group">
+                    <label>
+                      <input type="checkbox" id="modeAlgorithmEnabled" />
+                      <span class="checkbox-label">Enable Algorithm Mode</span>
+                    </label>
+                    <small class="form-hint">When enabled, this mode will execute JavaScript algorithms instead of sending messages directly to LLM</small>
+                  </div>
+                  
+                  <div id="algorithmSettingsContainer" class="algorithm-settings" style="display: none;">
+                    <div class="form-group">
+                      <label for="modeAlgorithmScript">Algorithm Script:</label>
+                      <div class="script-selector">
+                        <input type="text" id="modeAlgorithmScript" placeholder="Built-in script or custom path" readonly />
+                        <button type="button" id="selectAlgorithmScript" class="secondary-button">Browse</button>
+                        <button type="button" id="openAlgorithmScript" class="secondary-button">Edit</button>
+                        <button type="button" id="resetAlgorithmScript" class="secondary-button">Reset</button>
+                      </div>
+                      <small class="form-hint">Leave empty to use built-in script for this mode</small>
+                    </div>
+                    
+                    <div class="form-group">
+                      <label for="modeAlgorithmVariables">Algorithm Variables:</label>
+                      <div id="modeAlgorithmVariables" class="variables-editor">
+                        <!-- Variables will be populated here -->
+                      </div>
+                      <button type="button" id="addAlgorithmVariable" class="secondary-button">+ Add Variable</button>
+                    </div>
+                  </div>
+                </div>
               </form>
             </div>
             <div class="modal-footer">
@@ -1418,5 +1503,166 @@ export class SettingsPanel {
       <script src="${scriptUri}"></script>
     </body>
     </html>`;
+  }
+
+  /**
+   * Select script file for algorithm mode
+   */
+  private async _selectScriptFile(mode: string) {
+    const result = await vscode.window.showOpenDialog({
+      canSelectFiles: true,
+      canSelectFolders: false,
+      canSelectMany: false,
+      filters: {
+        'JavaScript Files': ['js']
+      },
+      title: `Select Algorithm Script for ${mode} Mode`
+    });
+
+    if (result && result[0]) {
+      const config = vscode.workspace.getConfiguration('codingagent.algorithm');
+      const scriptPaths = config.get('scriptPath', {}) as { [key: string]: string };
+      scriptPaths[mode] = result[0].fsPath;
+      
+      await config.update('scriptPath', scriptPaths, vscode.ConfigurationTarget.Global);
+      
+      this._panel.webview.postMessage({
+        type: 'scriptFileSelected',
+        mode: mode,
+        path: result[0].fsPath
+      });
+    }
+  }
+
+  /**
+   * Open algorithm script in editor
+   */
+  private async _openScript(mode: string) {
+    try {
+      const engine = AlgorithmEngine.getInstance();
+      await engine.openAlgorithmScript(mode);
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      vscode.window.showErrorMessage(`Failed to open script: ${errorMsg}`);
+    }
+  }
+
+  /**
+   * Set algorithm variable for mode
+   */
+  private async _setAlgorithmVariable(mode: string, key: string, value: string) {
+    try {
+      const engine = AlgorithmEngine.getInstance();
+      await engine.setAlgorithmVariable(mode, key, value);
+      
+      this._panel.webview.postMessage({
+        type: 'variableSet',
+        mode: mode,
+        key: key,
+        value: value
+      });
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      vscode.window.showErrorMessage(`Failed to set variable: ${errorMsg}`);
+    }
+  }
+
+  /**
+   * Delete algorithm variable for mode
+   */
+  private async _deleteAlgorithmVariable(mode: string, key: string) {
+    try {
+      const config = vscode.workspace.getConfiguration('codingagent.algorithm');
+      const variables = config.get('variables', {}) as { [key: string]: { [key: string]: string } };
+      
+      if (variables[mode] && variables[mode][key] !== undefined) {
+        delete variables[mode][key];
+        await config.update('variables', variables, vscode.ConfigurationTarget.Global);
+        
+        this._panel.webview.postMessage({
+          type: 'variableDeleted',
+          mode: mode,
+          key: key
+        });
+      }
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      vscode.window.showErrorMessage(`Failed to delete variable: ${errorMsg}`);
+    }
+  }
+
+  /**
+   * Update algorithm configuration for mode
+   */
+  private async _updateAlgorithmConfig(mode: string, enabled: boolean, scriptPath: string, variables: { [key: string]: string }) {
+    try {
+      const config = vscode.workspace.getConfiguration('codingagent.algorithm');
+      
+      // Update enabled state
+      const enabledConfig = config.get('enabled', {}) as { [key: string]: boolean };
+      enabledConfig[mode] = enabled;
+      await config.update('enabled', enabledConfig, vscode.ConfigurationTarget.Global);
+      
+      // Update script path
+      const scriptConfig = config.get('scriptPath', {}) as { [key: string]: string };
+      if (scriptPath) {
+        scriptConfig[mode] = scriptPath;
+      } else {
+        delete scriptConfig[mode];
+      }
+      await config.update('scriptPath', scriptConfig, vscode.ConfigurationTarget.Global);
+      
+      // Update variables
+      const variablesConfig = config.get('variables', {}) as { [key: string]: { [key: string]: string } };
+      variablesConfig[mode] = variables;
+      await config.update('variables', variablesConfig, vscode.ConfigurationTarget.Global);
+      
+      this._panel.webview.postMessage({
+        type: 'algorithmConfigUpdated',
+        mode: mode,
+        enabled: enabled,
+        scriptPath: scriptPath,
+        variables: variables
+      });
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      vscode.window.showErrorMessage(`Failed to update algorithm config: ${errorMsg}`);
+    }
+  }
+
+  /**
+   * Select algorithm script file for mode
+   */
+  private async _selectAlgorithmScript(mode: string) {
+    const result = await vscode.window.showOpenDialog({
+      canSelectFiles: true,
+      canSelectFolders: false,
+      canSelectMany: false,
+      filters: {
+        'JavaScript Files': ['js']
+      },
+      title: `Select Algorithm Script for ${mode} Mode`
+    });
+
+    if (result && result[0]) {
+      this._panel.webview.postMessage({
+        type: 'algorithmScriptSelected',
+        mode: mode,
+        path: result[0].fsPath
+      });
+    }
+  }
+
+  /**
+   * Open algorithm script in editor
+   */
+  private async _openAlgorithmScript(mode: string) {
+    try {
+      const engine = AlgorithmEngine.getInstance();
+      await engine.openAlgorithmScript(mode);
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      vscode.window.showErrorMessage(`Failed to open algorithm script: ${errorMsg}`);
+    }
   }
 }

@@ -8,6 +8,7 @@ import { ToolsService } from './tools';
 import { LoggingService } from './loggingService';
 import { AskUserTool } from './tools/askUser';
 import { PlanContextManager } from './planContextManager';
+import { AlgorithmEngine } from './algorithmEngine';
 import { 
   ChatMessage, 
   OpenAIChatMessage, 
@@ -25,6 +26,7 @@ export class ChatService {
   private openai: OpenAIService;
   private tools: ToolsService;
   private logging: LoggingService;
+  private algorithmEngine: AlgorithmEngine;
   private streamingCallback?: (update: StreamingUpdate) => void;
   private isInterrupted: boolean = false;
   private pendingCorrection: string | null = null;
@@ -41,6 +43,10 @@ export class ChatService {
     this.openai = new OpenAIService();
     this.tools = toolsService || new ToolsService();
     this.logging = LoggingService.getInstance();
+    this.algorithmEngine = AlgorithmEngine.getInstance();
+    
+    // Register this ChatService instance with the algorithm engine
+    this.algorithmEngine.setChatService(this);
     
     // Get workspace root for history persistence
     this.workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || null;
@@ -339,6 +345,47 @@ export class ChatService {
     const currentMode = this.openai.getCurrentMode();
     const currentModel = this.openai.getCurrentModel();
     const enableStreaming = this.openai.getEnableStreaming();
+    
+    // Check if algorithm is enabled for current mode
+    if (this.algorithmEngine.isAlgorithmEnabled(currentMode)) {
+      try {
+        const algorithmResult = await this.algorithmEngine.executeAlgorithm(currentMode, content);
+        
+        if (algorithmResult.handled) {
+          // Algorithm handled the message, create assistant response
+          const assistantMessage: ChatMessage = {
+            id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            role: 'assistant',
+            content: algorithmResult.response || 'Algorithm completed successfully',
+            timestamp: Date.now(),
+            model: `Algorithm-${currentMode}`,
+            isStreaming: false
+          };
+          
+          this.messages.push(assistantMessage);
+          this.saveChatHistory();
+          
+          // Send update to UI
+          if (callback) {
+            callback({
+              type: 'message_ready',
+              message: assistantMessage
+            });
+          }
+          
+          return [assistantMessage];
+        } else if (algorithmResult.error) {
+          // Algorithm failed, log error and fallback to LLM
+          await this.logging.logDebug(`Algorithm execution failed: ${algorithmResult.error}`);
+          console.warn('Algorithm execution failed, falling back to LLM:', algorithmResult.error);
+        }
+        // If algorithm didn't handle the message, continue with LLM processing
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        await this.logging.logDebug(`Algorithm execution error: ${errorMsg}`);
+        console.warn('Algorithm execution error, falling back to LLM:', errorMsg);
+      }
+    }
     
     try {
       const modeConfig = this.openai.getModeConfiguration(currentMode);
@@ -1786,5 +1833,33 @@ export class ChatService {
         }
       } as ToolCall;
     });
+  }
+
+  /**
+   * Send message to LLM for algorithm execution
+   */
+  async sendMessageToLLM(message: string, callback: (response: string) => void): Promise<void> {
+    try {
+      // Add user message temporarily
+      this.addUserMessage(message);
+      
+      // Process message and get response
+      const responseMessages = await this.processMessage(message);
+      
+      // Extract text content from response messages
+      let response = '';
+      for (const msg of responseMessages) {
+        if (msg.role === 'assistant' && msg.content) {
+          response += msg.content + '\n';
+        }
+      }
+      
+      // Call the callback with the response
+      callback(response.trim() || 'No response received from LLM');
+      
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      callback(`Error communicating with LLM: ${errorMsg}`);
+    }
   }
 }

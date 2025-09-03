@@ -1,0 +1,502 @@
+// src/algorithmEngine.ts
+
+import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
+import { ChatService } from './chatService';
+
+/**
+ * Interface for algorithm execution context
+ */
+export interface AlgorithmContext {
+  mode: string;
+  userMessage: string;
+  variables: { [key: string]: string };
+  console: {
+    log: (...args: any[]) => void;
+    error: (...args: any[]) => void;
+    warn: (...args: any[]) => void;
+    info: (...args: any[]) => void;
+  };
+  sendResponse: (message: string) => void;
+  sendToLLM: (message: string, callback: (response: string) => void) => void;
+  getVariable: (key: string) => string | undefined;
+  setVariable: (key: string, value: string) => void;
+  
+  // Internal properties for algorithm execution
+  _response?: string;
+  _llmCallback?: (response: string) => void;
+  _llmMessage?: string;
+}
+
+/**
+ * Algorithm execution result
+ */
+export interface AlgorithmResult {
+  handled: boolean;
+  response?: string;
+  error?: string;
+}
+
+/**
+ * Engine for executing JavaScript algorithms in a sandbox environment
+ */
+export class AlgorithmEngine {
+  private static instance: AlgorithmEngine;
+  private chatService?: ChatService;
+  private logs: string[] = [];
+
+  private constructor() {}
+
+  public static getInstance(): AlgorithmEngine {
+    if (!AlgorithmEngine.instance) {
+      AlgorithmEngine.instance = new AlgorithmEngine();
+    }
+    return AlgorithmEngine.instance;
+  }
+
+  public setChatService(chatService: ChatService): void {
+    this.chatService = chatService;
+  }
+
+  /**
+   * Check if algorithm is enabled for the given mode
+   */
+  public isAlgorithmEnabled(mode: string): boolean {
+    const config = vscode.workspace.getConfiguration('codingagent.algorithm');
+    const enabled = config.get('enabled', {}) as { [key: string]: boolean };
+    return enabled[mode] === true;
+  }
+
+  /**
+   * Get algorithm script path for the given mode
+   */
+  public getAlgorithmScriptPath(mode: string): string | null {
+    const config = vscode.workspace.getConfiguration('codingagent.algorithm');
+    const scriptPaths = config.get('scriptPath', {}) as { [key: string]: string };
+    
+    const customPath = scriptPaths[mode];
+    if (customPath && customPath.trim()) {
+      return customPath;
+    }
+
+    // Return built-in script path
+    return this.getBuiltInScriptPath(mode);
+  }
+
+  /**
+   * Get built-in algorithm script path
+   */
+  private getBuiltInScriptPath(mode: string): string | null {
+    // Get the extension's installation path
+    const extensionPath = vscode.extensions.getExtension('codding-agent')?.extensionPath;
+    if (!extensionPath) {
+      // Fallback to workspace if extension path not found
+      const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+      if (!workspaceRoot) {
+        return null;
+      }
+      return path.join(workspaceRoot, 'src', 'algorithms', `${mode.toLowerCase()}.js`);
+    }
+
+    const builtInPath = path.join(extensionPath, 'src', 'algorithms', `${mode.toLowerCase()}.js`);
+    return builtInPath;
+  }
+
+  /**
+   * Get algorithm variables for the given mode
+   */
+  public getAlgorithmVariables(mode: string): { [key: string]: string } {
+    const config = vscode.workspace.getConfiguration('codingagent.algorithm');
+    const variables = config.get('variables', {}) as { [key: string]: { [key: string]: string } };
+    return variables[mode] || {};
+  }
+
+  /**
+   * Set algorithm variable for the given mode
+   */
+  public async setAlgorithmVariable(mode: string, key: string, value: string): Promise<void> {
+    const config = vscode.workspace.getConfiguration('codingagent.algorithm');
+    const variables = config.get('variables', {}) as { [key: string]: { [key: string]: string } };
+    
+    if (!variables[mode]) {
+      variables[mode] = {};
+    }
+    variables[mode][key] = value;
+    
+    await config.update('variables', variables, vscode.ConfigurationTarget.Global);
+  }
+
+  /**
+   * Execute algorithm for the given mode and user message
+   */
+  public async executeAlgorithm(mode: string, userMessage: string): Promise<AlgorithmResult> {
+    if (!this.isAlgorithmEnabled(mode)) {
+      return { handled: false };
+    }
+
+    const scriptPath = this.getAlgorithmScriptPath(mode);
+    if (!scriptPath || !fs.existsSync(scriptPath)) {
+      return { 
+        handled: false, 
+        error: `Algorithm script not found for mode '${mode}' at path: ${scriptPath}` 
+      };
+    }
+
+    try {
+      // Read the script
+      const scriptContent = fs.readFileSync(scriptPath, 'utf8');
+      
+      // Create sandbox context
+      const context = await this.createSandboxContext(mode, userMessage);
+      
+      // Execute the script in sandbox
+      const result = await this.executeSandbox(scriptContent, context);
+      
+      return result;
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      this.log('error', `Algorithm execution failed: ${errorMsg}`);
+      return { 
+        handled: false, 
+        error: `Algorithm execution failed: ${errorMsg}` 
+      };
+    }
+  }
+
+  /**
+   * Create sandbox context for algorithm execution
+   */
+  private async createSandboxContext(mode: string, userMessage: string): Promise<AlgorithmContext> {
+    const variables = this.getAlgorithmVariables(mode);
+    
+    const context: AlgorithmContext = {
+      mode,
+      userMessage,
+      variables: { ...variables },
+      
+      console: {
+        log: (...args: any[]) => this.log('log', ...args),
+        error: (...args: any[]) => this.log('error', ...args),
+        warn: (...args: any[]) => this.log('warn', ...args),
+        info: (...args: any[]) => this.log('info', ...args)
+      },
+
+      sendResponse: (message: string) => {
+        // This will be handled by the execution result
+        context._response = message;
+      },
+
+      sendToLLM: (message: string, callback: (response: string) => void) => {
+        if (this.chatService) {
+          // Store callback for async execution
+          context._llmCallback = callback;
+          context._llmMessage = message;
+        } else {
+          callback('Error: Chat service not available');
+        }
+      },
+
+      getVariable: (key: string) => variables[key],
+
+      setVariable: (key: string, value: string) => {
+        variables[key] = value;
+        // Persist the change
+        this.setAlgorithmVariable(mode, key, value).catch(error => {
+          this.log('error', 'Failed to persist variable:', error);
+        });
+      }
+    } as any;
+
+    return context;
+  }
+
+  /**
+   * Execute script in sandbox environment
+   */
+  private async executeSandbox(scriptContent: string, context: AlgorithmContext): Promise<AlgorithmResult> {
+    // Create safe sandbox environment
+    const sandbox = {
+      context,
+      console: context.console,
+      setTimeout,
+      clearTimeout,
+      setInterval,
+      clearInterval,
+      Promise,
+      JSON,
+      Math,
+      Date,
+      RegExp,
+      String,
+      Number,
+      Boolean,
+      Array,
+      Object
+    };
+
+    try {
+      // Create unique execution context for each script run
+      const executionId = Math.random().toString(36).substr(2, 9);
+      const wrappedScript = `
+        (function(sandbox) {
+          const context = sandbox.context;
+          const console = sandbox.console;
+          
+          // Create isolated scope for script execution with unique identifier
+          return (function scriptExecution_${executionId}() {
+            ${scriptContent}
+            
+            // Execute the main function if it exists
+            if (typeof handleUserMessage === 'function') {
+              return handleUserMessage(context.userMessage, context);
+            } else {
+              throw new Error('Algorithm script must define handleUserMessage function');
+            }
+          })();
+        })
+      `;
+
+      // Execute the wrapped script using eval to ensure proper context
+      const func = eval(wrappedScript);
+      const result = await func(sandbox);
+
+      // Check if LLM call was made
+      if ((context as any)._llmMessage && (context as any)._llmCallback) {
+        return await this.handleLLMCall(context as any);
+      }
+
+      // Return direct response
+      const response = (context as any)._response || result;
+      return {
+        handled: true,
+        response: response || 'Algorithm executed successfully'
+      };
+
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      this.log('error', 'Sandbox execution error:', errorMsg);
+      return {
+        handled: false,
+        error: `Algorithm execution error: ${errorMsg}`
+      };
+    }
+  }
+
+  /**
+   * Handle LLM call from algorithm
+   */
+  private async handleLLMCall(context: any): Promise<AlgorithmResult> {
+    return new Promise((resolve) => {
+      if (!this.chatService) {
+        resolve({
+          handled: false,
+          error: 'Chat service not available for LLM calls'
+        });
+        return;
+      }
+
+      // Send message to LLM and wait for response
+      this.chatService.sendMessageToLLM(context._llmMessage, (llmResponse: string) => {
+        try {
+          // Call the algorithm callback with LLM response
+          context._llmCallback(llmResponse);
+          
+          // Return the algorithm's final response
+          const response = context._response || 'Algorithm completed with LLM interaction';
+          resolve({
+            handled: true,
+            response
+          });
+        } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : String(error);
+          resolve({
+            handled: false,
+            error: `Algorithm callback error: ${errorMsg}`
+          });
+        }
+      });
+    });
+  }
+
+  /**
+   * Log message with timestamp
+   */
+  private log(level: string, ...args: any[]): void {
+    const timestamp = new Date().toISOString();
+    const message = `[${timestamp}] [Algorithm-${level.toUpperCase()}] ${args.join(' ')}`;
+    this.logs.push(message);
+    
+    // Keep only last 1000 log entries
+    if (this.logs.length > 1000) {
+      this.logs = this.logs.slice(-1000);
+    }
+
+    // Also log to VS Code output channel for debugging
+    console.log(message);
+  }
+
+  /**
+   * Get recent log entries
+   */
+  public getLogs(): string[] {
+    return [...this.logs];
+  }
+
+  /**
+   * Clear logs
+   */
+  public clearLogs(): void {
+    this.logs = [];
+  }
+
+  /**
+   * Open algorithm script in VS Code editor
+   */
+  public async openAlgorithmScript(mode: string): Promise<void> {
+    const scriptPath = this.getAlgorithmScriptPath(mode);
+    if (!scriptPath) {
+      vscode.window.showErrorMessage(`No algorithm script configured for mode '${mode}'`);
+      return;
+    }
+
+    try {
+      // Check if it's a built-in script
+      const builtInPath = this.getBuiltInScriptPath(mode);
+      const isBuiltIn = scriptPath === builtInPath;
+
+      if (!fs.existsSync(scriptPath) && isBuiltIn) {
+        // Create built-in script if it doesn't exist
+        await this.createBuiltInScript(mode, scriptPath);
+      }
+
+      // Open the script file
+      const document = await vscode.workspace.openTextDocument(scriptPath);
+      const editor = await vscode.window.showTextDocument(document);
+
+      if (isBuiltIn) {
+        // Make built-in scripts read-only
+        await vscode.commands.executeCommand('workbench.action.files.setActiveEditorReadonlyInSession');
+      }
+
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      vscode.window.showErrorMessage(`Failed to open algorithm script: ${errorMsg}`);
+    }
+  }
+
+  /**
+   * Create built-in algorithm script
+   */
+  private async createBuiltInScript(mode: string, scriptPath: string): Promise<void> {
+    const builtInScript = this.getBuiltInScriptContent(mode);
+    const dir = path.dirname(scriptPath);
+    
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+
+    // Write the built-in script
+    fs.writeFileSync(scriptPath, builtInScript, 'utf8');
+  }
+
+  /**
+   * Get built-in script content for the mode
+   */
+  private getBuiltInScriptContent(mode: string): string {
+    switch (mode) {
+      case 'Orchestrator':
+        return this.getOrchestratorScript();
+      default:
+        return this.getDefaultScript(mode);
+    }
+  }
+
+  /**
+   * Get default Orchestrator algorithm script
+   */
+  private getOrchestratorScript(): string {
+    return `/**
+ * Built-in Orchestrator Algorithm
+ * 
+ * This script replaces LLM-based orchestration with algorithmic logic.
+ * The script receives user messages and coordinates task execution.
+ * 
+ * Required function: handleUserMessage(message, context)
+ * 
+ * Available context methods:
+ * - context.console.log/error/warn/info() - for logging
+ * - context.sendResponse(message) - send response to chat
+ * - context.sendToLLM(message, callback) - send to LLM and get response
+ * - context.getVariable(key) - get stored variable
+ * - context.setVariable(key, value) - set variable (persists)
+ */
+
+function handleUserMessage(message, context) {
+    context.console.log('Orchestrator algorithm processing message:', message);
+    
+    // Example orchestration logic
+    const steps = [
+        'Analyze user request',
+        'Determine required actions',
+        'Coordinate with appropriate agents',
+        'Execute plan',
+        'Provide summary'
+    ];
+    
+    let response = 'Orchestrator Algorithm Processing:\\n\\n';
+    
+    steps.forEach((step, index) => {
+        response += \`\${index + 1}. \${step}\\n\`;
+        context.console.info(\`Step \${index + 1}: \${step}\`);
+    });
+    
+    // Example: Check for plan-related requests
+    if (message.toLowerCase().includes('plan')) {
+        response += '\\nDetected plan-related request. Initiating plan workflow...';
+        context.setVariable('last_action', 'plan_workflow');
+    } else {
+        response += '\\nGeneral request processing initiated.';
+        context.setVariable('last_action', 'general_processing');
+    }
+    
+    // Send response back to chat
+    context.sendResponse(response);
+    
+    return 'Orchestrator algorithm completed';
+}`;
+  }
+
+  /**
+   * Get default script template for other modes
+   */
+  private getDefaultScript(mode: string): string {
+    return `/**
+ * ${mode} Algorithm Script
+ * 
+ * This script handles messages for ${mode} mode.
+ * 
+ * Required function: handleUserMessage(message, context)
+ * 
+ * Available context methods:
+ * - context.console.log/error/warn/info() - for logging
+ * - context.sendResponse(message) - send response to chat
+ * - context.sendToLLM(message, callback) - send to LLM and get response
+ * - context.getVariable(key) - get stored variable
+ * - context.setVariable(key, value) - set variable (persists)
+ */
+
+function handleUserMessage(message, context) {
+    context.console.log('${mode} algorithm processing message:', message);
+    
+    // Default behavior: forward to LLM
+    context.sendToLLM(message, function(llmResponse) {
+        context.console.info('LLM response received');
+        context.sendResponse(llmResponse);
+    });
+    
+    return '${mode} algorithm delegated to LLM';
+}`;
+  }
+}

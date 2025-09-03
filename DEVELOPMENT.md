@@ -32,11 +32,14 @@ CodingAgent/
 │   ├── settingsPanel.ts               # Settings management UI
 │   ├── webview.ts                     # WebView HTML generation
 │   ├── tools.ts                       # Tool registry and management
+│   ├── algorithmEngine.ts             # JavaScript algorithm execution engine
 │   ├── changeTrackingService.ts       # File change tracking and management
 │   ├── changeCodeLensProvider.ts      # Code lens for change acceptance/rejection
 │   ├── inlineChangeDecorationService.ts # Visual change decorations
 │   ├── changeAwareBaseTool.ts         # Base class for change-aware tools
 │   ├── backupManager.ts               # File backup and restoration
+│   ├── algorithms/
+│   │   └── orchestrator.js            # Built-in Orchestrator algorithm script
 │   ├── tools/
 │   │   ├── readFile.ts                # Read file content with line ranges
 │   │   ├── writeFile.ts               # Write or append to files
@@ -557,3 +560,94 @@ The extension works with any OpenAI-compatible service that doesn't require auth
 - LocalAI cloud deployments
 - Custom OpenAI proxy services
 - Team-managed AI inference servers
+
+## Algorithm System
+
+CodingAgent features a powerful JavaScript algorithm execution engine that allows replacing LLM-based orchestration with custom algorithmic logic. This is particularly useful for deterministic workflows and complex orchestration scenarios.
+
+### Key Features
+
+- **Sandboxed Execution**: Safe JavaScript execution environment
+- **Per-Mode Configuration**: Enable/disable algorithms for specific modes
+- **LLM Integration**: Algorithms can still delegate to LLM when needed
+- **Variable Persistence**: Key-value storage per mode
+- **GUI Configuration**: Full settings panel integration
+
+### Architecture
+
+```typescript
+// AlgorithmEngine manages algorithm execution
+export class AlgorithmEngine {
+  executeAlgorithm(mode: string, userMessage: string): Promise<AlgorithmResult>
+  isAlgorithmEnabled(mode: string): boolean
+  getAlgorithmScriptPath(mode: string): string | null
+  setAlgorithmVariable(mode: string, key: string, value: string): Promise<void>
+}
+
+// ChatService integrates algorithms into chat flow
+if (this.algorithmEngine.isAlgorithmEnabled(currentMode)) {
+  const result = await this.algorithmEngine.executeAlgorithm(currentMode, content);
+  if (result.handled) {
+    return [assistantMessage]; // Algorithm handled the request
+  }
+}
+// Fallback to LLM processing
+```
+
+### Algorithm Script Structure
+
+```javascript
+function handleUserMessage(message, context) {
+  // Algorithm logic
+  context.console.log('Processing:', message);
+  
+  // Option 1: Direct response
+  context.sendResponse('Algorithm response');
+  
+  // Option 2: Delegate to LLM
+  context.sendToLLM(message, function(llmResponse) {
+    context.sendResponse(llmResponse);
+  });
+  
+  // Option 3: Hybrid approach
+  if (message.includes('plan')) {
+    // Handle plan requests algorithmically
+    context.sendResponse('Plan workflow initiated');
+  } else {
+    // Delegate general requests to LLM
+    context.sendToLLM(message, context.sendResponse);
+  }
+  
+  return 'Algorithm completed';
+}
+```
+
+### Configuration
+
+```json
+{
+  "codingagent.algorithm.enabled": {
+    "Orchestrator": true,
+    "Coder": false
+  },
+  "codingagent.algorithm.scriptPath": {
+    "Orchestrator": "/path/to/custom/script.js"
+  },
+  "codingagent.algorithm.variables": {
+    "Orchestrator": {
+      "api_url": "https://api.example.com",
+      "timeout": "30000"
+    }
+  }
+}
+```
+
+### Use Cases
+
+1. **Deterministic Orchestration**: Replace unpredictable LLM orchestration with reliable algorithms
+2. **Request Routing**: Intelligently route requests to appropriate handlers
+3. **Workflow Management**: Implement complex multi-step workflows
+4. **API Integration**: Connect to external services without exposing credentials to LLM
+5. **Performance Optimization**: Avoid LLM calls for simple/repetitive tasks
+
+For detailed documentation, see [ALGORITHM_SYSTEM.md](./ALGORITHM_SYSTEM.md).

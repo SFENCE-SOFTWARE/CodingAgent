@@ -80,7 +80,17 @@
     modeAutoEvaluation: document.getElementById('modeAutoEvaluation'),
     modeToolsContainer: document.getElementById('modeToolsContainer'),
     saveModeBtn: document.getElementById('saveModeBtn'),
-    cancelModeBtn: document.getElementById('cancelModeBtn')
+    cancelModeBtn: document.getElementById('cancelModeBtn'),
+    
+    // Algorithm elements in mode editor
+    modeAlgorithmEnabled: document.getElementById('modeAlgorithmEnabled'),
+    algorithmSettingsContainer: document.getElementById('algorithmSettingsContainer'),
+    modeAlgorithmScript: document.getElementById('modeAlgorithmScript'),
+    selectAlgorithmScript: document.getElementById('selectAlgorithmScript'),
+    openAlgorithmScript: document.getElementById('openAlgorithmScript'),
+    resetAlgorithmScript: document.getElementById('resetAlgorithmScript'),
+    modeAlgorithmVariables: document.getElementById('modeAlgorithmVariables'),
+    addAlgorithmVariable: document.getElementById('addAlgorithmVariable')
   };
 
   // Initialize
@@ -117,6 +127,13 @@
     // Modal controls
     elements.closeModeEditor.addEventListener('click', closeModeEditor);
     elements.cancelModeBtn.addEventListener('click', closeModeEditor);
+    
+    // Algorithm settings in mode editor
+    elements.modeAlgorithmEnabled.addEventListener('change', toggleAlgorithmSettings);
+    elements.selectAlgorithmScript.addEventListener('click', () => selectAlgorithmScript(editingModeName));
+    elements.openAlgorithmScript.addEventListener('click', () => openAlgorithmScript(editingModeName));
+    elements.resetAlgorithmScript.addEventListener('click', () => resetAlgorithmScript(editingModeName));
+    elements.addAlgorithmVariable.addEventListener('click', () => addAlgorithmVariable(editingModeName));
     elements.saveModeBtn.addEventListener('click', saveMode);
     
     // Close modal when clicking outside
@@ -372,6 +389,21 @@
       elements.modeFrequencyPenalty.value = modeConfig.frequency_penalty !== undefined ? modeConfig.frequency_penalty : '';
       elements.modeAutoEvaluation.checked = modeConfig.autoEvaluation || false;
       
+      // Load algorithm settings
+      const algorithmEnabled = currentConfig.algorithm && currentConfig.algorithm.enabled && currentConfig.algorithm.enabled[modeName];
+      elements.modeAlgorithmEnabled.checked = algorithmEnabled || false;
+      
+      // Load algorithm script path
+      const algorithmScript = currentConfig.algorithm && currentConfig.algorithm.scriptPath && currentConfig.algorithm.scriptPath[modeName];
+      elements.modeAlgorithmScript.value = algorithmScript || '';
+      
+      // Load algorithm variables
+      const algorithmVariables = currentConfig.algorithm && currentConfig.algorithm.variables && currentConfig.algorithm.variables[modeName];
+      loadAlgorithmVariables(algorithmVariables || {});
+      
+      // Show/hide algorithm settings
+      toggleAlgorithmSettings();
+      
       // Set tool checkboxes
       const allowedTools = modeConfig.allowedTools || [];
       availableTools.forEach(toolInfo => {
@@ -389,6 +421,12 @@
       elements.modePresencePenalty.value = '';
       elements.modeFrequencyPenalty.value = '';
       elements.modeAutoEvaluation.checked = false;
+      
+      // Reset algorithm settings
+      elements.modeAlgorithmEnabled.checked = false;
+      elements.modeAlgorithmScript.value = '';
+      elements.modeAlgorithmVariables.innerHTML = '';
+      toggleAlgorithmSettings();
       
       // Uncheck all tools
       availableTools.forEach(toolInfo => {
@@ -442,16 +480,41 @@
       }).map(toolInfo => toolInfo.name)
     };
     
+    // Save algorithm settings
+    const algorithmEnabled = elements.modeAlgorithmEnabled.checked;
+    const algorithmScript = elements.modeAlgorithmScript.value.trim();
+    const algorithmVariables = getAlgorithmVariablesFromEditor();
+    
     if (isEditing) {
+      // First update the mode
       vscode.postMessage({
         type: 'updateMode',
         modeName: editingModeName,
         mode: mode
       });
+      
+      // Then update algorithm settings
+      vscode.postMessage({
+        type: 'updateAlgorithmConfig',
+        mode: editingModeName,
+        enabled: algorithmEnabled,
+        scriptPath: algorithmScript,
+        variables: algorithmVariables
+      });
     } else {
+      // For new modes, first create the mode
       vscode.postMessage({
         type: 'createMode',
         mode: mode
+      });
+      
+      // Then set algorithm settings
+      vscode.postMessage({
+        type: 'updateAlgorithmConfig',
+        mode: mode.name,
+        enabled: algorithmEnabled,
+        scriptPath: algorithmScript,
+        variables: algorithmVariables
       });
     }
   }
@@ -648,6 +711,33 @@
       case 'profilesList':
         renderProfiles(message.profiles);
         break;
+        
+      case 'scriptFileSelected':
+        showMessage(`Script path updated for ${message.mode}`);
+        requestConfiguration(); // Refresh to show updated path
+        break;
+        
+      case 'variableSet':
+        requestConfiguration(); // Refresh to show updated variables
+        break;
+        
+      case 'variableDeleted':
+        requestConfiguration(); // Refresh to show updated variables
+        break;
+        
+      case 'algorithmConfigUpdated':
+        if (message.success !== false) {
+          showMessage(`Algorithm settings updated for ${message.mode}`);
+        } else {
+          showMessage(`Failed to update algorithm settings for ${message.mode}`, 'error');
+        }
+        break;
+        
+      case 'algorithmScriptSelected':
+        if (elements.modeAlgorithmScript) {
+          elements.modeAlgorithmScript.value = message.path;
+        }
+        break;
     }
   });
 
@@ -839,6 +929,87 @@
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+  }
+
+  // Algorithm management functions
+  // Algorithm settings functions in mode editor
+  function toggleAlgorithmSettings() {
+    const enabled = elements.modeAlgorithmEnabled.checked;
+    elements.algorithmSettingsContainer.style.display = enabled ? 'block' : 'none';
+  }
+
+  function selectAlgorithmScript(modeName) {
+    if (!modeName) return;
+    vscode.postMessage({
+      type: 'selectAlgorithmScript',
+      mode: modeName
+    });
+  }
+
+  function openAlgorithmScript(modeName) {
+    if (!modeName) return;
+    vscode.postMessage({
+      type: 'openAlgorithmScript',
+      mode: modeName
+    });
+  }
+
+  function resetAlgorithmScript(modeName) {
+    if (!modeName) return;
+    if (confirm('Reset to built-in script? This will clear any custom script path.')) {
+      elements.modeAlgorithmScript.value = '';
+    }
+  }
+
+  function loadAlgorithmVariables(variables) {
+    const container = elements.modeAlgorithmVariables;
+    container.innerHTML = '';
+    
+    Object.entries(variables).forEach(([key, value]) => {
+      addVariableItem(container, key, value);
+    });
+  }
+
+  function addAlgorithmVariable(modeName) {
+    if (!modeName) return;
+    const container = elements.modeAlgorithmVariables;
+    addVariableItem(container, '', '');
+  }
+
+  function addVariableItem(container, key, value) {
+    const item = document.createElement('div');
+    item.className = 'variable-item';
+    
+    item.innerHTML = `
+      <input type="text" class="variable-key" placeholder="Variable name" value="${key}" />
+      <input type="text" class="variable-value" placeholder="Variable value" value="${value}" />
+      <button type="button" class="variable-remove">Remove</button>
+    `;
+    
+    const removeBtn = item.querySelector('.variable-remove');
+    removeBtn.addEventListener('click', () => {
+      item.remove();
+    });
+    
+    container.appendChild(item);
+  }
+
+  function getAlgorithmVariablesFromEditor() {
+    const variables = {};
+    const items = elements.modeAlgorithmVariables.querySelectorAll('.variable-item');
+    
+    items.forEach(item => {
+      const keyInput = item.querySelector('.variable-key');
+      const valueInput = item.querySelector('.variable-value');
+      const key = keyInput.value.trim();
+      const value = valueInput.value.trim();
+      
+      if (key) {
+        variables[key] = value;
+      }
+    });
+    
+    return variables;
   }
 
   // Make functions global for onclick handlers

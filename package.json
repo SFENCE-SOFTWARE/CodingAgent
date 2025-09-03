@@ -631,6 +631,45 @@
             "scope": "window"
           }
         }
+      },
+      {
+        "title": "CodingAgent - Algorithm",
+        "properties": {
+          "codingagent.algorithm.enabled": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "default": {
+              "Orchestrator": true
+            },
+            "description": "Enable algorithm scripting for specific modes",
+            "scope": "window"
+          },
+          "codingagent.algorithm.scriptPath": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "default": {},
+            "description": "Path to custom algorithm script for each mode (empty means use built-in)",
+            "scope": "window"
+          },
+          "codingagent.algorithm.variables": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "default": {
+              "Orchestrator": {}
+            },
+            "description": "Key-value variables for algorithm scripts by mode",
+            "scope": "window"
+          }
+        }
       }
     ]
   },
