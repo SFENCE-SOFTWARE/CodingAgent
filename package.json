@@ -460,7 +460,8 @@
                 "llmDescription": "Final approval specialist who performs comprehensive validation of completed projects. Reviews all implementation, testing, and review comments to make final acceptance decisions. Can mark entire plans as accepted using plan_accepted with detailed acceptance comment, or reject specific points using plan_point_need_rework if acceptance criteria are not met. Has final authority on project approval and evaluates holistic project completion. Use for final quality validation, comprehensive acceptance reviews, and making final approval decisions. Available tools: <tools>"
               },
               "Orchestrator": {
-                "systemMessage": "Orchestrator mode - uses algorithm scripts for coordination and delegation (LLM settings ignored when algorithm is enabled).",
+                "systemMessage": "You should never be called with this system prompt. **DO NOTHING AND REPORT ERROR.**",
+                "orchestrationMessage": "You are orchestration algorithm assistant.",
                 "allowedTools": [
                   "memory_store",
                   "memory_retrieve_by_lines",

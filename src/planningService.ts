@@ -11,17 +11,19 @@ export interface PlanPoint {
   detailedDescription: string;
   acceptanceCriteria: string;
   expectedOutputs: string;
-  implementerRole: string; // Role responsible for implementing this point
-  careOnPoints: string[]; // IDs of points to consider
+  status: string;
+  careOn: boolean;
+  comment: string;
+  careOnComment: string;
+  careOnPoints: string[];
   implemented: boolean;
   reviewed: boolean;
-  reviewedComment?: string;
+  reviewedComment: string;
   tested: boolean;
-  testedComment?: string;
+  testedComment: string;
   needRework: boolean;
-  reworkReason?: string;
+  reworkReason: string;
   comments: string[];
-  createdAt: number;
   updatedAt: number;
 }
 
@@ -200,7 +202,6 @@ export class PlanningService {
     shortDescription: string,
     detailedDescription: string,
     acceptanceCriteria: string,
-    implementerRole: string,
     expectedOutputs: string = ''
   ): { success: boolean; pointId?: string; error?: string } {
     const plan = this.plans.get(planId);
@@ -221,14 +222,19 @@ export class PlanningService {
       detailedDescription,
       acceptanceCriteria,
       expectedOutputs,
-      implementerRole,
+      status: 'pending',
+      careOn: false,
+      comment: '',
+      careOnComment: '',
       careOnPoints: [],
       implemented: false,
       reviewed: false,
+      reviewedComment: '',
       tested: false,
+      testedComment: '',
       needRework: false,
+      reworkReason: '',
       comments: [],
-      createdAt: Date.now(),
       updatedAt: Date.now()
     };
 
@@ -256,7 +262,6 @@ export class PlanningService {
       detailed_description: string;
       acceptance_criteria: string;
       expected_outputs: string;
-      implementer_role: string;
     }>
   ): { success: boolean; pointIds?: string[]; error?: string } {
     const plan = this.plans.get(planId);
@@ -286,14 +291,19 @@ export class PlanningService {
         detailedDescription: pointData.detailed_description,
         acceptanceCriteria: pointData.acceptance_criteria,
         expectedOutputs: pointData.expected_outputs,
-        implementerRole: pointData.implementer_role,
+        status: 'pending',
+        careOn: false,
+        comment: '',
+        careOnComment: '',
         careOnPoints: [],
         implemented: false,
         reviewed: false,
+        reviewedComment: '',
         tested: false,
+        testedComment: '',
         needRework: false,
+        reworkReason: '',
         comments: [],
-        createdAt: Date.now(),
         updatedAt: Date.now()
       };
       newPoints.push(newPoint);
@@ -320,7 +330,7 @@ export class PlanningService {
   public changePoint(
     planId: string,
     pointId: string,
-    updates: Partial<Pick<PlanPoint, 'shortName' | 'shortDescription' | 'detailedDescription' | 'acceptanceCriteria' | 'expectedOutputs' | 'implementerRole'>>
+    updates: Partial<Pick<PlanPoint, 'shortName' | 'shortDescription' | 'detailedDescription' | 'acceptanceCriteria' | 'expectedOutputs'>>
   ): { success: boolean; error?: string } {
     const plan = this.plans.get(planId);
     if (!plan) {
@@ -340,7 +350,6 @@ export class PlanningService {
     if (updates.detailedDescription !== undefined) point.detailedDescription = updates.detailedDescription;
     if (updates.acceptanceCriteria !== undefined) point.acceptanceCriteria = updates.acceptanceCriteria;
     if (updates.expectedOutputs !== undefined) point.expectedOutputs = updates.expectedOutputs;
-    if (updates.implementerRole !== undefined) point.implementerRole = updates.implementerRole;
 
     point.updatedAt = Date.now();
     plan.updatedAt = Date.now();
@@ -895,8 +904,9 @@ export class PlanningService {
       const plan = this.plans.get(planId);
       if (plan) {
         const point = plan.points.find(p => p.id === pointIds[0]);
-        if (point && point.implementerRole) {
-          template = template.replace(/<role>/g, point.implementerRole);
+        if (point) {
+          // No role replacement needed since implementerRole was removed
+          // template = template.replace(/<role>/g, 'implementer');
         }
       }
     }

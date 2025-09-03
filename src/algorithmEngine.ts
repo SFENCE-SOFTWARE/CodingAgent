@@ -88,19 +88,62 @@ export class AlgorithmEngine {
    * Get built-in algorithm script path
    */
   private getBuiltInScriptPath(mode: string): string | null {
-    // Get the extension's installation path
+    // First try to get extension path
     const extensionPath = vscode.extensions.getExtension('codding-agent')?.extensionPath;
-    if (!extensionPath) {
-      // Fallback to workspace if extension path not found
-      const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-      if (!workspaceRoot) {
-        return null;
+    
+    if (extensionPath) {
+      const builtInPath = path.join(extensionPath, 'src', 'algorithms', `${mode.toLowerCase()}.js`);
+      if (fs.existsSync(builtInPath)) {
+        return builtInPath;
       }
-      return path.join(workspaceRoot, 'src', 'algorithms', `${mode.toLowerCase()}.js`);
     }
 
-    const builtInPath = path.join(extensionPath, 'src', 'algorithms', `${mode.toLowerCase()}.js`);
-    return builtInPath;
+    // Fallback to workspace-based paths (for development mode)
+    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    if (workspaceRoot) {
+      // Try workspace src/algorithms first
+      const workspacePath = path.join(workspaceRoot, 'src', 'algorithms', `${mode.toLowerCase()}.js`);
+      if (fs.existsSync(workspacePath)) {
+        return workspacePath;
+      }
+      
+      // Try compiled output directory
+      const outPath = path.join(workspaceRoot, 'out', 'src', 'algorithms', `${mode.toLowerCase()}.js`);
+      if (fs.existsSync(outPath)) {
+        return outPath;
+      }
+    }
+
+    // Last resort: try relative to current file location (for development/test mode)
+    const currentDir = path.dirname(__filename);
+    // In development, __filename might be in out/src/, so go up to find src/
+    const developmentPath = path.join(currentDir, '..', '..', 'src', 'algorithms', `${mode.toLowerCase()}.js`);
+    if (fs.existsSync(developmentPath)) {
+      return developmentPath;
+    }
+    
+    // Try relative to current compiled location
+    const relativePath = path.join(currentDir, '..', 'algorithms', `${mode.toLowerCase()}.js`);
+    if (fs.existsSync(relativePath)) {
+      return relativePath;
+    }
+
+    // If still not found, check if we're in development and try parent directories
+    if (workspaceRoot) {
+      const possiblePaths = [
+        path.join(workspaceRoot, 'algorithms', `${mode.toLowerCase()}.js`),
+        path.join(path.dirname(workspaceRoot), 'CodingAgent', 'src', 'algorithms', `${mode.toLowerCase()}.js`),
+        path.join(path.dirname(workspaceRoot), 'src', 'algorithms', `${mode.toLowerCase()}.js`)
+      ];
+      
+      for (const testPath of possiblePaths) {
+        if (fs.existsSync(testPath)) {
+          return testPath;
+        }
+      }
+    }
+
+    return null;
   }
 
   /**

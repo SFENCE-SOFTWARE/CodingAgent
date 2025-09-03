@@ -17,33 +17,33 @@
 function handleUserMessage(message, context) {
     context.console.log('Orchestrator algorithm processing message:', message);
     
-    // Example orchestration logic
-    const steps = [
-        'Analyze user request',
-        'Determine required actions',
-        'Coordinate with appropriate agents',
-        'Execute plan',
-        'Provide summary'
-    ];
+    // First step: Detect language of the user request
+    const languageDetectionPrompt = `User send a message. Read it and answer only with language name, he used.\n\nUser message: \n${message}`;
     
-    let response = 'Orchestrator Algorithm Processing:\n\n';
-    
-    steps.forEach((step, index) => {
-        response += `${index + 1}. ${step}\n`;
-        context.console.info(`Step ${index + 1}: ${step}`);
+    context.sendToLLM(languageDetectionPrompt, function(llmResponse) {
+        const detectedLanguage = llmResponse.trim();
+        context.console.info(`Detected language: ${detectedLanguage}`);
+        
+        // Create comprehensive response showing both prompt and result
+        const fullResponse = `**Orchestrator Analysis**
+
+**Sent to LLM (using orchestrationMessage):**
+\`\`\`
+${languageDetectionPrompt}
+\`\`\`
+
+**LLM Response:**
+${detectedLanguage}
+
+**Result:** Detected language is **${detectedLanguage}**`;
+        
+        // Send comprehensive response back to chat
+        context.sendResponse(fullResponse);
+        
+        // Store the detected language for future use
+        context.setVariable('last_detected_language', detectedLanguage);
+        context.setVariable('last_user_message', message);
     });
-    
-    // Example: Check for plan-related requests
-    if (message.toLowerCase().includes('plan')) {
-        response += '\nDetected plan-related request. Initiating plan workflow...';
-        context.setVariable('last_action', 'plan_workflow');
-    } else {
-        response += '\nGeneral request processing initiated.';
-        context.setVariable('last_action', 'general_processing');
-    }
-    
-    // Send response back to chat
-    context.sendResponse(response);
     
     // Don't return anything when using sendResponse to avoid duplication
     return;

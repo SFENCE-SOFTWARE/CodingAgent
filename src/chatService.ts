@@ -1842,6 +1842,67 @@ export class ChatService {
    */
   async sendMessageToLLM(message: string, callback: (response: string) => void): Promise<void> {
     try {
+      // Use orchestration message instead of system message for Orchestrator mode
+      const response = await this.sendOrchestrationMessage(message);
+      callback(response);
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      callback(`Error communicating with LLM: ${errorMsg}`);
+    }
+  }
+
+  /**
+   * Send message using orchestration prompt instead of system prompt
+   */
+  private async sendOrchestrationMessage(message: string): Promise<string> {
+    const config = vscode.workspace.getConfiguration('codingagent');
+    const currentMode = config.get<string>('currentMode', 'Coder');
+    const modes = config.get<Record<string, any>>('modes', {});
+    const modeConfig = modes[currentMode] || {};
+    
+    // Use orchestrationMessage instead of systemMessage for LLM calls from algorithm
+    const orchestrationMessage = modeConfig.orchestrationMessage || modeConfig.systemMessage || 'You are a helpful assistant.';
+    
+    // Create a simple request with orchestration context
+    const request: OpenAIChatRequest = {
+      model: this.getCurrentModel(),
+      messages: [
+        {
+          role: 'system',
+          content: orchestrationMessage
+        },
+        {
+          role: 'user', 
+          content: message
+        }
+      ],
+      stream: false, // Don't stream for algorithm calls
+      temperature: modeConfig.temperature || 0.7
+    };
+
+    try {
+      const response = await this.openai.sendChat(request);
+      
+      // Extract text content from response
+      let responseText = '';
+      if (response.choices && response.choices.length > 0) {
+        const lastChoice = response.choices[response.choices.length - 1];
+        if (lastChoice.message && lastChoice.message.content) {
+          responseText = lastChoice.message.content;
+        }
+      }
+      
+      return responseText || 'No response received from LLM';
+    } catch (error) {
+      throw new Error(`Failed to get LLM response: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  /**
+   * Send message to LLM for algorithm execution (old method)
+   */
+  async sendMessageToLLMOld(message: string, callback: (response: string) => void): Promise<void> {
+    try {
       // Add user message temporarily
       this.addUserMessage(message);
       
