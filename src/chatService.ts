@@ -359,6 +359,7 @@ export class ChatService {
             content: algorithmResult.response || 'Algorithm completed successfully',
             timestamp: Date.now(),
             model: `Algorithm-${currentMode}`,
+            displayRole: `Algorithm-${currentMode}`, // Custom display role without LLM prefix
             isStreaming: false
           };
           
@@ -1903,8 +1904,14 @@ export class ChatService {
    */
   async sendOrchestrationRequest(message: string, callback: (response: string) => void, chatCallback?: (update: ChatUpdate) => void): Promise<void> {
     try {
+      const config = vscode.workspace.getConfiguration('codingagent');
+      const currentMode = config.get<string>('currentMode', 'Coder');
+      
       // Add orchestration prompt to chat history for visibility
       const promptMessage = this.addUserMessage(`**[Orchestrator Query]**\n${message}`);
+      
+      // Set custom display role for orchestration query
+      promptMessage.displayRole = `Algorithm-${currentMode} Query`;
       
       // Send real-time update to show the prompt in UI
       if (chatCallback) {
@@ -1915,17 +1922,7 @@ export class ChatService {
       }
       
       // Process with orchestration context and get response
-      const responseMessages = await this.processOrchestrationMessage(message);
-      
-      // Send each response message to UI in real-time
-      for (const responseMessage of responseMessages) {
-        if (chatCallback) {
-          chatCallback({
-            type: 'message_ready',
-            message: responseMessage
-          });
-        }
-      }
+      const responseMessages = await this.processOrchestrationMessage(message, chatCallback);
       
       // Extract text content from response messages for algorithm callback
       let response = '';
@@ -1958,7 +1955,7 @@ export class ChatService {
   /**
    * Process orchestration message using the same flow as normal chat
    */
-  private async processOrchestrationMessage(message: string): Promise<ChatMessage[]> {
+  private async processOrchestrationMessage(message: string, chatCallback?: (update: ChatUpdate) => void): Promise<ChatMessage[]> {
     const config = vscode.workspace.getConfiguration('codingagent');
     const currentMode = config.get<string>('currentMode', 'Coder');
     const modes = config.get<Record<string, any>>('modes', {});
@@ -2011,9 +2008,9 @@ export class ChatService {
     try {
       // Use exactly the same flow as normal chat!
       if (enableStreaming) {
-        return await this.processStreamingMessage(request, currentModel, currentMode, startTime, undefined);
+        return await this.processStreamingMessage(request, currentModel, currentMode, startTime, chatCallback);
       } else {
-        return await this.processNonStreamingMessage(request, currentModel, currentMode, startTime, undefined);
+        return await this.processNonStreamingMessage(request, currentModel, currentMode, startTime, chatCallback);
       }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
