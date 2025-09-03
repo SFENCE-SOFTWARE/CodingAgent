@@ -49,12 +49,16 @@ export class PlanAddPointsTool implements BaseTool {
                     type: 'string',
                     description: 'Acceptance criteria for the point'
                   },
+                  implementer_role: {
+                    type: 'string',
+                    description: 'Role responsible for implementing this point'
+                  },
                   expected_outputs: {
                     type: 'string',
                     description: 'Expected outputs and deliverables. For analysis tasks, specify memory keys or files to be created. Example: "Analysis stored in memory key \'user-research-2024\'" or "Updated config.json file" or "Documentation in docs/api.md"'
                   }
                 },
-                required: ['short_name', 'short_description', 'detailed_description', 'acceptance_criteria', 'expected_outputs'],
+                required: ['short_name', 'short_description', 'detailed_description', 'acceptance_criteria', 'implementer_role', 'expected_outputs'],
                 additionalProperties: false
               },
               minItems: 1
@@ -81,11 +85,11 @@ export class PlanAddPointsTool implements BaseTool {
     // Validate each point structure
     for (let i = 0; i < points.length; i++) {
       const point = points[i];
-      if (!point.short_name || !point.short_description || !point.detailed_description || !point.acceptance_criteria) {
+      if (!point.short_name || !point.short_description || !point.detailed_description || !point.acceptance_criteria || !point.implementer_role) {
         return {
           success: false,
           content: '',
-          error: `Point at index ${i} is missing required fields: short_name, short_description, detailed_description, acceptance_criteria`
+          error: `Point at index ${i} is missing required fields: short_name, short_description, detailed_description, acceptance_criteria, implementer_role`
         };
       }
     }

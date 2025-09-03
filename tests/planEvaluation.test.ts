@@ -27,7 +27,7 @@ suite('Plan Evaluation Tests', () => {
     planningService.createPlan(planId, 'Test Plan', 'Short desc', 'Long desc');
     
     // Add a point
-    planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria');
+    planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Coder');
     
     // Review the plan
     planningService.setPlanReviewed(planId, 'Plan looks good');
@@ -62,7 +62,7 @@ suite('Plan Evaluation Tests', () => {
     planningService.createPlan(planId, 'Test Plan', 'Short desc', 'Long desc');
     
     // Add a point
-    planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria');
+    planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Coder');
     
     // Evaluate the plan (should fail on plan not reviewed)
     const result = planningService.evaluatePlanCompletion(planId);
@@ -81,7 +81,7 @@ suite('Plan Evaluation Tests', () => {
     planningService.createPlan(planId, 'Test Plan', 'Short desc', 'Long desc');
     
     // Add a point
-    const addResult = planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria');
+    const addResult = planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Coder');
     const pointId = addResult.pointId!;
     
     // Review the plan
@@ -110,7 +110,7 @@ suite('Plan Evaluation Tests', () => {
     planningService.createPlan(planId, 'Test Plan', 'Short desc', 'Long desc');
     
     // Add a point
-    const addResult = planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria');
+    const addResult = planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Coder');
     const pointId = addResult.pointId!;
     
     // Review the plan
@@ -133,7 +133,7 @@ suite('Plan Evaluation Tests', () => {
     planningService.createPlan(planId, 'Test Plan', 'Short desc', 'Long desc');
     
     // Add a point
-    const addResult = planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria');
+    const addResult = planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Coder');
     const pointId = addResult.pointId!;
     
     // Review the plan
@@ -159,7 +159,7 @@ suite('Plan Evaluation Tests', () => {
     planningService.createPlan(planId, 'Test Plan', 'Short desc', 'Long desc');
     
     // Add a point
-    const addResult = planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria');
+    const addResult = planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Coder');
     const pointId = addResult.pointId!;
     
     // Review the plan
@@ -188,7 +188,7 @@ suite('Plan Evaluation Tests', () => {
     planningService.createPlan(planId, 'Test Plan', 'Short desc', 'Long desc');
     
     // Add a point
-    const addResult = planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria');
+    const addResult = planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Coder');
     const pointId = addResult.pointId!;
     
     // Review the plan
@@ -219,7 +219,7 @@ suite('Plan Evaluation Tests', () => {
     planningService.createPlan(planId, 'Test Plan', 'Short desc', 'Long desc');
     
     // Add a point
-    const addResult = planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria');
+    const addResult = planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Coder');
     const pointId = addResult.pointId!;
     
     // Review the plan
@@ -253,8 +253,8 @@ suite('Plan Evaluation Tests', () => {
     planningService.createPlan(planId, 'Test Plan', 'Short desc', 'Long desc');
     
     // Add two points
-    const addResult1 = planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria');
-    const addResult2 = planningService.addPoint(planId, addResult1.pointId!, 'Point 2', 'Short desc', 'Detailed desc', 'Acceptance criteria');
+    const addResult1 = planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Coder');
+    const addResult2 = planningService.addPoint(planId, addResult1.pointId!, 'Point 2', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Coder');
     const pointId1 = addResult1.pointId!;
     const pointId2 = addResult2.pointId!;
     
@@ -291,8 +291,8 @@ suite('Plan Evaluation Tests', () => {
     planningService.createPlan(planId, 'Test Plan', 'Short desc', 'Long desc');
     
     // Add multiple points
-    const addResult1 = planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria');
-    const addResult2 = planningService.addPoint(planId, addResult1.pointId!, 'Point 2', 'Short desc', 'Detailed desc', 'Acceptance criteria');
+    const addResult1 = planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Coder');
+    const addResult2 = planningService.addPoint(planId, addResult1.pointId!, 'Point 2', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Coder');
     const pointId1 = addResult1.pointId!;
     const pointId2 = addResult2.pointId!;
     
@@ -318,7 +318,7 @@ suite('Plan Evaluation Tests', () => {
     planningService.createPlan(planId, 'Test Plan', 'Short desc', 'Long desc');
     
     // Add a point
-    planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria');
+    planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Coder');
     
     // Execute via tool
     const result = await planEvaluateTool.execute({ plan_id: planId }, testWorkspaceRoot);
