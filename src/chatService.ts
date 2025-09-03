@@ -349,7 +349,7 @@ export class ChatService {
     // Check if algorithm is enabled for current mode
     if (this.algorithmEngine.isAlgorithmEnabled(currentMode)) {
       try {
-        const algorithmResult = await this.algorithmEngine.executeAlgorithm(currentMode, content);
+        const algorithmResult = await this.algorithmEngine.executeAlgorithm(currentMode, content, callback);
         
         if (algorithmResult.handled) {
           // Algorithm handled the message, create assistant response
@@ -1914,10 +1914,20 @@ export class ChatService {
         });
       }
       
-      // Process with orchestration context
+      // Process with orchestration context and get response
       const responseMessages = await this.processOrchestrationMessage(message);
       
-      // Extract text content from response messages
+      // Send each response message to UI in real-time
+      for (const responseMessage of responseMessages) {
+        if (chatCallback) {
+          chatCallback({
+            type: 'message_ready',
+            message: responseMessage
+          });
+        }
+      }
+      
+      // Extract text content from response messages for algorithm callback
       let response = '';
       for (const msg of responseMessages) {
         if (msg.role === 'assistant' && msg.content) {
@@ -1927,25 +1937,7 @@ export class ChatService {
       
       const finalResponse = response.trim() || 'No response received from LLM';
       
-      // Create and add response message
-      const responseMessage: ChatMessage = {
-        id: this.generateId(),
-        role: 'assistant',
-        content: finalResponse,
-        timestamp: Date.now()
-      };
-      
-      this.messages.push(responseMessage);
-      this.saveChatHistory();
-      
-      if (chatCallback) {
-        chatCallback({
-          type: 'message_ready',
-          message: responseMessage
-        });
-      }
-      
-      // Call the callback with the response
+      // Call the algorithm callback with the response
       callback(finalResponse);
       
     } catch (error) {

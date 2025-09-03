@@ -24,21 +24,11 @@ function handleUserMessage(message, context) {
         const detectedLanguage = llmResponse.trim();
         context.console.info(`Detected language: ${detectedLanguage}`);
         
-        // Create comprehensive response showing both prompt and result
-        const fullResponse = `**Orchestrator Analysis**
-
-**Sent to LLM (using orchestrationMessage):**
-\`\`\`
-${languageDetectionPrompt}
-\`\`\`
-
-**LLM Response:**
-${detectedLanguage}
-
-**Result:** Detected language is **${detectedLanguage}**`;
+        // Send only the result - the LLM communication should be visible in chat separately
+        const result = `Detected language: **${detectedLanguage}**`;
         
-        // Send comprehensive response back to chat
-        context.sendResponse(fullResponse);
+        // Send result back to chat
+        context.sendResponse(result);
         
         // Store the detected language for future use
         context.setVariable('last_detected_language', detectedLanguage);

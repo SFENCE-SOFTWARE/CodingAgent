@@ -45,6 +45,7 @@ export class AlgorithmEngine {
   private static instance: AlgorithmEngine;
   private chatService?: ChatService;
   private logs: string[] = [];
+  private currentChatCallback?: (update: any) => void;
 
   private constructor() {}
 
@@ -173,10 +174,13 @@ export class AlgorithmEngine {
   /**
    * Execute algorithm for the given mode and user message
    */
-  public async executeAlgorithm(mode: string, userMessage: string): Promise<AlgorithmResult> {
+  public async executeAlgorithm(mode: string, userMessage: string, chatCallback?: (update: any) => void): Promise<AlgorithmResult> {
     if (!this.isAlgorithmEnabled(mode)) {
       return { handled: false };
     }
+
+    // Store chat callback for use in LLM calls
+    this.currentChatCallback = chatCallback;
 
     const scriptPath = this.getAlgorithmScriptPath(mode);
     if (!scriptPath || !fs.existsSync(scriptPath)) {
@@ -358,7 +362,7 @@ export class AlgorithmEngine {
             error: `Algorithm callback error: ${errorMsg}`
           });
         }
-      });
+      }, this.currentChatCallback);
     });
   }
 
