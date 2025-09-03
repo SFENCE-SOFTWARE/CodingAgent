@@ -155,4 +155,111 @@ suite('AlgorithmEngine Tests', () => {
     const logs = algorithmEngine.getLogs();
     assert.strictEqual(logs.length, 0, 'All logs should be cleared');
   });
+
+  test('orchestrator algorithm - complete workflow test', async () => {
+    // Test that the real orchestrator.js script works correctly
+    const config = vscode.workspace.getConfiguration('codingagent.algorithm');
+    await config.update('enabled', { 'Orchestrator': true }, vscode.ConfigurationTarget.Global);
+    
+    // Mock ChatService for LLM calls
+    let llmCallCount = 0;
+    const mockChatService = {
+      sendOrchestrationRequest: (prompt: string, callback: (response: string) => void) => {
+        llmCallCount++;
+        
+        // Mock language detection
+        if (prompt.includes('Detect the language')) {
+          callback('en');
+        }
+        // Mock categorization
+        else if (prompt.includes('categorize it')) {
+          callback('QUESTION');
+        }
+        // Mock general question
+        else {
+          callback('This is a test response from LLM');
+        }
+      }
+    };
+    
+    algorithmEngine.setChatService(mockChatService as any);
+    
+    const result = await algorithmEngine.executeAlgorithm('Orchestrator', 'What is the weather?');
+    
+    assert.strictEqual(result.handled, true, 'Orchestrator should handle the message');
+    assert.ok(result.response?.includes('This is a test response from LLM'), 'Should return LLM response for QUESTION category');
+    assert.ok(llmCallCount >= 2, 'Should make at least 2 LLM calls (language detection + categorization)');
+  });
+
+  test('orchestrator algorithm - plan opening test', async () => {
+    const config = vscode.workspace.getConfiguration('codingagent.algorithm');
+    await config.update('enabled', { 'Orchestrator': true }, vscode.ConfigurationTarget.Global);
+    
+    // Mock ChatService for LLM calls
+    const mockChatService = {
+      sendOrchestrationRequest: (prompt: string, callback: (response: string) => void) => {
+        // Mock language detection
+        if (prompt.includes('Detect the language')) {
+          callback('en');
+        }
+        // Mock categorization - return OPEN with plan ID
+        else if (prompt.includes('categorize it')) {
+          callback('OPEN test-plan-123');
+        }
+      }
+    };
+    
+    // Mock PlanningService
+    const mockPlanningService = {
+      showPlan: (planId: string) => {
+        if (planId.toLowerCase() === 'test-plan-123') {
+          return {
+            success: true,
+            plan: {
+              name: 'Test Plan',
+              shortDescription: 'This is a test plan'
+            }
+          };
+        }
+        return { success: false, error: 'Plan not found' };
+      }
+    };
+    
+    algorithmEngine.setChatService(mockChatService as any);
+    algorithmEngine.setPlanningService(mockPlanningService as any);
+    
+    const result = await algorithmEngine.executeAlgorithm('Orchestrator', 'Open plan test-plan-123');
+    
+    assert.strictEqual(result.handled, true, 'Orchestrator should handle plan opening');
+    assert.ok(result.response?.includes('Successfully loaded plan "TEST-PLAN-123"'), 'Should successfully load the plan');
+    assert.ok(result.response?.includes('Test Plan'), 'Should include plan name in response');
+    assert.ok(result.response?.includes('Plan is now active'), 'Should confirm plan is active');
+  });
+
+  test('orchestrator algorithm - new plan test', async () => {
+    const config = vscode.workspace.getConfiguration('codingagent.algorithm');
+    await config.update('enabled', { 'Orchestrator': true }, vscode.ConfigurationTarget.Global);
+    
+    // Mock ChatService for LLM calls
+    const mockChatService = {
+      sendOrchestrationRequest: (prompt: string, callback: (response: string) => void) => {
+        // Mock language detection
+        if (prompt.includes('Detect the language')) {
+          callback('en');
+        }
+        // Mock categorization - return NEW
+        else if (prompt.includes('categorize it')) {
+          callback('NEW');
+        }
+      }
+    };
+    
+    algorithmEngine.setChatService(mockChatService as any);
+    
+    const result = await algorithmEngine.executeAlgorithm('Orchestrator', 'Create a new plan for my project');
+    
+    assert.strictEqual(result.handled, true, 'Orchestrator should handle new plan request');
+    assert.ok(result.response?.includes('Plan creation request detected'), 'Should detect plan creation request');
+    assert.ok(result.response?.includes('Implementation pending'), 'Should indicate pending implementation');
+  });
 });

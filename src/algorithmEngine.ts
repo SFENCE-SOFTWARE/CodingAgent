@@ -1,9 +1,10 @@
-// src/algorithmEngine.ts
+//// src/algorithmEngine.ts
 
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { ChatService } from './chatService';
+import { PlanningService } from './planningService';
 
 /**
  * Interface for algorithm execution context
@@ -18,9 +19,13 @@ export interface AlgorithmContext {
     info: (...args: any[]) => void;
   };
   sendResponse: (message: string) => void;
-  sendToLLM: (message: string) => Promise<string>; // Change to Promise-based
-  getConfig: (key: string) => any;
-  setConfig: (key: string, value: any) => void;
+  sendToLLM: (message: string) => Promise<string>; // Promise-based
+  getConfig: (key: string) => any; // Read-only config access
+  planningService?: {
+    showPlan: (planId: string) => { success: boolean; plan?: any; error?: string };
+    listPlans: () => { success: boolean; plans?: Array<{id: string, name: string, shortDescription?: string}>; error?: string };
+    createPlan: (id: string, name: string, shortDescription: string, longDescription: string) => { success: boolean; error?: string };
+  };
 }
 
 /**
@@ -38,9 +43,10 @@ export interface AlgorithmResult {
 export class AlgorithmEngine {
   private static instance: AlgorithmEngine;
   private chatService?: ChatService;
+  private planningService?: PlanningService;
   private logs: string[] = [];
   private currentChatCallback?: (update: any) => void;
-  private configData: { [algorithm: string]: { [key: string]: any } } = {};
+  private configStore: Map<string, any> = new Map(); // Config management in RAM
   private algorithmResponses: { [algorithm: string]: string } = {}; // Store final responses
 
   private constructor() {}
@@ -54,6 +60,10 @@ export class AlgorithmEngine {
 
   public setChatService(chatService: ChatService): void {
     this.chatService = chatService;
+  }
+
+  public setPlanningService(planningService: PlanningService): void {
+    this.planningService = planningService;
   }
 
   /**
@@ -144,9 +154,6 @@ export class AlgorithmEngine {
   }
 
   /**
-   * Get algorithm variables for the given mode
-   */
-  /**
    * Execute algorithm for the given mode and user message
    */
   public async executeAlgorithm(mode: string, userMessage: string, chatCallback?: (update: any) => void): Promise<AlgorithmResult> {
@@ -170,7 +177,7 @@ export class AlgorithmEngine {
       const scriptContent = fs.readFileSync(scriptPath, 'utf8');
       
       // Create sandbox context
-      const context = await this.createSandboxContext(mode, userMessage);
+      const context = this.createSandboxContext(mode, userMessage);
       
       // Execute the script in sandbox
       const result = await this.executeSandbox(scriptContent, context);
@@ -189,52 +196,69 @@ export class AlgorithmEngine {
   /**
    * Create sandbox context for algorithm execution
    */
-  private async createSandboxContext(mode: string, userMessage: string): Promise<AlgorithmContext> {
-    const context: AlgorithmContext = {
+  private createSandboxContext(mode: string, userMessage: string): AlgorithmContext {
+    return {
       mode,
       userMessage,
-      
       console: {
-        log: (...args: any[]) => this.log('log', ...args),
+        log: (...args: any[]) => this.log('info', ...args),
         error: (...args: any[]) => this.log('error', ...args),
         warn: (...args: any[]) => this.log('warn', ...args),
         info: (...args: any[]) => this.log('info', ...args)
       },
-
       sendResponse: (message: string) => {
-        // Store final response for the algorithm
+        // Store the final response for retrieval
         this.algorithmResponses[mode] = message;
       },
-
-      sendToLLM: async (message: string): Promise<string> => {
-        if (!this.chatService) {
-          throw new Error('Chat service not available');
-        }
-
+      // Config management in RAM (read-only)
+      getConfig: (key: string) => {
+        return this.configStore.get(key);
+      },
+      
+      // LLM communication - now Promise-based
+      sendToLLM: async (prompt: string): Promise<string> => {
         return new Promise((resolve, reject) => {
-          this.chatService!.sendOrchestrationRequest(message, (response: string) => {
-            resolve(response);
-          }, this.currentChatCallback);
+          try {
+            if (!this.chatService) {
+              reject(new Error('ChatService not available'));
+              return;
+            }
+            
+            this.chatService.sendOrchestrationRequest(
+              prompt, 
+              (response: string) => {
+                resolve(response);
+              }, 
+              this.currentChatCallback
+            );
+          } catch (error) {
+            reject(new Error(`LLM request failed: ${error instanceof Error ? error.message : String(error)}`));
+          }
         });
       },
-
-      getConfig: (key: string) => {
-        if (!this.configData[mode]) {
-          this.configData[mode] = {};
+      
+      // Planning service integration (if available)
+      planningService: this.planningService ? {
+        showPlan: (planId: string) => {
+          if (!this.planningService) {
+            return { success: false, error: 'Planning service not available' };
+          }
+          return this.planningService.showPlan(planId, true); // Include point descriptions
+        },
+        listPlans: () => {
+          if (!this.planningService) {
+            return { success: false, error: 'Planning service not available' };
+          }
+          return this.planningService.listPlans(true); // Include short descriptions
+        },
+        createPlan: (id: string, name: string, shortDescription: string, longDescription: string) => {
+          if (!this.planningService) {
+            return { success: false, error: 'Planning service not available' };
+          }
+          return this.planningService.createPlan(id, name, shortDescription, longDescription);
         }
-        return this.configData[mode][key];
-      },
-
-      setConfig: (key: string, value: any) => {
-        if (!this.configData[mode]) {
-          this.configData[mode] = {};
-        }
-        this.configData[mode][key] = value;
-        this.log('info', `Config set for ${mode}: ${key} = ${value}`);
-      }
-    } as any;
-
-    return context;
+      } : undefined
+    };
   }
 
   /**
@@ -425,43 +449,97 @@ export class AlgorithmEngine {
  * Available context methods:
  * - context.console.log/error/warn/info() - for logging
  * - context.sendResponse(message) - send response to chat
- * - context.sendToLLM(message, callback) - send to LLM and get response
- * - context.getVariable(key) - get stored variable
- * - context.setVariable(key, value) - set variable (persists)
+ * - context.sendToLLM(message) - send to LLM and get response (Promise-based)
+ * - context.getConfig(key) - get stored config (read-only)
  */
 
-function handleUserMessage(message, context) {
+async function handleUserMessage(message, context) {
     context.console.log('Orchestrator algorithm processing message:', message);
     
-    // Example orchestration logic
-    const steps = [
-        'Analyze user request',
-        'Determine required actions',
-        'Coordinate with appropriate agents',
-        'Execute plan',
-        'Provide summary'
-    ];
+    // Step 1: Detect language and translate if needed
+    const llmLanguages = ['en', 'cs', 'sk'];
+    const targetLanguage = llmLanguages[0]; // Default to first supported language
     
-    let response = 'Orchestrator Algorithm Processing:\\n\\n';
+    let workingMessage = message;
+    let detectedLanguage = 'unknown';
     
-    steps.forEach((step, index) => {
-        response += \`\${index + 1}. \${step}\\n\`;
-        context.console.info(\`Step \${index + 1}: \${step}\`);
-    });
-    
-    // Example: Check for plan-related requests
-    if (message.toLowerCase().includes('plan')) {
-        response += '\\nDetected plan-related request. Initiating plan workflow...';
-        context.setVariable('last_action', 'plan_workflow');
-    } else {
-        response += '\\nGeneral request processing initiated.';
-        context.setVariable('last_action', 'general_processing');
+    try {
+        // Ask LLM to detect language
+        const languagePrompt = \`Detect the language of this message and respond with just the two-letter language code (en, cs, sk, de, fr, etc.): "\${message}"\`;
+        detectedLanguage = await context.sendToLLM(languagePrompt);
+        detectedLanguage = detectedLanguage.trim().toLowerCase();
+        
+        context.console.info(\`Detected language: \${detectedLanguage}\`);
+        
+        // If detected language is not in supported LLM languages, translate
+        if (!llmLanguages.includes(detectedLanguage)) {
+            context.console.info(\`Language \${detectedLanguage} not in LLM languages, translating to \${targetLanguage}\`);
+            const translatePrompt = \`Translate this message to \${targetLanguage}, keep the same meaning and intent: "\${message}"\`;
+            workingMessage = await context.sendToLLM(translatePrompt);
+            context.console.info(\`Translated message: \${workingMessage}\`);
+        }
+        
+        // Use translated message for further processing
+        message = workingMessage;
+        
+    } catch (error) {
+        context.console.error('Language detection/translation failed:', error.message);
+        // Continue with original message
     }
     
-    // Send response back to chat
-    context.sendResponse(response);
-    
-    return 'Orchestrator algorithm completed';
+    // Step 2: Categorize the request
+    try {
+        const categorizationPrompt = \`Analyze this user request and categorize it. Respond with exactly one of these options:
+- NEW (if user wants to create a new plan)
+- OPEN <plan_id> (if user wants to open/work with an existing plan, replace <plan_id> with the actual plan ID mentioned)
+- QUESTION (for any other type of request - questions, general help, etc.)
+
+User request: "\${message}"\`;
+        
+        const category = await context.sendToLLM(categorizationPrompt);
+        const categoryTrimmed = category.trim().toUpperCase();
+        
+        context.console.info(\`Request categorized as: \${categoryTrimmed}\`);
+        
+        // Handle different categories
+        if (categoryTrimmed === 'NEW') {
+            context.console.info('Plan creation request detected - logic will be added later');
+            context.sendResponse('Plan creation request detected. Implementation pending.');
+            return 'Plan creation workflow initiated';
+            
+        } else if (categoryTrimmed.startsWith('OPEN ')) {
+            const planId = categoryTrimmed.substring(5).trim();
+            context.console.info(\`Plan opening request detected for plan: \${planId}\`);
+            
+            if (context.planningService) {
+                const planResult = context.planningService.showPlan(planId);
+                if (planResult.success && planResult.plan) {
+                    context.sendResponse(\`Successfully loaded plan "\${planId}": \${planResult.plan.name}\\n\\nDescription: \${planResult.plan.shortDescription}\\n\\nPlan is now active.\`);
+                    return \`Plan "\${planId}" loaded successfully\`;
+                } else {
+                    context.sendResponse(\`Failed to load plan "\${planId}": \${planResult.error || 'Plan not found'}\`);
+                    return \`Plan loading failed: \${planResult.error}\`;
+                }
+            } else {
+                context.sendResponse(\`Plan opening requested for "\${planId}" but planning service is not available.\`);
+                return 'Planning service not available';
+            }
+            
+        } else {
+            // QUESTION or anything else - forward to LLM directly
+            context.console.info('General question detected, forwarding to LLM');
+            const llmResponse = await context.sendToLLM(message); // Use working message
+            context.sendResponse(llmResponse);
+            return 'General question handled by LLM';
+        }
+        
+    } catch (error) {
+        context.console.error('Request categorization failed:', error.message);
+        // Fallback to direct LLM
+        const llmResponse = await context.sendToLLM(message);
+        context.sendResponse(llmResponse);
+        return 'Fallback to direct LLM due to categorization error';
+    }
 }`;
   }
 
@@ -479,21 +557,24 @@ function handleUserMessage(message, context) {
  * Available context methods:
  * - context.console.log/error/warn/info() - for logging
  * - context.sendResponse(message) - send response to chat
- * - context.sendToLLM(message, callback) - send to LLM and get response
- * - context.getVariable(key) - get stored variable
- * - context.setVariable(key, value) - set variable (persists)
+ * - context.sendToLLM(message) - send to LLM and get response (Promise-based)
+ * - context.getConfig(key) - get stored config (read-only)
  */
 
-function handleUserMessage(message, context) {
+async function handleUserMessage(message, context) {
     context.console.log('${mode} algorithm processing message:', message);
     
     // Default behavior: forward to LLM
-    context.sendToLLM(message, function(llmResponse) {
+    try {
+        const llmResponse = await context.sendToLLM(message);
         context.console.info('LLM response received');
         context.sendResponse(llmResponse);
-    });
-    
-    return '${mode} algorithm delegated to LLM';
+        return '${mode} algorithm delegated to LLM';
+    } catch (error) {
+        context.console.error('LLM request failed:', error.message);
+        context.sendResponse('Sorry, I encountered an error processing your request.');
+        return '${mode} algorithm failed';
+    }
 }`;
   }
 }

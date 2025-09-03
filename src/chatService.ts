@@ -9,6 +9,7 @@ import { LoggingService } from './loggingService';
 import { AskUserTool } from './tools/askUser';
 import { PlanContextManager } from './planContextManager';
 import { AlgorithmEngine } from './algorithmEngine';
+import { PlanningService } from './planningService';
 import { 
   ChatMessage, 
   OpenAIChatMessage, 
@@ -47,6 +48,10 @@ export class ChatService {
     
     // Register this ChatService instance with the algorithm engine
     this.algorithmEngine.setChatService(this);
+    
+    // Register planning service with algorithm engine
+    const planningService = PlanningService.getInstance();
+    this.algorithmEngine.setPlanningService(planningService);
     
     // Get workspace root for history persistence
     this.workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || null;
