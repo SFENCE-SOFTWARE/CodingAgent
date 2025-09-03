@@ -1558,14 +1558,15 @@ export class SettingsPanel {
    */
   private async _setAlgorithmVariable(mode: string, key: string, value: string) {
     try {
-      const engine = AlgorithmEngine.getInstance();
-      await engine.setAlgorithmVariable(mode, key, value);
+      // Variable management has been replaced with config management
+      // Variables are now handled in RAM during algorithm execution
       
       this._panel.webview.postMessage({
         type: 'variableSet',
         mode: mode,
         key: key,
-        value: value
+        value: value,
+        message: 'Variables are now managed by algorithms directly during execution'
       });
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);

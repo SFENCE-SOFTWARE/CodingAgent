@@ -1908,7 +1908,7 @@ export class ChatService {
       const currentMode = config.get<string>('currentMode', 'Coder');
       
       // Add orchestration prompt to chat history for visibility
-      const promptMessage = this.addUserMessage(`**[Orchestrator Query]**\n${message}`);
+      const promptMessage = this.addUserMessage(message); // Remove [Orchestrator Query] prefix
       
       // Set custom display role for orchestration query
       promptMessage.displayRole = `Algorithm-${currentMode} Query`;

@@ -11,7 +11,6 @@ import { ChatService } from './chatService';
 export interface AlgorithmContext {
   mode: string;
   userMessage: string;
-  variables: { [key: string]: string };
   console: {
     log: (...args: any[]) => void;
     error: (...args: any[]) => void;
@@ -19,14 +18,9 @@ export interface AlgorithmContext {
     info: (...args: any[]) => void;
   };
   sendResponse: (message: string) => void;
-  sendToLLM: (message: string, callback: (response: string) => void) => void;
-  getVariable: (key: string) => string | undefined;
-  setVariable: (key: string, value: string) => void;
-  
-  // Internal properties for algorithm execution
-  _response?: string;
-  _llmCallback?: (response: string) => void;
-  _llmMessage?: string;
+  sendToLLM: (message: string) => Promise<string>; // Change to Promise-based
+  getConfig: (key: string) => any;
+  setConfig: (key: string, value: any) => void;
 }
 
 /**
@@ -46,6 +40,8 @@ export class AlgorithmEngine {
   private chatService?: ChatService;
   private logs: string[] = [];
   private currentChatCallback?: (update: any) => void;
+  private configData: { [algorithm: string]: { [key: string]: any } } = {};
+  private algorithmResponses: { [algorithm: string]: string } = {}; // Store final responses
 
   private constructor() {}
 
@@ -150,27 +146,6 @@ export class AlgorithmEngine {
   /**
    * Get algorithm variables for the given mode
    */
-  public getAlgorithmVariables(mode: string): { [key: string]: string } {
-    const config = vscode.workspace.getConfiguration('codingagent.algorithm');
-    const variables = config.get('variables', {}) as { [key: string]: { [key: string]: string } };
-    return variables[mode] || {};
-  }
-
-  /**
-   * Set algorithm variable for the given mode
-   */
-  public async setAlgorithmVariable(mode: string, key: string, value: string): Promise<void> {
-    const config = vscode.workspace.getConfiguration('codingagent.algorithm');
-    const variables = config.get('variables', {}) as { [key: string]: { [key: string]: string } };
-    
-    if (!variables[mode]) {
-      variables[mode] = {};
-    }
-    variables[mode][key] = value;
-    
-    await config.update('variables', variables, vscode.ConfigurationTarget.Global);
-  }
-
   /**
    * Execute algorithm for the given mode and user message
    */
@@ -215,12 +190,9 @@ export class AlgorithmEngine {
    * Create sandbox context for algorithm execution
    */
   private async createSandboxContext(mode: string, userMessage: string): Promise<AlgorithmContext> {
-    const variables = this.getAlgorithmVariables(mode);
-    
     const context: AlgorithmContext = {
       mode,
       userMessage,
-      variables: { ...variables },
       
       console: {
         log: (...args: any[]) => this.log('log', ...args),
@@ -230,28 +202,35 @@ export class AlgorithmEngine {
       },
 
       sendResponse: (message: string) => {
-        // This will be handled by the execution result
-        context._response = message;
+        // Store final response for the algorithm
+        this.algorithmResponses[mode] = message;
       },
 
-      sendToLLM: (message: string, callback: (response: string) => void) => {
-        if (this.chatService) {
-          // Store callback for async execution
-          context._llmCallback = callback;
-          context._llmMessage = message;
-        } else {
-          callback('Error: Chat service not available');
+      sendToLLM: async (message: string): Promise<string> => {
+        if (!this.chatService) {
+          throw new Error('Chat service not available');
         }
+
+        return new Promise((resolve, reject) => {
+          this.chatService!.sendOrchestrationRequest(message, (response: string) => {
+            resolve(response);
+          }, this.currentChatCallback);
+        });
       },
 
-      getVariable: (key: string) => variables[key],
+      getConfig: (key: string) => {
+        if (!this.configData[mode]) {
+          this.configData[mode] = {};
+        }
+        return this.configData[mode][key];
+      },
 
-      setVariable: (key: string, value: string) => {
-        variables[key] = value;
-        // Persist the change
-        this.setAlgorithmVariable(mode, key, value).catch(error => {
-          this.log('error', 'Failed to persist variable:', error);
-        });
+      setConfig: (key: string, value: any) => {
+        if (!this.configData[mode]) {
+          this.configData[mode] = {};
+        }
+        this.configData[mode][key] = value;
+        this.log('info', `Config set for ${mode}: ${key} = ${value}`);
       }
     } as any;
 
@@ -308,16 +287,23 @@ export class AlgorithmEngine {
       const func = eval(wrappedScript);
       const result = await func(sandbox);
 
-      // Check if LLM call was made
-      if ((context as any)._llmMessage && (context as any)._llmCallback) {
-        return await this.handleLLMCall(context as any);
+      // Get final response from algorithm (set via sendResponse)
+      const finalResponse = this.algorithmResponses[context.mode];
+      
+      if (finalResponse) {
+        // Clear stored response
+        delete this.algorithmResponses[context.mode];
+        
+        return {
+          handled: true,
+          response: finalResponse
+        };
       }
 
-      // Return direct response
-      const response = (context as any)._response || result;
+      // Fallback to direct result if sendResponse wasn't called
       return {
         handled: true,
-        response: response || 'Algorithm executed successfully'
+        response: result || 'Algorithm executed successfully'
       };
 
     } catch (error) {
@@ -328,42 +314,6 @@ export class AlgorithmEngine {
         error: `Algorithm execution error: ${errorMsg}`
       };
     }
-  }
-
-  /**
-   * Handle LLM call from algorithm
-   */
-  private async handleLLMCall(context: any): Promise<AlgorithmResult> {
-    return new Promise((resolve) => {
-      if (!this.chatService) {
-        resolve({
-          handled: false,
-          error: 'Chat service not available for LLM calls'
-        });
-        return;
-      }
-
-      // Use the standard chat flow to ensure proper logging and UI updates
-      this.chatService.sendOrchestrationRequest(context._llmMessage, (llmResponse: string) => {
-        try {
-          // Call the algorithm callback with LLM response
-          context._llmCallback(llmResponse);
-          
-          // Return the algorithm's final response
-          const response = context._response || 'Algorithm completed with LLM interaction';
-          resolve({
-            handled: true,
-            response
-          });
-        } catch (error) {
-          const errorMsg = error instanceof Error ? error.message : String(error);
-          resolve({
-            handled: false,
-            error: `Algorithm callback error: ${errorMsg}`
-          });
-        }
-      }, this.currentChatCallback);
-    });
   }
 
   /**
