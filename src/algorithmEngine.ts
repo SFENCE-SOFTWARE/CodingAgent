@@ -5,6 +5,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { ChatService } from './chatService';
 import { PlanningService } from './planningService';
+import { PlanContextManager } from './planContextManager';
 
 /**
  * Interface for algorithm execution context
@@ -19,12 +20,19 @@ export interface AlgorithmContext {
     info: (...args: any[]) => void;
   };
   sendResponse: (message: string) => void;
+  sendNotice: (content: string) => void;
   sendToLLM: (message: string) => Promise<string>; // Promise-based
   getConfig: (key: string) => any; // Read-only config access
+  getVariable: (variableKey: string) => string | undefined; // Get algorithm variables
   planningService?: {
     showPlan: (planId: string) => { success: boolean; plan?: any; error?: string };
     listPlans: () => { success: boolean; plans?: Array<{id: string, name: string, shortDescription?: string}>; error?: string };
     createPlan: (id: string, name: string, shortDescription: string, longDescription: string) => { success: boolean; error?: string };
+    evaluatePlanCompletion: (planId: string) => { success: boolean; result?: any; error?: string };
+  };
+  planContextManager?: {
+    getCurrentPlanId: () => string | null;
+    setCurrentPlanId: (planId: string | null) => void;
   };
 }
 
@@ -210,9 +218,21 @@ export class AlgorithmEngine {
         // Store the final response for retrieval
         this.algorithmResponses[mode] = message;
       },
+      // Send notice message to chat
+      sendNotice: (content: string) => {
+        if (this.chatService && this.chatService.sendNoticeMessage) {
+          this.chatService.sendNoticeMessage(content);
+        }
+      },
       // Config management in RAM (read-only)
       getConfig: (key: string) => {
         return this.configStore.get(key);
+      },
+      // Get algorithm variables for current mode
+      getVariable: (variableKey: string) => {
+        const config = vscode.workspace.getConfiguration('codingagent.algorithm.variables');
+        const variables = config.get(mode) as Record<string, string> || {};
+        return variables[variableKey];
       },
       
       // LLM communication - now Promise-based with optional mode
@@ -257,8 +277,26 @@ export class AlgorithmEngine {
             return { success: false, error: 'Planning service not available' };
           }
           return this.planningService.createPlan(id, name, shortDescription, longDescription);
+        },
+        evaluatePlanCompletion: (planId: string) => {
+          if (!this.planningService) {
+            return { success: false, error: 'Planning service not available' };
+          }
+          return this.planningService.evaluatePlanCompletion(planId);
         }
-      } : undefined
+      } : undefined,
+      
+      // Plan context manager integration
+      planContextManager: {
+        getCurrentPlanId: () => {
+          const manager = PlanContextManager.getInstance();
+          return manager.getCurrentPlanId();
+        },
+        setCurrentPlanId: (planId: string | null) => {
+          const manager = PlanContextManager.getInstance();
+          manager.setCurrentPlanId(planId);
+        }
+      }
     };
   }
 

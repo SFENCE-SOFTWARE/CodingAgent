@@ -663,7 +663,9 @@
               }
             },
             "default": {
-              "Orchestrator": {}
+              "Orchestrator": {
+                "llmLanguages": "English"
+              }
             },
             "description": "Key-value variables for algorithm scripts by mode",
             "scope": "window"

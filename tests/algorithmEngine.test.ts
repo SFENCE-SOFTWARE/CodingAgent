@@ -240,6 +240,8 @@ suite('AlgorithmEngine Tests', () => {
     const config = vscode.workspace.getConfiguration('codingagent.algorithm');
     await config.update('enabled', { 'Orchestrator': true }, vscode.ConfigurationTarget.Global);
     
+    let noticeSent = false;
+    
     // Mock ChatService for LLM calls
     const mockChatService = {
       sendOrchestrationRequest: (prompt: string, callback: (response: string) => void, chatCallback?: any, mode?: string) => {
@@ -255,6 +257,11 @@ suite('AlgorithmEngine Tests', () => {
         else if (prompt.includes('Create a plan') && mode === 'Architect') {
           callback('I have created a comprehensive plan for your project with detailed implementation steps. The plan includes all necessary phases and is ready for execution.');
         }
+      },
+      sendNoticeMessage: (content: string) => {
+        if (content.includes('Switching to Architect mode')) {
+          noticeSent = true;
+        }
       }
     };
     
@@ -263,7 +270,7 @@ suite('AlgorithmEngine Tests', () => {
     const result = await algorithmEngine.executeAlgorithm('Orchestrator', 'Create a new plan for my project');
     
     assert.strictEqual(result.handled, true, 'Orchestrator should handle new plan request');
-    assert.ok(result.response?.includes('🏗️ **Switching to Architect mode'), 'Should show mode switch notice');
+    assert.strictEqual(noticeSent, true, 'Should send mode switch notice');
     assert.ok(result.response?.includes('I have created a comprehensive plan'), 'Should include plan creation confirmation');
   });
 });

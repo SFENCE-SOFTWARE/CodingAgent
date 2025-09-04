@@ -312,6 +312,11 @@ export class ChatService {
     }
   }
 
+  // Public method for sending notice messages (for algorithm engine)
+  public sendNoticeMessage(content: string): void {
+    this.addNoticeMessage(content);
+  }
+
   continueIterations(): void {
     this.shouldContinueIterations = true;
     this.isWaitingForIterationContinue = false;
