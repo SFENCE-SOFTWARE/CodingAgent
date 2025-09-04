@@ -39,6 +39,7 @@ export class ChatService {
   private currentPlanId: string | null = null; // Track the current active plan ID
   private workspaceRoot: string | null = null; // Store workspace root for history persistence
   private isOrchestrated: boolean = false; // Track if we're in orchestrated mode
+  private configurationChangeCallback?: () => void; // Callback for configuration changes
 
   constructor(toolsService?: ToolsService) {
     this.openai = new OpenAIService();
@@ -122,6 +123,10 @@ export class ChatService {
 
   setStreamingCallback(callback: (update: StreamingUpdate) => void): void {
     this.streamingCallback = callback;
+  }
+
+  setConfigurationChangeCallback(callback: () => void): void {
+    this.configurationChangeCallback = callback;
   }
 
   /**
@@ -217,6 +222,11 @@ export class ChatService {
       // Temporarily switch to target mode
       await config.update('currentMode', targetMode, vscode.ConfigurationTarget.Global);
       
+      // Notify UI about mode change
+      if (this.configurationChangeCallback) {
+        this.configurationChangeCallback();
+      }
+      
       // Set orchestrated flag to use orchestrationMessage
       this.isOrchestrated = true;
       
@@ -276,6 +286,11 @@ export class ChatService {
       
       // Switch back to original mode
       await config.update('currentMode', originalMode, vscode.ConfigurationTarget.Global);
+      
+      // Notify UI about mode change
+      if (this.configurationChangeCallback) {
+        this.configurationChangeCallback();
+      }
       
       // Restore orchestrated flag
       this.isOrchestrated = wasOrchestrated;
@@ -619,7 +634,8 @@ export class ChatService {
       this.streamingCallback({
         type: 'start',
         messageId,
-        model: currentModel
+        model: currentModel,
+        mode: currentMode
       });
     }
 
@@ -865,7 +881,8 @@ export class ChatService {
         timestamp: Date.now(),
         toolCalls: normalizedToolCalls,
         reasoning: this.extractReasoning(assistantMessage),
-        model: this.openai.getCurrentModel()
+        model: this.openai.getCurrentModel(),
+        mode: this.openai.getCurrentMode()
       };
       
       this.messages.push(assistantChatMessage);
@@ -1151,7 +1168,8 @@ export class ChatService {
             this.streamingCallback({
               type: 'start',
               messageId: followUpMessageId,
-              model: this.openai.getCurrentModel()
+              model: this.openai.getCurrentModel(),
+              mode: this.openai.getCurrentMode()
             });
           }
           
@@ -1337,7 +1355,8 @@ export class ChatService {
             timestamp: Date.now(),
             toolCalls: normalizedToolCalls, // Use normalized tool calls
             reasoning: this.extractReasoning(currentMessage),
-            model: this.openai.getCurrentModel()
+            model: this.openai.getCurrentModel(),
+            mode: this.openai.getCurrentMode()
           };
           
           this.messages.push(intermediateChatMessage);
@@ -1416,7 +1435,8 @@ export class ChatService {
         content: currentMessage.content || 'Process completed',
         timestamp: Date.now(),
         reasoning: this.extractReasoning(currentMessage),
-        model: this.openai.getCurrentModel()
+        model: this.openai.getCurrentModel(),
+        mode: this.openai.getCurrentMode()
       };
 
       this.messages.push(finalChatMessage);
@@ -1460,7 +1480,9 @@ export class ChatService {
       id: this.generateId(),
       role: 'user',
       content,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      mode: this.openai.getCurrentMode(),
+      model: this.openai.getCurrentModel()
     };
     
     this.messages.push(userMessage);
@@ -1473,7 +1495,9 @@ export class ChatService {
       id: this.generateId(),
       role: 'user',
       content,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      mode: this.openai.getCurrentMode(),
+      model: this.openai.getCurrentModel()
     };
     
     // Override the display role
@@ -1701,10 +1725,18 @@ export class ChatService {
 
   async setMode(mode: string): Promise<void> {
     await this.openai.setCurrentMode(mode);
+    // Notify UI about configuration change
+    if (this.configurationChangeCallback) {
+      this.configurationChangeCallback();
+    }
   }
 
   async setModel(model: string): Promise<void> {
     await this.openai.setCurrentModel(model);
+    // Notify UI about configuration change
+    if (this.configurationChangeCallback) {
+      this.configurationChangeCallback();
+    }
   }
 
   getShowThinking(): boolean {
@@ -1782,7 +1814,8 @@ export class ChatService {
             role: 'assistant',
             content: `🔍 **Automatic Plan Evaluation**\n\n${result.content}\n\n*This evaluation was triggered automatically after your request. You can continue with the suggested corrective action or proceed with other tasks.*`,
             timestamp: Date.now(),
-            model: this.openai.getCurrentModel()
+            model: this.openai.getCurrentModel(),
+            mode: this.openai.getCurrentMode()
           };
           
           this.messages.push(evaluationMessage);

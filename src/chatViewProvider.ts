@@ -34,6 +34,11 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       this.handleStreamingUpdate(update);
     });
     
+    // Set up configuration change callback
+    this.chatService.setConfigurationChangeCallback(() => {
+      this.sendConfiguration();
+    });
+    
     // Listen for configuration changes
     vscode.workspace.onDidChangeConfiguration((event) => {
       if (event.affectsConfiguration('codingagent')) {
@@ -56,7 +61,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         this.sendMessage({
           type: 'streamingStart',
           messageId: update.messageId,
-          model: update.model
+          model: update.model,
+          mode: update.mode
         });
         break;
 
@@ -301,6 +307,10 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
 
           case 'copyToClipboard':
             await this.handleCopyToClipboard(message.text);
+            break;
+
+          case 'openPlanVisualization':
+            await this.handleOpenPlanVisualization(message.planId);
             break;
         }
       } catch (error) {
@@ -792,5 +802,24 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       console.error('Failed to copy to clipboard:', error);
       vscode.window.showErrorMessage('Failed to copy to clipboard');
     }
+  }
+
+  private async handleOpenPlanVisualization(planId: string) {
+    try {
+      // Execute command to open plan visualization
+      await vscode.commands.executeCommand('codingagent.openPlanVisualization', planId);
+    } catch (error) {
+      console.error('Failed to open plan visualization:', error);
+      vscode.window.showErrorMessage('Failed to open plan visualization');
+    }
+  }
+
+  public updateCurrentPlan(planId: string | null) {
+    if (!this._view) return;
+    
+    this.sendMessage({
+      type: 'updateCurrentPlan',
+      planId: planId
+    });
   }
 }

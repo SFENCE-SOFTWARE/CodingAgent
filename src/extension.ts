@@ -4,10 +4,13 @@ import * as vscode from 'vscode';
 import { ChatViewProvider } from './chatViewProvider';
 import { OpenAIService } from './openai_html_api';
 import { SettingsPanel } from './settingsPanel';
+import { PlanVisualizationPanel } from './planVisualizationPanel';
 import { ToolsService } from './tools';
 import { InlineChangeDecorationService } from './inlineChangeDecorationService';
 import { ChangeCodeLensProvider } from './changeCodeLensProvider';
+import { PlanContextManager } from './planContextManager';
 
+// Plan visualization function
 export function activate(context: vscode.ExtensionContext) {
   console.log('CodingAgent extension is now active!');
 
@@ -106,6 +109,13 @@ export function activate(context: vscode.ExtensionContext) {
   } else {
     console.warn('Cannot set up change tracking callback - some services are missing');
   }
+
+  // Set up plan context manager callback
+  const planContextManager = PlanContextManager.getInstance();
+  planContextManager.setUpdateCallback((planId: string | null) => {
+    console.log(`[Extension] Plan context changed to: ${planId}`);
+    chatViewProvider.updateCurrentPlan(planId);
+  });
 
   // Register commands
   context.subscriptions.push(
@@ -284,6 +294,18 @@ export function activate(context: vscode.ExtensionContext) {
         if (changeTracker) {
           await changeTracker.rejectChange(changeId);
           vscode.window.showInformationMessage(`Change rejected and reverted`);
+        }
+      })
+    );
+
+    // Plan visualization command
+    context.subscriptions.push(
+      vscode.commands.registerCommand('codingagent.openPlanVisualization', async (planId: string) => {
+        try {
+          PlanVisualizationPanel.createOrShow(context.extensionUri, planId, toolsService);
+        } catch (error) {
+          console.error('Failed to open plan visualization:', error);
+          vscode.window.showErrorMessage(`Failed to open plan visualization: ${error}`);
         }
       })
     );

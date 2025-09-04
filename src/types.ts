@@ -131,6 +131,7 @@ export interface ChatMessage {
   reasoning?: string;
   raw?: any;
   model?: string;
+  mode?: string;
   isStreaming?: boolean;
   isAlreadyDisplayed?: boolean; // Flag to prevent duplicate display in UI
   changeIds?: string[]; // Track associated file changes
@@ -163,6 +164,7 @@ export interface StreamingUpdate {
   thinking?: string;
   toolCalls?: ToolCall[];
   model?: string;
+  mode?: string;
   error?: string;
   isComplete?: boolean;
   changeIds?: string[]; // For change tracking updates

@@ -129,7 +129,7 @@ export class ToolsService {
       new AskUserTool(),
 
       // Planning tools
-      new PlanNewTool(),
+      new PlanNewTool(this.workspaceRoot),
       new PlanOpenTool(),
       new PlanListTool(),
       new PlanAddPointsTool(),
@@ -284,5 +284,17 @@ export class ToolsService {
     }
     
     return categorized;
+  }
+
+  /**
+   * Get planning service
+   */
+  getPlanningService() {
+    // Find a planning tool to get the service
+    const planTool = Array.from(this.tools.values()).find(tool => tool instanceof PlanNewTool) as PlanNewTool | undefined;
+    if (planTool) {
+      return planTool.getPlanningService();
+    }
+    return null;
   }
 }

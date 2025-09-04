@@ -18,6 +18,7 @@
   const copyAllBtn = document.getElementById('copyAllBtn');
   const copyAllWithThinkingBtn = document.getElementById('copyAllWithThinkingBtn');
   const refreshModelsBtn = document.getElementById('refreshModelsBtn');
+  const planVisualizationBtn = document.getElementById('planVisualizationBtn');
   
   // Correction dialog elements
   const correctionDialog = document.getElementById('correctionDialog');
@@ -67,6 +68,7 @@
   let pendingChanges = []; // Track pending file changes
   let isChangesPanelVisible = false;
   let pendingTerminalCommands = []; // Track pending terminal commands
+  let currentPlanId = null; // Track current active plan
   
   // Initialize
   function init() {
@@ -222,6 +224,27 @@
       console.error('refreshModelsBtn element not found!');
     }
     
+    // Plan visualization button
+    if (planVisualizationBtn) {
+      planVisualizationBtn.addEventListener('click', () => {
+        console.log('Plan visualization button clicked');
+        
+        // Add visual feedback
+        planVisualizationBtn.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+          planVisualizationBtn.style.transform = '';
+        }, 150);
+        
+        // Request plan visualization
+        vscode.postMessage({ 
+          type: 'openPlanVisualization',
+          planId: currentPlanId 
+        });
+      });
+    } else {
+      console.error('planVisualizationBtn element not found!');
+    }
+    
     // Change tracking events
     showChangesBtn.addEventListener('click', () => {
       showChangesPanel();
@@ -290,6 +313,17 @@
   function updateChangesButtonCompactMode() {
     // Always use compact mode - just add the class
     showChangesBtn.classList.add('compact');
+  }
+
+  function updatePlanVisualizationButton() {
+    if (planVisualizationBtn) {
+      if (currentPlanId) {
+        planVisualizationBtn.style.display = 'block';
+        planVisualizationBtn.title = `Visualize plan: ${currentPlanId}`;
+      } else {
+        planVisualizationBtn.style.display = 'none';
+      }
+    }
   }
 
   function setToolCallsRunning(running) {
@@ -577,9 +611,10 @@
     if (message.displayRole) {
       roleSpan.textContent = message.displayRole;
     } else if (message.role === 'assistant') {
-      // Dynamic assistant label with model name and mode
+      // Dynamic assistant label with model name and mode from message
       const modelName = message.model || currentModel || 'Unknown';
-      roleSpan.textContent = `LLM ${modelName} - ${currentMode}`;
+      const modeName = message.mode || currentMode || 'Unknown';
+      roleSpan.textContent = `LLM ${modelName} - ${modeName}`;
     } else {
       roleSpan.textContent = message.role;
     }
@@ -926,15 +961,31 @@
   }
   
   function updateConfiguration(config) {
+    console.log('[Chat] Updating configuration:', config);
     currentMode = config.mode;
     currentModel = config.model;
     enableStreaming = config.enableStreaming !== undefined ? config.enableStreaming : true;
     
-    modeSelect.value = currentMode;
-    modelSelect.value = currentModel;
+    // Update mode select - check if option exists first
+    const modeOptions = Array.from(modeSelect.options).map(opt => opt.value);
+    if (modeOptions.includes(currentMode)) {
+      modeSelect.value = currentMode;
+      console.log('[Chat] Mode updated to:', currentMode);
+    } else {
+      console.warn('[Chat] Mode not found in options:', currentMode, 'Available:', modeOptions);
+    }
+    
+    // Update model select - check if option exists first
+    const modelOptions = Array.from(modelSelect.options).map(opt => opt.value);
+    if (modelOptions.includes(currentModel)) {
+      modelSelect.value = currentModel;
+      console.log('[Chat] Model updated to:', currentModel);
+    } else {
+      console.warn('[Chat] Model not found in options:', currentModel, 'Available:', modelOptions);
+    }
   }
 
-  function createStreamingMessage(messageId, model) {
+  function createStreamingMessage(messageId, model, mode) {
     const messageDiv = document.createElement('div');
     messageDiv.className = 'message assistant streaming';
     messageDiv.setAttribute('data-message-id', messageId);
@@ -949,7 +1000,10 @@
     
     const roleSpan = document.createElement('span');
     roleSpan.className = 'message-role';
-    roleSpan.textContent = `LLM ${model || currentModel || 'Unknown'} - ${currentMode}`;
+    // Use provided model/mode or fall back to current values
+    const displayModel = model || currentModel || 'Unknown';
+    const displayMode = mode || currentMode || 'Unknown';
+    roleSpan.textContent = `LLM ${displayModel} - ${displayMode}`;
     
     const timestampSpan = document.createElement('span');
     timestampSpan.className = 'message-timestamp';
@@ -1389,6 +1443,11 @@
         updateAvailableModes(message.modes);
         break;
         
+      case 'updateCurrentPlan':
+        currentPlanId = message.planId;
+        updatePlanVisualizationButton();
+        break;
+        
       case 'showError':
         console.error('Extension error:', message.error);
         addMessage({
@@ -1431,7 +1490,7 @@
 
       // Streaming message handlers
       case 'streamingStart':
-        createStreamingMessage(message.messageId, message.model);
+        createStreamingMessage(message.messageId, message.model, message.mode);
         break;
 
       case 'streamingContent':

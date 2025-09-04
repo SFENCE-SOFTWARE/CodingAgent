@@ -60,6 +60,9 @@ export function getWebviewContent(
           <button id="copyAllWithThinkingBtn" class="action-btn" title="Copy all conversation with thinking as markdown">
             🧠
           </button>
+          <button id="planVisualizationBtn" class="action-btn" title="Visualize current plan" style="display: none;">
+            📊
+          </button>
           <button id="refreshModelsBtn" class="action-btn" title="Refresh available models">
             <img src="${refreshIconUri}" alt="Refresh" width="16" height="16">
           </button>
