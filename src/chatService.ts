@@ -1907,10 +1907,10 @@ export class ChatService {
   /**
    * Send orchestration request with full chat UI integration
    */
-  async sendOrchestrationRequest(message: string, callback: (response: string) => void, chatCallback?: (update: ChatUpdate) => void): Promise<void> {
+  async sendOrchestrationRequest(message: string, callback: (response: string) => void, chatCallback?: (update: ChatUpdate) => void, mode?: string): Promise<void> {
     try {
       const config = vscode.workspace.getConfiguration('codingagent');
-      const currentMode = config.get<string>('currentMode', 'Coder');
+      const currentMode = mode || config.get<string>('currentMode', 'Coder'); // Use provided mode or fall back to current mode
       
       // Add orchestration prompt to chat history for visibility
       const promptMessage = this.addUserMessage(message); // Remove [Orchestrator Query] prefix
@@ -1926,8 +1926,8 @@ export class ChatService {
         });
       }
       
-      // Process with orchestration context and get response
-      const responseMessages = await this.processOrchestrationMessage(message, chatCallback);
+      // Process with orchestration context and get response using the specified mode
+      const responseMessages = await this.processOrchestrationMessage(message, chatCallback, currentMode);
       
       // Extract text content from response messages for algorithm callback
       let response = '';
@@ -1960,9 +1960,9 @@ export class ChatService {
   /**
    * Process orchestration message using the same flow as normal chat
    */
-  private async processOrchestrationMessage(message: string, chatCallback?: (update: ChatUpdate) => void): Promise<ChatMessage[]> {
+  private async processOrchestrationMessage(message: string, chatCallback?: (update: ChatUpdate) => void, mode?: string): Promise<ChatMessage[]> {
     const config = vscode.workspace.getConfiguration('codingagent');
-    const currentMode = config.get<string>('currentMode', 'Coder');
+    const currentMode = mode || config.get<string>('currentMode', 'Coder'); // Use provided mode or fall back to current mode
     const modes = config.get<Record<string, any>>('modes', {});
     const basicModeConfig = modes[currentMode] || {};
     

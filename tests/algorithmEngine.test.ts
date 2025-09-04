@@ -242,7 +242,7 @@ suite('AlgorithmEngine Tests', () => {
     
     // Mock ChatService for LLM calls
     const mockChatService = {
-      sendOrchestrationRequest: (prompt: string, callback: (response: string) => void) => {
+      sendOrchestrationRequest: (prompt: string, callback: (response: string) => void, chatCallback?: any, mode?: string) => {
         // Mock language detection
         if (prompt.includes('Detect the language')) {
           callback('en');
@@ -250,6 +250,10 @@ suite('AlgorithmEngine Tests', () => {
         // Mock categorization - return NEW
         else if (prompt.includes('categorize it')) {
           callback('NEW');
+        }
+        // Mock Architect mode plan creation
+        else if (prompt.includes('Vytvoř plán') && mode === 'Architect') {
+          callback('Vytvořil jsem komplexní plán pro váš požadavek s detailními kroky a časovým harmonogramem. Plán zahrnuje všechny potřebné fáze implementace a je připraven k realizaci.');
         }
       }
     };
@@ -259,7 +263,7 @@ suite('AlgorithmEngine Tests', () => {
     const result = await algorithmEngine.executeAlgorithm('Orchestrator', 'Create a new plan for my project');
     
     assert.strictEqual(result.handled, true, 'Orchestrator should handle new plan request');
-    assert.ok(result.response?.includes('Plan creation request detected'), 'Should detect plan creation request');
-    assert.ok(result.response?.includes('Implementation pending'), 'Should indicate pending implementation');
+    assert.ok(result.response?.includes('Vytvořil jsem komplexní plán'), 'Should include plan creation confirmation');
+    assert.ok(result.response?.includes('detailními kroky'), 'Should include plan details confirmation');
   });
 });

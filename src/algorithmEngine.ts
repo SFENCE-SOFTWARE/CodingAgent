@@ -215,8 +215,8 @@ export class AlgorithmEngine {
         return this.configStore.get(key);
       },
       
-      // LLM communication - now Promise-based
-      sendToLLM: async (prompt: string): Promise<string> => {
+      // LLM communication - now Promise-based with optional mode
+      sendToLLM: async (prompt: string, mode?: string): Promise<string> => {
         return new Promise((resolve, reject) => {
           try {
             if (!this.chatService) {
@@ -229,7 +229,8 @@ export class AlgorithmEngine {
               (response: string) => {
                 resolve(response);
               }, 
-              this.currentChatCallback
+              this.currentChatCallback,
+              mode // Pass the optional mode parameter
             );
           } catch (error) {
             reject(new Error(`LLM request failed: ${error instanceof Error ? error.message : String(error)}`));

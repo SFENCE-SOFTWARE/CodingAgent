@@ -18,7 +18,7 @@ async function handleUserMessage(message, context) {
     context.console.log('Orchestrator algorithm processing message:', message);
     
     // Step 1: Detect language and translate if needed
-    const llmLanguages = ['en', 'cs', 'sk'];
+    const llmLanguages = ['en'];
     const targetLanguage = llmLanguages[0]; // Default to first supported language
     
     let workingMessage = message;
@@ -61,9 +61,21 @@ User request: "${workingMessage}"`;
         
         // Handle different categories
         if (categoryTrimmed === 'NEW') {
-            context.console.info('Plan creation request detected - logic will be added later');
-            context.sendResponse('Plan creation request detected. Implementation pending.');
-            return 'Plan creation workflow initiated';
+            context.console.info('Plan creation request detected - calling Architect mode');
+            
+            // Create plan using Architect mode
+            const architectPrompt = `Create a plan for the user's request and summarize the output in two sentences, explaining what you did and how, without listing individual points.\n\nUser's request: "${workingMessage}"`;
+
+            try {
+                const architectResponse = await context.sendToLLM(architectPrompt, 'Architect');
+                context.sendResponse(architectResponse);
+                return 'Plan created successfully using Architect mode';
+            } catch (error) {
+                context.console.error('Plan creation failed:', error.message);
+                context.sendResponse('Plan creation failed. Please try again.');
+
+                return 'Plan creation failed';
+            }
             
         } else if (categoryTrimmed.startsWith('OPEN ')) {
             const planId = categoryTrimmed.substring(5).trim();
