@@ -220,11 +220,13 @@ export class ChatService {
       this.addNoticeMessage(`🔄 Switching to ${targetMode} mode to handle delegated task...`);
       
       // Temporarily switch to target mode
-      await config.update('currentMode', targetMode, vscode.ConfigurationTarget.Global);
+      await this.openai.setCurrentMode(targetMode);
       
-      // Notify UI about mode change
+      // Notify UI about mode change with small delay to ensure config is updated
       if (this.configurationChangeCallback) {
-        this.configurationChangeCallback();
+        setTimeout(() => {
+          this.configurationChangeCallback!();
+        }, 100);
       }
       
       // Set orchestrated flag to use orchestrationMessage
@@ -285,11 +287,13 @@ export class ChatService {
       this.addNoticeMessage(`🔄 Task completed. Switching back to ${originalMode} mode...`);
       
       // Switch back to original mode
-      await config.update('currentMode', originalMode, vscode.ConfigurationTarget.Global);
+      await this.openai.setCurrentMode(originalMode);
       
-      // Notify UI about mode change
+      // Notify UI about mode change with small delay to ensure config is updated
       if (this.configurationChangeCallback) {
-        this.configurationChangeCallback();
+        setTimeout(() => {
+          this.configurationChangeCallback!();
+        }, 100);
       }
       
       // Restore orchestrated flag
@@ -1950,13 +1954,27 @@ export class ChatService {
   async sendOrchestrationRequest(message: string, callback: (response: string) => void, chatCallback?: (update: ChatUpdate) => void, mode?: string): Promise<void> {
     try {
       const config = vscode.workspace.getConfiguration('codingagent');
-      const currentMode = mode || config.get<string>('currentMode', 'Coder'); // Use provided mode or fall back to current mode
+      const originalMode = config.get<string>('currentMode', 'Coder');
+      const targetMode = mode || originalMode;
+      
+      // If mode is specified and different from current, switch to it
+      if (mode && mode !== originalMode) {
+        console.log(`[ChatService] Switching from ${originalMode} to ${targetMode} for orchestration request`);
+        await this.openai.setCurrentMode(targetMode);
+        
+        // Notify UI about mode change
+        if (this.configurationChangeCallback) {
+          setTimeout(() => {
+            this.configurationChangeCallback!();
+          }, 100);
+        }
+      }
       
       // Add orchestration prompt to chat history for visibility
       const promptMessage = this.addUserMessage(message); // Remove [Orchestrator Query] prefix
       
       // Set custom display role for orchestration query
-      promptMessage.displayRole = `Algorithm-${currentMode} Query`;
+      promptMessage.displayRole = `Algorithm-${targetMode} Query`;
       
       // Send real-time update to show the prompt in UI
       if (chatCallback) {
@@ -1967,7 +1985,7 @@ export class ChatService {
       }
       
       // Process with orchestration context and get response using the specified mode
-      const responseMessages = await this.processOrchestrationMessage(message, chatCallback, currentMode);
+      const responseMessages = await this.processOrchestrationMessage(message, chatCallback, targetMode);
       
       // Extract text content from response messages for algorithm callback
       let response = '';
@@ -1978,6 +1996,19 @@ export class ChatService {
       }
       
       const finalResponse = response.trim() || 'No response received from LLM';
+      
+      // If mode was changed, switch back to original mode
+      if (mode && mode !== originalMode) {
+        console.log(`[ChatService] Switching back from ${targetMode} to ${originalMode} after orchestration request`);
+        await this.openai.setCurrentMode(originalMode);
+        
+        // Notify UI about mode change
+        if (this.configurationChangeCallback) {
+          setTimeout(() => {
+            this.configurationChangeCallback!();
+          }, 100);
+        }
+      }
       
       // Call the algorithm callback with the response
       callback(finalResponse);
