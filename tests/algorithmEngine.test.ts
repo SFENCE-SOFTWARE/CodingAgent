@@ -252,8 +252,8 @@ suite('AlgorithmEngine Tests', () => {
           callback('NEW');
         }
         // Mock Architect mode plan creation
-        else if (prompt.includes('Vytvoř plán') && mode === 'Architect') {
-          callback('Vytvořil jsem komplexní plán pro váš požadavek s detailními kroky a časovým harmonogramem. Plán zahrnuje všechny potřebné fáze implementace a je připraven k realizaci.');
+        else if (prompt.includes('Create a plan') && mode === 'Architect') {
+          callback('I have created a comprehensive plan for your project with detailed implementation steps. The plan includes all necessary phases and is ready for execution.');
         }
       }
     };
@@ -263,7 +263,7 @@ suite('AlgorithmEngine Tests', () => {
     const result = await algorithmEngine.executeAlgorithm('Orchestrator', 'Create a new plan for my project');
     
     assert.strictEqual(result.handled, true, 'Orchestrator should handle new plan request');
-    assert.ok(result.response?.includes('Vytvořil jsem komplexní plán'), 'Should include plan creation confirmation');
-    assert.ok(result.response?.includes('detailními kroky'), 'Should include plan details confirmation');
+    assert.ok(result.response?.includes('🏗️ **Switching to Architect mode'), 'Should show mode switch notice');
+    assert.ok(result.response?.includes('I have created a comprehensive plan'), 'Should include plan creation confirmation');
   });
 });
