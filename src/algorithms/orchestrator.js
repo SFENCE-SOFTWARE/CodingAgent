@@ -90,7 +90,9 @@ User request: "${workingMessage}"`;
             }
             
         } else if (categoryTrimmed.startsWith('OPEN ')) {
-            const planId = categoryTrimmed.substring(5).trim();
+            // Extract plan ID from original category (preserving case)
+            const originalCategoryTrimmed = category.trim();
+            const planId = originalCategoryTrimmed.substring(5).trim();
             context.console.info(`Plan opening request detected for plan: ${planId}`);
             
             if (context.planningService && context.planContextManager) {
