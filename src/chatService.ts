@@ -564,7 +564,8 @@ export class ChatService {
       content: assistantMessage.content || 'No content in response',
       timestamp: Date.now(),
       reasoning: this.extractReasoning(assistantMessage),
-      model: currentModel
+      model: currentModel,
+      displayRole: `LLM ${currentModel} - ${currentMode}`
     };
 
     this.messages.push(chatMessage);
@@ -607,7 +608,8 @@ export class ChatService {
       content: '',
       timestamp: Date.now(),
       model: currentModel,
-      isStreaming: true
+      isStreaming: true,
+      displayRole: `LLM ${currentModel} - ${currentMode}`
     };
 
     this.messages.push(chatMessage);

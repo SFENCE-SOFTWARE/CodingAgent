@@ -142,7 +142,7 @@ async function executePlanCycle(context) {
     
     // Debug counter to limit iterations during development
     let iterationCount = 0;
-    const maxIterations = 2; // Limit for debugging purposes
+    const maxIterations = 2; // Increased for testing LLM delegation
     
     context.sendNotice('🔄 **Starting plan execution cycle...**');
     
@@ -207,12 +207,80 @@ async function executePlanCycle(context) {
             
             context.sendNotice(`🔧 ${actionMessage}`);
             
-            // TODO: In next iteration, here we would call appropriate LLM mode based on failedStep
-            // For now, just simulate some work with a short delay
-            context.console.info('Simulating work... (LLM calls not implemented yet)');
+            // Step 1: Ask LLM to select appropriate mode for this action
+            context.console.info('Step 1: Asking LLM to select mode for action...');
             
-            // Add a small delay to prevent overwhelming the system
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            const availableModes = context.getAvailableModes();
+            if (!availableModes || availableModes.trim().length === 0) {
+                context.console.warn('No available modes found, skipping LLM delegation');
+                context.sendNotice(`⚠️ **No available modes found for delegation**`);
+                break;
+            }
+            
+            const modeSelectionPrompt = `You need to select the most appropriate mode to handle this plan action.
+
+Available modes:
+${availableModes}
+
+Action to handle: ${evaluation.failedStep}
+Action description: ${evaluation.nextStepPrompt}
+Reason: ${evaluation.reason}
+
+Respond with ONLY the mode name (e.g., "Coder" or "Reviewer"), nothing else.`;
+            
+            let selectedMode;
+            try {
+                selectedMode = await context.sendToLLM(modeSelectionPrompt);
+                selectedMode = selectedMode.trim();
+                context.console.info(`LLM selected mode: ${selectedMode}`);
+            } catch (error) {
+                context.console.error('Mode selection failed:', error.message);
+                context.sendNotice(`❌ **Mode selection failed: ${error.message}**`);
+                break;
+            }
+            
+            // Step 2: Ask LLM to generate specific prompt for the selected mode
+            context.console.info('Step 2: Asking LLM to generate prompt for selected mode...');
+            
+            const promptGenerationPrompt = `You need to create a specific prompt for the ${selectedMode} mode to handle this plan action.
+
+Current plan ID: ${currentPlanId}
+Action type: ${evaluation.failedStep}
+Points to work on: ${evaluation.failedPoints ? evaluation.failedPoints.join(', ') : 'N/A'}
+Original action description: ${evaluation.nextStepPrompt}
+Reason: ${evaluation.reason}
+
+Create a clear, specific prompt that the ${selectedMode} mode can use to complete this task. The prompt should include all necessary context and instructions.
+
+Respond with ONLY the prompt text, no additional explanation or formatting.`;
+            
+            let generatedPrompt;
+            try {
+                generatedPrompt = await context.sendToLLM(promptGenerationPrompt);
+                generatedPrompt = generatedPrompt.trim();
+                context.console.info(`Generated prompt for ${selectedMode}: ${generatedPrompt.substring(0, 100)}...`);
+            } catch (error) {
+                context.console.error('Prompt generation failed:', error.message);
+                context.sendNotice(`❌ **Prompt generation failed: ${error.message}**`);
+                break;
+            }
+            
+            // Step 3: Send the generated prompt to the selected mode
+            context.console.info(`Step 3: Delegating to ${selectedMode} mode...`);
+            context.sendNotice(`🎯 **Delegating to ${selectedMode} mode**: ${evaluation.failedStep}`);
+            
+            try {
+                const delegatedResponse = await context.sendToLLM(generatedPrompt, selectedMode);
+                context.console.info(`${selectedMode} mode completed task`);
+                context.sendNotice(`✅ **${selectedMode} mode completed**: ${delegatedResponse.substring(0, 200)}...`);
+            } catch (error) {
+                context.console.error(`${selectedMode} mode delegation failed:`, error.message);
+                context.sendNotice(`❌ **${selectedMode} mode failed: ${error.message}**`);
+                // Continue cycle even if delegation fails
+            }
+            
+            // Add a delay before next iteration
+            await new Promise(resolve => setTimeout(resolve, 2000));
         }
         
         if (iterationCount >= maxIterations) {

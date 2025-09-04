@@ -248,6 +248,10 @@ export class PlanningService {
     }
 
     plan.updatedAt = Date.now();
+    
+    // Clear needRework flags for all points when a new point is added
+    this.clearNeedReworkFlags(planId);
+    
     this.savePlan(plan);
 
     return { success: true, pointId: newPointId };
@@ -322,6 +326,10 @@ export class PlanningService {
     }
 
     plan.updatedAt = Date.now();
+    
+    // Clear needRework flags for all points when new points are added
+    this.clearNeedReworkFlags(planId);
+    
     this.savePlan(plan);
 
     return { success: true, pointIds: newPointIds };
@@ -353,6 +361,10 @@ export class PlanningService {
 
     point.updatedAt = Date.now();
     plan.updatedAt = Date.now();
+    
+    // Clear needRework flags for all points when plan is modified
+    this.clearNeedReworkFlags(planId);
+    
     this.savePlan(plan);
 
     return { success: true };
@@ -638,6 +650,32 @@ export class PlanningService {
     return { success: true };
   }
 
+  /**
+   * Clear needRework flags for all points in a plan
+   */
+  public clearNeedReworkFlags(planId: string): { success: boolean; error?: string } {
+    const plan = this.plans.get(planId);
+    if (!plan) {
+      return { success: false, error: `Plan with ID '${planId}' not found` };
+    }
+
+    let needReworkPointsCleared = 0;
+    for (const point of plan.points) {
+      if (point.needRework) {
+        point.needRework = false;
+        point.reworkReason = '';
+        needReworkPointsCleared++;
+      }
+    }
+
+    if (needReworkPointsCleared > 0) {
+      plan.updatedAt = Date.now();
+      this.savePlan(plan);
+    }
+
+    return { success: true };
+  }
+
   public getPlanState(planId: string): { success: boolean; state?: PlanState; error?: string } {
     const plan = this.plans.get(planId);
     if (!plan) {
@@ -740,6 +778,10 @@ export class PlanningService {
 
     // Update plan timestamp and save
     plan.updatedAt = Date.now();
+    
+    // Clear needRework flags for all points when points are removed
+    this.clearNeedReworkFlags(planId);
+    
     this.savePlan(plan);
 
     return { success: true, removedPoints };

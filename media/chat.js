@@ -577,9 +577,9 @@
     if (message.displayRole) {
       roleSpan.textContent = message.displayRole;
     } else if (message.role === 'assistant') {
-      // Dynamic assistant label with model name
+      // Dynamic assistant label with model name and mode
       const modelName = message.model || currentModel || 'Unknown';
-      roleSpan.textContent = `LLM ${modelName}`;
+      roleSpan.textContent = `LLM ${modelName} - ${currentMode}`;
     } else {
       roleSpan.textContent = message.role;
     }
@@ -949,7 +949,7 @@
     
     const roleSpan = document.createElement('span');
     roleSpan.className = 'message-role';
-    roleSpan.textContent = `LLM ${model || currentModel || 'Unknown'}`;
+    roleSpan.textContent = `LLM ${model || currentModel || 'Unknown'} - ${currentMode}`;
     
     const timestampSpan = document.createElement('span');
     timestampSpan.className = 'message-timestamp';

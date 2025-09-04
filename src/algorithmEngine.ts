@@ -34,6 +34,7 @@ export interface AlgorithmContext {
     getCurrentPlanId: () => string | null;
     setCurrentPlanId: (planId: string | null) => void;
   };
+  getAvailableModes: () => string; // Returns formatted list of available modes
 }
 
 /**
@@ -296,6 +297,22 @@ export class AlgorithmEngine {
           const manager = PlanContextManager.getInstance();
           manager.setCurrentPlanId(planId);
         }
+      },
+      
+      // Available modes (excluding current mode)
+      getAvailableModes: () => {
+        const config = vscode.workspace.getConfiguration('codingagent');
+        const currentMode = config.get<string>('currentMode', 'Coder');
+        const allModes = config.get<Record<string, any>>('modes', {});
+        
+        const availableModes: string[] = [];
+        for (const [modeName, modeConfig] of Object.entries(allModes)) {
+          if (modeName !== currentMode && modeConfig.llmDescription) {
+            availableModes.push(`${modeName} - ${modeConfig.llmDescription}`);
+          }
+        }
+        
+        return availableModes.join('\n');
       }
     };
   }
