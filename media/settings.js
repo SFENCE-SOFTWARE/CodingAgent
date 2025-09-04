@@ -25,6 +25,7 @@
     logVerbosity: document.getElementById('logVerbosity'),
     logMode: document.getElementById('logMode'),
     logModeFilePath: document.getElementById('logModeFilePath'),
+    logModeIncludeTools: document.getElementById('logModeIncludeTools'),
     readFileMaxLines: document.getElementById('readFileMaxLines'),
     autoApproveCommands: document.getElementById('autoApproveCommands'),
     memoryMaxLines: document.getElementById('memoryMaxLines'),
@@ -260,6 +261,7 @@
     elements.logVerbosity.value = config.logging?.verbosity || 'Standard';
     elements.logMode.checked = config.logging?.logMode || false;
     elements.logModeFilePath.value = config.logging?.logModeFilePath || '';
+    elements.logModeIncludeTools.checked = config.logging?.logModeIncludeTools || false;
     
     // Tools settings
     elements.readFileMaxLines.value = config.tools?.readFileMaxLines || 1000;
@@ -555,6 +557,7 @@
       'logging.verbosity': elements.logVerbosity.value,
       'logging.logMode': elements.logMode.checked,
       'logging.logModeFilePath': elements.logModeFilePath.value,
+      'logging.logModeIncludeTools': elements.logModeIncludeTools.checked,
       'tools.readFileMaxLines': parseInt(elements.readFileMaxLines.value) || 1000,
       'tools.autoApproveCommands': elements.autoApproveCommands.value,
       'memory.maxLines': parseInt(elements.memoryMaxLines.value) || 1000,

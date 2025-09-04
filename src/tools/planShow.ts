@@ -72,10 +72,11 @@ export class PlanShowTool implements BaseTool {
             content += `   Review Comment: ${plan.reviewedComment}\n`;
           }
         } else if (plan.needsWork) {
-          content += `❌ Plan Status: NEEDS WORK\n`;
-          if (plan.needsWorkComment) {
-            content += `   Improvement Required: ${plan.needsWorkComment}\n`;
+          content += `❌ Plan Status: NEEDS WORK`;
+          if (plan.needsWorkComments && plan.needsWorkComments.length > 0) {
+            content += ` (${plan.needsWorkComments.length} issue${plan.needsWorkComments.length > 1 ? 's' : ''})`;
           }
+          content += `\n`;
         } else {
           content += `⏳ Plan Status: PENDING REVIEW\n`;
         }

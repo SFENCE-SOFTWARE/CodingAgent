@@ -524,6 +524,11 @@
             "type": "string",
             "default": "",
             "description": "Path to raw JSON log file (empty = workspace/.codingagent/logs/openai-raw-json.log)"
+          },
+          "codingagent.logging.logModeIncludeTools": {
+            "type": "boolean",
+            "default": false,
+            "description": "Include tools definitions in raw JSON logs (can make logs very large)"
           }
         }
       },

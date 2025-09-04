@@ -11,6 +11,7 @@ export class LoggingService {
   private verbosity: 'Minimal' | 'Standard' | 'Verbose' = 'Standard';
   private logMode: boolean = false;
   private logModeFilePath: string = '';
+  private logModeIncludeTools: boolean = false;
 
   public static getInstance(): LoggingService {
     if (!LoggingService.instance) {
@@ -37,6 +38,7 @@ export class LoggingService {
     this.verbosity = config.get('verbosity', 'Standard') as 'Minimal' | 'Standard' | 'Verbose';
     this.logMode = config.get('logMode', false);
     this.logModeFilePath = config.get('logModeFilePath', '');
+    this.logModeIncludeTools = config.get('logModeIncludeTools', false);
 
     // If no log file path specified, use default
     if (this.isEnabled && !this.logFilePath) {
@@ -500,7 +502,15 @@ export class LoggingService {
     entry += `REQUEST (Raw JSON):\n`;
     entry += `${'-'.repeat(80)}\n`;
     try {
-      entry += JSON.stringify(request, null, 2);
+      let requestToLog = request;
+      
+      // Filter out tools if not enabled
+      if (!this.logModeIncludeTools && request && request.tools) {
+        requestToLog = { ...request };
+        requestToLog.tools = `[TOOLS FILTERED - ${request.tools.length} tools available, enable logModeIncludeTools to see them]`;
+      }
+      
+      entry += JSON.stringify(requestToLog, null, 2);
     } catch (error) {
       entry += `[Error serializing request: ${error}]`;
     }

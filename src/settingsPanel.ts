@@ -225,7 +225,8 @@ export class SettingsPanel {
           filePath: config.get('logging.filePath'),
           verbosity: config.get('logging.verbosity'),
           logMode: config.get('logging.logMode'),
-          logModeFilePath: config.get('logging.logModeFilePath')
+          logModeFilePath: config.get('logging.logModeFilePath'),
+          logModeIncludeTools: config.get('logging.logModeIncludeTools')
         },
         algorithm: {
           enabled: config.get('algorithm.enabled'),
@@ -313,6 +314,7 @@ export class SettingsPanel {
         await config.update('logging.verbosity', undefined, vscode.ConfigurationTarget.Global);
         await config.update('logging.logMode', undefined, vscode.ConfigurationTarget.Global);
         await config.update('logging.logModeFilePath', undefined, vscode.ConfigurationTarget.Global);
+        await config.update('logging.logModeIncludeTools', undefined, vscode.ConfigurationTarget.Global);
         await config.update('tools.readFileMaxLines', undefined, vscode.ConfigurationTarget.Global);
         await config.update('tools.autoApproveCommands', undefined, vscode.ConfigurationTarget.Global);
         await config.update('memory.maxLines', undefined, vscode.ConfigurationTarget.Global);
@@ -631,7 +633,8 @@ export class SettingsPanel {
           filePath: config.get('logging.filePath'),
           verbosity: config.get('logging.verbosity'),
           logMode: config.get('logging.logMode'),
-          logModeFilePath: config.get('logging.logModeFilePath')
+          logModeFilePath: config.get('logging.logModeFilePath'),
+          logModeIncludeTools: config.get('logging.logModeIncludeTools')
         },
         plan: {
           autoEvaluation: {
@@ -735,6 +738,7 @@ export class SettingsPanel {
         await config.update('logging.verbosity', profileData.logging.verbosity, vscode.ConfigurationTarget.Global);
         await config.update('logging.logMode', profileData.logging.logMode, vscode.ConfigurationTarget.Global);
         await config.update('logging.logModeFilePath', profileData.logging.logModeFilePath, vscode.ConfigurationTarget.Global);
+        await config.update('logging.logModeIncludeTools', profileData.logging.logModeIncludeTools, vscode.ConfigurationTarget.Global);
       }
       
       if (profileData.plan) {
@@ -1244,6 +1248,14 @@ export class SettingsPanel {
                     <button id="selectLogModeFileBtn" class="secondary-button">Browse</button>
                   </div>
                   <small class="form-hint">Location for raw API communication logs</small>
+                </div>
+                
+                <div class="form-group">
+                  <label>
+                    <input type="checkbox" id="logModeIncludeTools" />
+                    <span class="checkbox-label">Include Tools in Logs</span>
+                  </label>
+                  <small class="form-hint">Include tool definitions in logs (warning: can make logs very large)</small>
                 </div>
               </section>
             </div>

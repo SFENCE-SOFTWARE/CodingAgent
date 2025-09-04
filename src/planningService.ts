@@ -16,6 +16,7 @@ export interface PlanPoint {
   comment: string;
   careOnComment: string;
   careOnPoints: string[];
+  dependsOn: string[];  // New: points that this point depends on
   implemented: boolean;
   reviewed: boolean;
   reviewedComment: string;
@@ -36,7 +37,7 @@ export interface Plan {
   reviewed: boolean;
   reviewedComment?: string;
   needsWork: boolean;
-  needsWorkComment?: string;
+  needsWorkComments?: string[];  // Changed to array
   accepted: boolean;
   acceptedComment?: string;
   createdAt: number;
@@ -62,6 +63,7 @@ export interface PlanEvaluationResult {
   failedStep?: 'plan_rework' | 'plan_review' | 'rework' | 'implementation' | 'code_review' | 'testing' | 'acceptance';
   failedPoints?: string[];
   reason?: string;
+  doneCallback?: () => void;  // New: callback to call when task is completed
 }
 
 export class PlanningService {
@@ -227,6 +229,7 @@ export class PlanningService {
       comment: '',
       careOnComment: '',
       careOnPoints: [],
+      dependsOn: [],
       implemented: false,
       reviewed: false,
       reviewedComment: '',
@@ -300,6 +303,7 @@ export class PlanningService {
         comment: '',
         careOnComment: '',
         careOnPoints: [],
+        dependsOn: [],
         implemented: false,
         reviewed: false,
         reviewedComment: '',
@@ -390,6 +394,42 @@ export class PlanningService {
     return { success: true, plan: result };
   }
 
+  public setPointDependencies(planId: string, pointId: string, dependsOnPointIds: string[], careOnPointIds: string[]): { success: boolean; error?: string } {
+    const plan = this.plans.get(planId);
+    if (!plan) {
+      return { success: false, error: `Plan with ID '${planId}' not found` };
+    }
+
+    const pointIndex = this.findPointIndex(plan, pointId);
+    if (pointIndex === -1) {
+      return { success: false, error: `Point with ID '${pointId}' not found in plan '${planId}'` };
+    }
+
+    // Validate dependsOn point IDs
+    for (const dependsOnId of dependsOnPointIds) {
+      if (!this.validatePointId(plan, dependsOnId)) {
+        return { success: false, error: `Depends-on point with ID '${dependsOnId}' not found in plan '${planId}'` };
+      }
+    }
+
+    // Validate careOn point IDs
+    for (const careOnId of careOnPointIds) {
+      if (!this.validatePointId(plan, careOnId)) {
+        return { success: false, error: `Care-on point with ID '${careOnId}' not found in plan '${planId}'` };
+      }
+    }
+
+    const point = plan.points[pointIndex];
+    point.dependsOn = dependsOnPointIds;
+    point.careOnPoints = careOnPointIds;
+    point.updatedAt = Date.now();
+    plan.updatedAt = Date.now();
+    this.savePlan(plan);
+
+    return { success: true };
+  }
+
+  // Keep the old method for backward compatibility
   public setCareOnPoints(planId: string, pointId: string, careOnPointIds: string[]): { success: boolean; error?: string } {
     const plan = this.plans.get(planId);
     if (!plan) {
@@ -574,7 +614,7 @@ export class PlanningService {
     plan.reviewed = true;
     plan.reviewedComment = comment;
     plan.needsWork = false;
-    plan.needsWorkComment = undefined;
+    plan.needsWorkComments = undefined;
     plan.accepted = false;  // Reset acceptance when plan structure is reviewed
     plan.acceptedComment = undefined;
     plan.updatedAt = Date.now();
@@ -583,14 +623,14 @@ export class PlanningService {
     return { success: true };
   }
 
-  public setPlanNeedsWork(planId: string, comment: string): { success: boolean; error?: string } {
+  public setPlanNeedsWork(planId: string, comments: string[]): { success: boolean; error?: string } {
     const plan = this.plans.get(planId);
     if (!plan) {
       return { success: false, error: `Plan with ID '${planId}' not found` };
     }
 
     plan.needsWork = true;
-    plan.needsWorkComment = comment;
+    plan.needsWorkComments = comments;
     plan.reviewed = false;
     plan.reviewedComment = undefined;
     plan.accepted = false;
@@ -619,7 +659,7 @@ export class PlanningService {
     plan.accepted = true;
     plan.acceptedComment = comment;
     plan.needsWork = false;
-    plan.needsWorkComment = undefined;
+    plan.needsWorkComments = undefined;
     plan.updatedAt = Date.now();
     this.savePlan(plan);
 
@@ -668,7 +708,15 @@ export class PlanningService {
       }
     }
 
-    if (needReworkPointsCleared > 0) {
+    // Also clear plan need work flags when points are modified
+    let planNeedWorkCleared = false;
+    if (plan.needsWork) {
+      plan.needsWork = false;
+      plan.needsWorkComments = undefined;
+      planNeedWorkCleared = true;
+    }
+
+    if (needReworkPointsCleared > 0 || planNeedWorkCleared) {
       plan.updatedAt = Date.now();
       this.savePlan(plan);
     }
@@ -800,13 +848,20 @@ export class PlanningService {
 
     // Step 1: Check if plan needs rework (highest priority)
     if (plan.needsWork) {
+      const firstComment = plan.needsWorkComments && plan.needsWorkComments.length > 0 
+        ? plan.needsWorkComments[0] 
+        : 'Plan needs rework';
+      
       return {
         success: true,
         result: {
           isDone: false,
-          nextStepPrompt: this.generateCorrectionPrompt('plan_rework', [], 'Plan needs rework', planId),
+          nextStepPrompt: this.generateCorrectionPrompt('plan_rework', [], firstComment, planId),
           failedStep: 'plan_rework',
-          reason: plan.needsWorkComment || 'Plan needs rework'
+          reason: firstComment,
+          doneCallback: () => {
+            this.removeFirstNeedWorkComment(planId);
+          }
         }
       };
     }
@@ -954,5 +1009,34 @@ export class PlanningService {
     }
     
     return template;
+  }
+
+  /**
+   * Remove the first need-work comment from a plan.
+   * If no comments remain, clear the needsWork flag.
+   */
+  public removeFirstNeedWorkComment(planId: string): { success: boolean; error?: string } {
+    const plan = this.plans.get(planId);
+    if (!plan) {
+      return { success: false, error: `Plan with ID '${planId}' not found` };
+    }
+
+    if (!plan.needsWork || !plan.needsWorkComments || plan.needsWorkComments.length === 0) {
+      return { success: false, error: 'Plan does not have any need-work comments' };
+    }
+
+    // Remove the first comment
+    plan.needsWorkComments.shift();
+
+    // If no comments remain, clear the needsWork flag
+    if (plan.needsWorkComments.length === 0) {
+      plan.needsWork = false;
+      plan.needsWorkComments = undefined;
+    }
+
+    plan.updatedAt = Date.now();
+    this.savePlan(plan);
+
+    return { success: true };
   }
 }

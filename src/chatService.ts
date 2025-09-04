@@ -2019,11 +2019,21 @@ export class ChatService {
 
     try {
       // Use exactly the same flow as normal chat!
+      let responseMessages: ChatMessage[];
       if (enableStreaming) {
-        return await this.processStreamingMessage(request, currentModel, currentMode, startTime, chatCallback);
+        responseMessages = await this.processStreamingMessage(request, currentModel, currentMode, startTime, chatCallback);
       } else {
-        return await this.processNonStreamingMessage(request, currentModel, currentMode, startTime, chatCallback);
+        responseMessages = await this.processNonStreamingMessage(request, currentModel, currentMode, startTime, chatCallback);
       }
+      
+      // Mark orchestration responses with special display role
+      for (const msg of responseMessages) {
+        if (msg.role === 'assistant') {
+          msg.displayRole = `LLM ${currentModel} - ${currentMode} (Orchestrated)`;
+        }
+      }
+      
+      return responseMessages;
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       await this.logging.logDebug('Orchestration request failed: ' + errorMsg);

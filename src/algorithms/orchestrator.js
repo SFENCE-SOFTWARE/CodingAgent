@@ -273,6 +273,38 @@ Respond with ONLY the prompt text, no additional explanation or formatting.`;
                 const delegatedResponse = await context.sendToLLM(generatedPrompt, selectedMode);
                 context.console.info(`${selectedMode} mode completed task`);
                 context.sendNotice(`✅ **${selectedMode} mode completed**: ${delegatedResponse.substring(0, 200)}...`);
+                
+                // Step 4: If there's a done callback, check with LLM if the change was successful
+                if (evaluation.doneCallback && typeof evaluation.doneCallback === 'function') {
+                    context.console.info('Step 4: Checking if change was successful for callback execution...');
+                    
+                    const successCheckPrompt = `Based on the response from ${selectedMode} mode, was the requested change successful? 
+                    
+Original task: ${evaluation.failedStep}
+Task description: ${evaluation.nextStepPrompt}
+Reason: ${evaluation.reason}
+Mode response: ${delegatedResponse}
+
+Respond with ONLY "YES" if the change was successful and complete, or "NO" if it failed or was not completed.`;
+                    
+                    try {
+                        const successResponse = await context.sendToLLM(successCheckPrompt);
+                        const wasSuccessful = successResponse.trim().toUpperCase() === 'YES';
+                        
+                        if (wasSuccessful) {
+                            context.console.info('LLM confirmed change was successful, executing done callback...');
+                            evaluation.doneCallback();
+                            context.sendNotice(`✅ **Change confirmed successful, callback executed**`);
+                        } else {
+                            context.console.info('LLM confirmed change was not successful, skipping callback');
+                            context.sendNotice(`⚠️ **Change not confirmed successful, callback not executed**`);
+                        }
+                    } catch (error) {
+                        context.console.error('Success check failed:', error.message);
+                        context.sendNotice(`❌ **Success check failed: ${error.message}**`);
+                    }
+                }
+                
             } catch (error) {
                 context.console.error(`${selectedMode} mode delegation failed:`, error.message);
                 context.sendNotice(`❌ **${selectedMode} mode failed: ${error.message}**`);

@@ -11,7 +11,7 @@ import { PlanListTool } from '../src/tools/planList';
 import { PlanAddPointsTool } from '../src/tools/planAddPoints';
 import { PlanChangePointTool } from '../src/tools/planChangePoint';
 import { PlanShowTool } from '../src/tools/planShow';
-import { PlanPointCareOnTool } from '../src/tools/planPointCareOn';
+import { PlanPointDependsOnTool } from '../src/tools/planPointDependsOn';
 import { PlanPointShowTool } from '../src/tools/planPointShow';
 import { PlanPointCommentTool } from '../src/tools/planPointComment';
 import { PlanPointImplementedTool } from '../src/tools/planPointImplemented';
@@ -38,7 +38,7 @@ suite('Planning Tools Test Suite', () => {
   let planAddPointsTool: PlanAddPointsTool;
   let planChangePointTool: PlanChangePointTool;
   let planShowTool: PlanShowTool;
-  let planPointCareOnTool: PlanPointCareOnTool;
+  let planPointDependsOnTool: PlanPointDependsOnTool;
   let planPointShowTool: PlanPointShowTool;
   let planPointCommentTool: PlanPointCommentTool;
   let planPointImplementedTool: PlanPointImplementedTool;
@@ -71,7 +71,7 @@ suite('Planning Tools Test Suite', () => {
     planAddPointsTool = new PlanAddPointsTool();
     planChangePointTool = new PlanChangePointTool();
     planShowTool = new PlanShowTool();
-    planPointCareOnTool = new PlanPointCareOnTool();
+    planPointDependsOnTool = new PlanPointDependsOnTool();
     planPointShowTool = new PlanPointShowTool();
     planPointCommentTool = new PlanPointCommentTool();
     planPointImplementedTool = new PlanPointImplementedTool();
@@ -120,7 +120,7 @@ suite('Planning Tools Test Suite', () => {
     test('All tools have proper info', () => {
       const tools = [
         planNewTool, planListTool, planAddPointsTool, planChangePointTool,
-        planShowTool, planPointCareOnTool, planPointShowTool, planPointCommentTool,
+        planShowTool, planPointDependsOnTool, planPointShowTool, planPointCommentTool,
         planPointImplementedTool, planPointReviewedTool, planPointTestedTool,
         planPointNeedReworkTool, planReviewedTool,
         planNeedWorksTool, planAcceptedTool, planStateTool, planDoneTool, planDeleteTool
@@ -491,7 +491,7 @@ suite('Planning Tools Test Suite', () => {
     test('Mark point as needing rework', async () => {
       const result = await planPointNeedReworkTool.execute({
         point_id: testPointId,
-        rework_reason: 'Failed unit tests'
+        rework_reasons: ['Failed unit tests', 'Code review issues']
       }, testWorkspaceRoot);
 
       assert.strictEqual(result.success, true, 'Mark need rework should succeed');
@@ -579,7 +579,11 @@ suite('Planning Tools Test Suite', () => {
 
     test('Mark plan as needing work', async () => {
       const result = await planNeedWorksTool.execute({
-        comment: 'Plan needs more detailed acceptance criteria and additional test cases. Consider adding security requirements.'
+        comments: [
+          'Plan needs more detailed acceptance criteria',
+          'Additional test cases required',
+          'Consider adding security requirements'
+        ]
       }, testWorkspaceRoot);
 
       assert.strictEqual(result.success, true, 'Mark plan need works should succeed');
@@ -647,12 +651,13 @@ suite('Planning Tools Test Suite', () => {
         // Fallback: just use some point ID if we can't parse
         secondPointId = testPointId; // Use same point for simplicity
       }
-      const result = await planPointCareOnTool.execute({
+      const result = await planPointDependsOnTool.execute({
         point_id: testPointId,
-        care_on_point_ids: [secondPointId]
+        depends_on: [],
+        care_on: [secondPointId]
       }, testWorkspaceRoot);
 
-      assert.strictEqual(result.success, true, 'Set care-on should succeed');
+      assert.strictEqual(result.success, true, 'Set dependencies should succeed');
       assert.ok(result.content.includes(secondPointId), 'Result should mention care-on point');
     });
 

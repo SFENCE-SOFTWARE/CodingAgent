@@ -27,12 +27,15 @@ export class PlanPointNeedReworkTool implements BaseTool {
               type: 'string',
               description: 'ID of the point to mark as needing rework'
             },
-            rework_reason: {
-              type: 'string',
-              description: 'Reason why the point needs rework'
+            rework_reasons: {
+              type: 'array',
+              items: {
+                type: 'string'
+              },
+              description: 'List of reasons why the point needs rework'
             }
           },
-          required: ['point_id', 'rework_reason'],
+          required: ['point_id', 'rework_reasons'],
           additionalProperties: false
         }
       }
@@ -40,7 +43,7 @@ export class PlanPointNeedReworkTool implements BaseTool {
   }
 
   async execute(args: any, workspaceRoot: string): Promise<ToolResult> {
-    const { point_id, rework_reason } = args;
+    const { point_id, rework_reasons } = args;
 
     // Get current plan from context
     const planContextManager = PlanContextManager.getInstance();
@@ -62,22 +65,39 @@ export class PlanPointNeedReworkTool implements BaseTool {
       };
     }
 
-    if (typeof rework_reason !== 'string' || rework_reason.trim().length === 0) {
+    if (!Array.isArray(rework_reasons) || rework_reasons.length === 0) {
       return {
         success: false,
         content: '',
-        error: 'Rework reason must be a non-empty string'
+        error: 'Rework reasons must be a non-empty array of strings'
+      };
+    }
+
+    // Validate that all reasons are non-empty strings
+    const validReasons = rework_reasons.filter(reason => 
+      typeof reason === 'string' && reason.trim().length > 0
+    ).map(reason => reason.trim());
+
+    if (validReasons.length === 0) {
+      return {
+        success: false,
+        content: '',
+        error: 'At least one non-empty rework reason is required'
       };
     }
 
     try {
       const planningService = PlanningService.getInstance(workspaceRoot);
-      const result = planningService.setNeedRework(plan_id, point_id, rework_reason.trim());
+      
+      // Join reasons into a single string for now (to maintain compatibility with existing backend)
+      const combinedReason = validReasons.map((reason, index) => `${index + 1}. ${reason}`).join('\n');
+      const result = planningService.setNeedRework(plan_id, point_id, combinedReason);
 
       if (result.success) {
+        const reasonsList = validReasons.map((reason, index) => `${index + 1}. ${reason}`).join('\n  ');
         return {
           success: true,
-          content: `Point '${point_id}' in plan '${plan_id}' marked as needing rework: "${rework_reason.trim()}"`
+          content: `Point '${point_id}' in plan '${plan_id}' marked as needing rework with ${validReasons.length} reason(s):\n  ${reasonsList}`
         };
       } else {
         return {
