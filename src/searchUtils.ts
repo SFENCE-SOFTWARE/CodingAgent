@@ -121,13 +121,13 @@ export class SearchUtils {
     includeMatchText: boolean,
     includeBinaryFiles: boolean
   ): Promise<void> {
-    if (results.length >= maxResults) return;
+    if (results.length >= maxResults) {return;}
 
     try {
       const entries = await fs.promises.readdir(dirPath, { withFileTypes: true });
       
       for (const entry of entries) {
-        if (results.length >= maxResults) break;
+        if (results.length >= maxResults) {break;}
 
         const fullPath = path.join(dirPath, entry.name);
         

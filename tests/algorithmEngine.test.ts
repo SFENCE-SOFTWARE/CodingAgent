@@ -179,7 +179,8 @@ suite('AlgorithmEngine Tests', () => {
         else {
           callback('This is a test response from LLM');
         }
-      }
+      },
+      getIsInterrupted: () => false
     };
     
     algorithmEngine.setChatService(mockChatService as any);
@@ -210,7 +211,8 @@ suite('AlgorithmEngine Tests', () => {
         else {
           callback('Test response from orchestrator');
         }
-      }
+      },
+      getIsInterrupted: () => false
     };
     
     algorithmEngine.setChatService(mockChatService as any);
@@ -240,7 +242,8 @@ suite('AlgorithmEngine Tests', () => {
         else {
           callback('Test response for plan creation');
         }
-      }
+      },
+      getIsInterrupted: () => false
     };
     
     algorithmEngine.setChatService(mockChatService as any);

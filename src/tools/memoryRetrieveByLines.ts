@@ -196,18 +196,18 @@ export class MemoryRetrieveByLinesTool implements BaseTool {
       // Include rich metadata if available
       if (entry.metadata) {
         const metadata = entry.metadata;
-        if (metadata.dataType) result.dataType = metadata.dataType;
-        if (metadata.category) result.category = metadata.category;
-        if (metadata.tags) result.tags = metadata.tags;
-        if (metadata.priority) result.priority = metadata.priority;
-        if (metadata.description) result.description = metadata.description;
-        if (metadata.context) result.context = metadata.context;
-        if (metadata.lastAccessed) result.lastAccessed = new Date(metadata.lastAccessed).toISOString();
-        if (metadata.accessCount) result.accessCount = metadata.accessCount;
-        if (metadata.relatedKeys) result.relatedKeys = metadata.relatedKeys;
-        if (metadata.expiresAt) result.expiresAt = new Date(metadata.expiresAt).toISOString();
-        if (metadata.sizeBytes) result.sizeBytes = metadata.sizeBytes;
-        if (metadata.complexity) result.complexity = metadata.complexity;
+        if (metadata.dataType) {result.dataType = metadata.dataType;}
+        if (metadata.category) {result.category = metadata.category;}
+        if (metadata.tags) {result.tags = metadata.tags;}
+        if (metadata.priority) {result.priority = metadata.priority;}
+        if (metadata.description) {result.description = metadata.description;}
+        if (metadata.context) {result.context = metadata.context;}
+        if (metadata.lastAccessed) {result.lastAccessed = new Date(metadata.lastAccessed).toISOString();}
+        if (metadata.accessCount) {result.accessCount = metadata.accessCount;}
+        if (metadata.relatedKeys) {result.relatedKeys = metadata.relatedKeys;}
+        if (metadata.expiresAt) {result.expiresAt = new Date(metadata.expiresAt).toISOString();}
+        if (metadata.sizeBytes) {result.sizeBytes = metadata.sizeBytes;}
+        if (metadata.complexity) {result.complexity = metadata.complexity;}
         
         // Include full metadata for LLM reference
         result.fullMetadata = metadata;

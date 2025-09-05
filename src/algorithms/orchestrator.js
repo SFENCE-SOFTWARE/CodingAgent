@@ -221,10 +221,10 @@ async function handleToolRequest(message, context) {
             // Look for common patterns
             if (lowerMessage.includes('npm ')) {
                 const npmMatch = message.match(/npm\s+[^\s]+/i);
-                if (npmMatch) command = npmMatch[0];
+                if (npmMatch) {command = npmMatch[0];}
             } else if (lowerMessage.includes('git ')) {
                 const gitMatch = message.match(/git\s+[^\s]+(?:\s+[^\s]+)*/i);
-                if (gitMatch) command = gitMatch[0];
+                if (gitMatch) {command = gitMatch[0];}
             } else if (lowerMessage.includes('ls') || lowerMessage.includes('dir')) {
                 command = 'ls -la';
             }

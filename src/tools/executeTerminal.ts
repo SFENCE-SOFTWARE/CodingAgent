@@ -1,7 +1,7 @@
 // src/tools/executeTerminal.ts
 
 import * as vscode from 'vscode';
-import * as child_process from 'child_process';
+import * as childProcess from 'child_process';
 import * as path from 'path';
 import { BaseTool, ToolDefinition, ToolResult, ToolInfo } from '../types';
 
@@ -238,7 +238,7 @@ export class ExecuteTerminalTool implements BaseTool {
       terminal.sendText(command);
 
       // Execute with child_process to capture output
-      const child = child_process.exec(command, {
+      const child = childProcess.exec(command, {
         cwd: workspaceRoot,
         timeout: 60000, // 60 second timeout
         maxBuffer: 1024 * 1024 * 10, // 10MB buffer
@@ -277,7 +277,7 @@ export class ExecuteTerminalTool implements BaseTool {
           combinedOutput += stdout;
         }
         if (stderr) {
-          if (combinedOutput) combinedOutput += '\n';
+          if (combinedOutput) {combinedOutput += '\n';}
           combinedOutput += stderr;
         }
 

@@ -28,7 +28,7 @@ function getContentStats(value: any): { length: number; lines: number; type: str
  * Format size in human-readable format
  */
 function formatSize(bytes: number): string {
-  if (bytes === 0) return '0 B';
+  if (bytes === 0) {return '0 B';}
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
@@ -175,22 +175,22 @@ export class MemoryListTool implements BaseTool {
 
           if (entry.metadata) {
             const metadata = entry.metadata;
-            if (metadata.dataType) result.dataType = metadata.dataType;
-            if (metadata.category) result.category = metadata.category;
-            if (metadata.tags && metadata.tags.length > 0) result.tags = metadata.tags;
-            if (metadata.priority && metadata.priority !== 'medium') result.priority = metadata.priority;
-            if (metadata.description) result.description = metadata.description;
-            if (metadata.context) result.context = metadata.context;
-            if (metadata.source) result.source = metadata.source;
-            if (metadata.format) result.format = metadata.format;
-            if (metadata.complexity) result.complexity = metadata.complexity;
-            if (metadata.version) result.version = metadata.version;
-            if (metadata.accessCount) result.accessCount = metadata.accessCount;
-            if (metadata.lastAccessed) result.lastAccessed = new Date(metadata.lastAccessed).toISOString();
-            if (metadata.lastModified) result.lastModified = new Date(metadata.lastModified).toISOString();
-            if (metadata.expiresAt) result.expiresAt = new Date(metadata.expiresAt).toISOString();
-            if (metadata.sensitive) result.sensitive = metadata.sensitive;
-            if (metadata.relatedKeys && metadata.relatedKeys.length > 0) result.relatedKeys = metadata.relatedKeys;
+            if (metadata.dataType) {result.dataType = metadata.dataType;}
+            if (metadata.category) {result.category = metadata.category;}
+            if (metadata.tags && metadata.tags.length > 0) {result.tags = metadata.tags;}
+            if (metadata.priority && metadata.priority !== 'medium') {result.priority = metadata.priority;}
+            if (metadata.description) {result.description = metadata.description;}
+            if (metadata.context) {result.context = metadata.context;}
+            if (metadata.source) {result.source = metadata.source;}
+            if (metadata.format) {result.format = metadata.format;}
+            if (metadata.complexity) {result.complexity = metadata.complexity;}
+            if (metadata.version) {result.version = metadata.version;}
+            if (metadata.accessCount) {result.accessCount = metadata.accessCount;}
+            if (metadata.lastAccessed) {result.lastAccessed = new Date(metadata.lastAccessed).toISOString();}
+            if (metadata.lastModified) {result.lastModified = new Date(metadata.lastModified).toISOString();}
+            if (metadata.expiresAt) {result.expiresAt = new Date(metadata.expiresAt).toISOString();}
+            if (metadata.sensitive) {result.sensitive = metadata.sensitive;}
+            if (metadata.relatedKeys && metadata.relatedKeys.length > 0) {result.relatedKeys = metadata.relatedKeys;}
           }
 
           return result;
@@ -210,12 +210,12 @@ export class MemoryListTool implements BaseTool {
           parts.push(`[${contentStats.lines}L, ${formatSize(contentStats.length)}]`);
           
           // Add metadata info
-          if (entry.metadata?.dataType) parts.push(`{${entry.metadata.dataType}}`);
-          if (entry.metadata?.category) parts.push(`(${entry.metadata.category})`);
+          if (entry.metadata?.dataType) {parts.push(`{${entry.metadata.dataType}}`);}
+          if (entry.metadata?.category) {parts.push(`(${entry.metadata.category})`);}
           if (entry.metadata?.priority && entry.metadata.priority !== 'medium') {
             parts.push(`!${entry.metadata.priority}`);
           }
-          if (entry.metadata?.tags?.length) parts.push(`#${entry.metadata.tags.join(' #')}`);
+          if (entry.metadata?.tags?.length) {parts.push(`#${entry.metadata.tags.join(' #')}`);}
           if (entry.metadata?.description) {
             const desc = entry.metadata.description.length > 50 
               ? entry.metadata.description.substring(0, 47) + '...' 
@@ -229,7 +229,7 @@ export class MemoryListTool implements BaseTool {
         // Enhanced summary with content statistics
         const typeGroups = allEntries.reduce((acc, entry) => {
           const t = entry.type;
-          if (!acc[t]) acc[t] = { count: 0, totalLines: 0, totalSize: 0 };
+          if (!acc[t]) {acc[t] = { count: 0, totalLines: 0, totalSize: 0 };}
           acc[t].count++;
           const stats = getContentStats(entry.value);
           acc[t].totalLines += stats.lines;

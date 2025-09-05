@@ -129,16 +129,16 @@ export class MemoryStoreTool implements BaseTool {
       // Build structured metadata
       const metadata: any = {};
       
-      if (dataType) metadata.dataType = dataType;
-      if (category) metadata.category = category;
-      if (tags && Array.isArray(tags)) metadata.tags = tags;
-      if (priority) metadata.priority = priority;
-      if (description) metadata.description = description;
-      if (context) metadata.context = context;
+      if (dataType) {metadata.dataType = dataType;}
+      if (category) {metadata.category = category;}
+      if (tags && Array.isArray(tags)) {metadata.tags = tags;}
+      if (priority) {metadata.priority = priority;}
+      if (description) {metadata.description = description;}
+      if (context) {metadata.context = context;}
       if (expiresAfterDays && typeof expiresAfterDays === 'number') {
         metadata.expiresAfterDays = expiresAfterDays;
       }
-      if (relatedKeys && Array.isArray(relatedKeys)) metadata.relatedKeys = relatedKeys;
+      if (relatedKeys && Array.isArray(relatedKeys)) {metadata.relatedKeys = relatedKeys;}
 
       // Set default source
       metadata.source = 'tool_input';
@@ -149,10 +149,10 @@ export class MemoryStoreTool implements BaseTool {
       let resultMessage = `Successfully stored value with key '${key}' in ${type} memory`;
       
       const metadataSummary = [];
-      if (dataType) metadataSummary.push(`type: ${dataType}`);
-      if (category) metadataSummary.push(`category: ${category}`);
-      if (priority) metadataSummary.push(`priority: ${priority}`);
-      if (tags?.length) metadataSummary.push(`tags: ${tags.join(', ')}`);
+      if (dataType) {metadataSummary.push(`type: ${dataType}`);}
+      if (category) {metadataSummary.push(`category: ${category}`);}
+      if (priority) {metadataSummary.push(`priority: ${priority}`);}
+      if (tags?.length) {metadataSummary.push(`tags: ${tags.join(', ')}`);}
       
       if (metadataSummary.length > 0) {
         resultMessage += ` (${metadataSummary.join(', ')})`;

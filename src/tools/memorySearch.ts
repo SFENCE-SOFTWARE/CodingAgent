@@ -249,15 +249,15 @@ export class MemorySearchTool implements BaseTool {
         // Include rich metadata if available
         if (entry.metadata) {
           const metadata = entry.metadata;
-          if (metadata.dataType) result.dataType = metadata.dataType;
-          if (metadata.category) result.category = metadata.category;
-          if (metadata.tags) result.tags = metadata.tags;
-          if (metadata.priority) result.priority = metadata.priority;
-          if (metadata.description) result.description = metadata.description;
-          if (metadata.context) result.context = metadata.context;
-          if (metadata.lastAccessed) result.lastAccessed = new Date(metadata.lastAccessed).toISOString();
-          if (metadata.accessCount) result.accessCount = metadata.accessCount;
-          if (metadata.relatedKeys) result.relatedKeys = metadata.relatedKeys;
+          if (metadata.dataType) {result.dataType = metadata.dataType;}
+          if (metadata.category) {result.category = metadata.category;}
+          if (metadata.tags) {result.tags = metadata.tags;}
+          if (metadata.priority) {result.priority = metadata.priority;}
+          if (metadata.description) {result.description = metadata.description;}
+          if (metadata.context) {result.context = metadata.context;}
+          if (metadata.lastAccessed) {result.lastAccessed = new Date(metadata.lastAccessed).toISOString();}
+          if (metadata.accessCount) {result.accessCount = metadata.accessCount;}
+          if (metadata.relatedKeys) {result.relatedKeys = metadata.relatedKeys;}
           
           // Include essential metadata for LLM reference (without full content)
           result.metadata = {
@@ -273,12 +273,12 @@ export class MemorySearchTool implements BaseTool {
       });
 
       const searchSummary = [];
-      if (key_pattern) searchSummary.push(`key: "${key_pattern}"`);
-      if (value_pattern) searchSummary.push(`value: "${value_pattern}"`);
-      if (data_type) searchSummary.push(`dataType: ${data_type}`);
-      if (category) searchSummary.push(`category: ${category}`);
-      if (tags?.length) searchSummary.push(`tags: ${tags.join(', ')}`);
-      if (priority) searchSummary.push(`priority: ${priority}`);
+      if (key_pattern) {searchSummary.push(`key: "${key_pattern}"`);}
+      if (value_pattern) {searchSummary.push(`value: "${value_pattern}"`);}
+      if (data_type) {searchSummary.push(`dataType: ${data_type}`);}
+      if (category) {searchSummary.push(`category: ${category}`);}
+      if (tags?.length) {searchSummary.push(`tags: ${tags.join(', ')}`);}
+      if (priority) {searchSummary.push(`priority: ${priority}`);}
 
       const paginationInfo = totalCount > max_results 
         ? ` (showing ${startIndex + 1}-${endIndex} of ${totalCount}${hasMore ? ', use offset=' + endIndex + ' for next page' : ''})`

@@ -671,7 +671,7 @@ export class ChatService {
         streamedChunks.push(chunk);
         const delta = chunk.choices[0]?.delta;
         
-        if (!delta) continue;
+        if (!delta) {continue;}
 
         // Handle content updates
         if (delta.content) {
@@ -1194,7 +1194,7 @@ export class ChatService {
             for await (const chunk of this.openai.sendChatStream(followUpRequest, abortSignal)) {
               const delta = chunk.choices[0]?.delta;
               
-              if (!delta) continue;
+              if (!delta) {continue;}
 
               // Handle content updates
               if (delta.content) {

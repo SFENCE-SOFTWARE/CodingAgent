@@ -72,7 +72,7 @@ export class ChangeCodeLensProvider implements vscode.CodeLensProvider {
 
   // Group consecutive line changes of the same type
   private groupConsecutiveChanges(lineChanges: any[]): any[] {
-    if (lineChanges.length === 0) return [];
+    if (lineChanges.length === 0) {return [];}
 
     const groups: any[] = [];
     let currentGroup: any = null;

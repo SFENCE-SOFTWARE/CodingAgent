@@ -357,11 +357,11 @@ export class PlanningService {
     const point = plan.points[pointIndex];
     
     // Update only provided fields
-    if (updates.shortName !== undefined) point.shortName = updates.shortName;
-    if (updates.shortDescription !== undefined) point.shortDescription = updates.shortDescription;
-    if (updates.detailedDescription !== undefined) point.detailedDescription = updates.detailedDescription;
-    if (updates.acceptanceCriteria !== undefined) point.acceptanceCriteria = updates.acceptanceCriteria;
-    if (updates.expectedOutputs !== undefined) point.expectedOutputs = updates.expectedOutputs;
+    if (updates.shortName !== undefined) {point.shortName = updates.shortName;}
+    if (updates.shortDescription !== undefined) {point.shortDescription = updates.shortDescription;}
+    if (updates.detailedDescription !== undefined) {point.detailedDescription = updates.detailedDescription;}
+    if (updates.acceptanceCriteria !== undefined) {point.acceptanceCriteria = updates.acceptanceCriteria;}
+    if (updates.expectedOutputs !== undefined) {point.expectedOutputs = updates.expectedOutputs;}
 
     point.updatedAt = Date.now();
     plan.updatedAt = Date.now();

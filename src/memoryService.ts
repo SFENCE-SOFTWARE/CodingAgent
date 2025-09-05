@@ -410,7 +410,7 @@ export class MemoryService {
     // Filter by tags
     if (options.tags && options.tags.length > 0) {
       filtered = filtered.filter(entry => {
-        if (!entry.metadata?.tags) return false;
+        if (!entry.metadata?.tags) {return false;}
         return options.tags!.some(tag => entry.metadata!.tags!.includes(tag));
       });
     }
@@ -432,7 +432,7 @@ export class MemoryService {
     if (options.metadataPattern) {
       const metadataRegex = this.createRegex(options.metadataPattern, options.caseSensitive, options.isRegex);
       filtered = filtered.filter(entry => {
-        if (!entry.metadata) return false;
+        if (!entry.metadata) {return false;}
         const metadataStr = JSON.stringify(entry.metadata);
         return metadataRegex.test(metadataStr);
       });
@@ -722,9 +722,9 @@ export class MemoryService {
 
     // Recent access bonus
     const daysSinceLastAccess = (Date.now() - (entry.metadata?.lastAccessed || 0)) / (24 * 60 * 60 * 1000);
-    if (daysSinceLastAccess < 1) score += 50;
-    else if (daysSinceLastAccess < 7) score += 25;
-    else if (daysSinceLastAccess < 30) score += 10;
+    if (daysSinceLastAccess < 1) {score += 50;}
+    else if (daysSinceLastAccess < 7) {score += 25;}
+    else if (daysSinceLastAccess < 30) {score += 10;}
 
     // Priority bonus
     const priorityBonus = { 'critical': 100, 'high': 50, 'medium': 25, 'low': 10 };

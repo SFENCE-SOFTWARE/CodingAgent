@@ -284,7 +284,7 @@ export class LoggingService {
   }
 
   private formatContent(content: string): string {
-    if (!content) return '';
+    if (!content) {return '';}
     
     // Truncate based on verbosity
     if (this.verbosity === 'Minimal' && content.length > 200) {

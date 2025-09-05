@@ -54,7 +54,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   private handleStreamingUpdate(update: StreamingUpdate) {
-    if (!this._view) return;
+    if (!this._view) {return;}
 
     switch (update.type) {
       case 'start':
@@ -335,7 +335,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   private async handleSendMessage(content: string) {
-    if (!this._view) return;
+    if (!this._view) {return;}
 
     try {
       // Add user message to internal history immediately
@@ -407,7 +407,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   private sendConfiguration() {
-    if (!this._view) return;
+    if (!this._view) {return;}
 
     this.sendMessage({
       type: 'updateConfiguration',
@@ -421,7 +421,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   private async sendAvailableModels() {
-    if (!this._view) return;
+    if (!this._view) {return;}
 
     try {
       const models = await this.chatService.getAvailableModels();
@@ -646,7 +646,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   private sendAvailableModesUpdate() {
-    if (!this._view) return;
+    if (!this._view) {return;}
 
     const config = vscode.workspace.getConfiguration('codingagent');
     const modes = config.get('modes', {}) as Record<string, any>;
@@ -815,7 +815,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   public updateCurrentPlan(planId: string | null) {
-    if (!this._view) return;
+    if (!this._view) {return;}
     
     this.sendMessage({
       type: 'updateCurrentPlan',

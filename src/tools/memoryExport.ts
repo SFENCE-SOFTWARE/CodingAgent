@@ -248,9 +248,9 @@ export class MemoryExportTool implements BaseTool {
         let textContent = '';
         if (includeMetadata && metadata) {
           textContent += `Key: ${entryKey}\nType: ${type}\n`;
-          if (metadata.description) textContent += `Description: ${metadata.description}\n`;
-          if (metadata.category) textContent += `Category: ${metadata.category}\n`;
-          if (metadata.tags) textContent += `Tags: ${metadata.tags.join(', ')}\n`;
+          if (metadata.description) {textContent += `Description: ${metadata.description}\n`;}
+          if (metadata.category) {textContent += `Category: ${metadata.category}\n`;}
+          if (metadata.tags) {textContent += `Tags: ${metadata.tags.join(', ')}\n`;}
           textContent += '\n';
         }
         textContent += typeof value === 'string' ? value : JSON.stringify(value, null, 2);
@@ -264,20 +264,20 @@ export class MemoryExportTool implements BaseTool {
   private formatMetadataAsMarkdown(metadata: any): string {
     let content = '## Metadata\n\n';
     
-    if (metadata.description) content += `**Description:** ${metadata.description}\n\n`;
-    if (metadata.category) content += `**Category:** ${metadata.category}\n\n`;
-    if (metadata.tags && metadata.tags.length > 0) content += `**Tags:** ${metadata.tags.join(', ')}\n\n`;
-    if (metadata.priority) content += `**Priority:** ${metadata.priority}\n\n`;
-    if (metadata.context) content += `**Context:** ${metadata.context}\n\n`;
-    if (metadata.source) content += `**Source:** ${metadata.source}\n\n`;
-    if (metadata.format) content += `**Format:** ${metadata.format}\n\n`;
-    if (metadata.projectPath) content += `**Project Path:** ${metadata.projectPath}\n\n`;
+    if (metadata.description) {content += `**Description:** ${metadata.description}\n\n`;}
+    if (metadata.category) {content += `**Category:** ${metadata.category}\n\n`;}
+    if (metadata.tags && metadata.tags.length > 0) {content += `**Tags:** ${metadata.tags.join(', ')}\n\n`;}
+    if (metadata.priority) {content += `**Priority:** ${metadata.priority}\n\n`;}
+    if (metadata.context) {content += `**Context:** ${metadata.context}\n\n`;}
+    if (metadata.source) {content += `**Source:** ${metadata.source}\n\n`;}
+    if (metadata.format) {content += `**Format:** ${metadata.format}\n\n`;}
+    if (metadata.projectPath) {content += `**Project Path:** ${metadata.projectPath}\n\n`;}
     if (metadata.relatedKeys && metadata.relatedKeys.length > 0) {
       content += `**Related Keys:** ${metadata.relatedKeys.join(', ')}\n\n`;
     }
-    if (metadata.createdAt) content += `**Created:** ${metadata.createdAt}\n\n`;
-    if (metadata.updatedAt) content += `**Updated:** ${metadata.updatedAt}\n\n`;
-    if (metadata.expiresAt) content += `**Expires:** ${metadata.expiresAt}\n\n`;
+    if (metadata.createdAt) {content += `**Created:** ${metadata.createdAt}\n\n`;}
+    if (metadata.updatedAt) {content += `**Updated:** ${metadata.updatedAt}\n\n`;}
+    if (metadata.expiresAt) {content += `**Expires:** ${metadata.expiresAt}\n\n`;}
     
     return content + '## Content\n\n';
   }

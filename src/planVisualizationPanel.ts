@@ -319,7 +319,7 @@ export class PlanVisualizationPanel {
   }
 
   private _escapeHtml(text: string): string {
-    if (!text) return '';
+    if (!text) {return '';}
     return text
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')

@@ -219,7 +219,7 @@ export class ReadWebpageAsHTMLTool implements BaseTool {
     let currentChunk = '';
     
     for (const element of elements) {
-      if (element.trim().length === 0) continue;
+      if (element.trim().length === 0) {continue;}
       
       if (currentChunk.length + element.length <= targetSize) {
         currentChunk += element;

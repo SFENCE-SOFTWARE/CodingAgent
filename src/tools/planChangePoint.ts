@@ -83,11 +83,11 @@ export class PlanChangePointTool implements BaseTool {
       
       // Build updates object with only non-null values
       const updates: any = {};
-      if (short_name !== null && short_name !== undefined) updates.shortName = short_name;
-      if (short_description !== null && short_description !== undefined) updates.shortDescription = short_description;
-      if (detailed_description !== null && detailed_description !== undefined) updates.detailedDescription = detailed_description;
-      if (acceptance_criteria !== null && acceptance_criteria !== undefined) updates.acceptanceCriteria = acceptance_criteria;
-      if (expected_outputs !== null && expected_outputs !== undefined) updates.expectedOutputs = expected_outputs;
+      if (short_name !== null && short_name !== undefined) {updates.shortName = short_name;}
+      if (short_description !== null && short_description !== undefined) {updates.shortDescription = short_description;}
+      if (detailed_description !== null && detailed_description !== undefined) {updates.detailedDescription = detailed_description;}
+      if (acceptance_criteria !== null && acceptance_criteria !== undefined) {updates.acceptanceCriteria = acceptance_criteria;}
+      if (expected_outputs !== null && expected_outputs !== undefined) {updates.expectedOutputs = expected_outputs;}
 
       if (Object.keys(updates).length === 0) {
         return {

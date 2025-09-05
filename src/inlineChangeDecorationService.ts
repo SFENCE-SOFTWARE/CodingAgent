@@ -148,14 +148,14 @@ export class InlineChangeDecorationService {
 
   private async updateActiveEditorDecorations(): Promise<void> {
     const editor = vscode.window.activeTextEditor;
-    if (!editor) return;
+    if (!editor) {return;}
 
     const filePath = editor.document.uri.fsPath;
     await this.updateFileDecorations(filePath);
   }
 
   private async updateDocumentDecorations(document: vscode.TextDocument): Promise<void> {
-    if (document.uri.scheme !== 'file') return;
+    if (document.uri.scheme !== 'file') {return;}
     
     const filePath = document.uri.fsPath;
     await this.updateFileDecorations(filePath);
@@ -190,7 +190,7 @@ export class InlineChangeDecorationService {
   // Context menu and command support
   async handleAcceptChangeAtPosition(position: vscode.Position): Promise<void> {
     const editor = vscode.window.activeTextEditor;
-    if (!editor) return;
+    if (!editor) {return;}
 
     const filePath = editor.document.uri.fsPath;
     const lineNumber = position.line + 1; // Convert to 1-based
@@ -211,7 +211,7 @@ export class InlineChangeDecorationService {
 
   async handleRejectChangeAtPosition(position: vscode.Position): Promise<void> {
     const editor = vscode.window.activeTextEditor;
-    if (!editor) return;
+    if (!editor) {return;}
 
     const filePath = editor.document.uri.fsPath;
     const lineNumber = position.line + 1; // Convert to 1-based
