@@ -263,11 +263,11 @@ async function executePlanCycle(context) {
     
     // Debug counter to limit iterations during development
     let iterationCount = 0;
-    const maxIterations = 2; // Increased for testing LLM delegation
+    const maxIterations = -1; // Increased for testing LLM delegation, use -1 for disable
     
     context.sendNotice('🔄 **Starting plan execution cycle...**');
-    
-    while (iterationCount < maxIterations) {
+
+    while (iterationCount < maxIterations || maxIterations === -1) {
         iterationCount++;
         context.console.info(`Plan cycle iteration ${iterationCount}/${maxIterations}`);
         
