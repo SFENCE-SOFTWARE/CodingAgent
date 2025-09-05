@@ -131,7 +131,7 @@ export class PlanVisualizationPanel {
           <tr>
             <td>${point.id}</td>
             <td>${this._escapeHtml(point.shortName)}</td>
-            <td>${this._escapeHtml(point.shortDescription)}</td>
+            <td>${this._escapeHtml(point.detailedDescription || point.shortDescription || 'No description')}</td>
             <td>${dependsOn}</td>
             <td><span class="status-badge" style="background-color: ${statusColor}">${status}</span></td>
             <td>${this._escapeHtml(point.comment || '')}</td>
@@ -279,6 +279,9 @@ export class PlanVisualizationPanel {
   }
 
   private _getPointStatus(point: any): string {
+    // Debug logging
+    console.log(`[PlanVisualization] Point ${point.id}: implemented=${point.implemented}, reviewed=${point.reviewed}, tested=${point.tested}, needRework=${point.needRework}`);
+    
     if (point.implemented && point.reviewed && point.tested) {
       return 'Complete';
     } else if (point.needRework) {

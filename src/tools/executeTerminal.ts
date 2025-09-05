@@ -1,6 +1,8 @@
 // src/tools/executeTerminal.ts
 
 import * as vscode from 'vscode';
+import * as child_process from 'child_process';
+import * as path from 'path';
 import { BaseTool, ToolDefinition, ToolResult, ToolInfo } from '../types';
 
 interface PendingCommand {
@@ -90,17 +92,34 @@ export class ExecuteTerminalTool implements BaseTool {
   }
 
   getToolDefinition(): ToolDefinition {
+    // Get OS info dynamically
+    const osType = process.platform;
+    const osNames: Record<string, string> = {
+      'win32': 'Windows',
+      'darwin': 'macOS', 
+      'linux': 'Linux',
+      'freebsd': 'FreeBSD',
+      'openbsd': 'OpenBSD',
+      'aix': 'AIX',
+      'android': 'Android',
+      'cygwin': 'Cygwin',
+      'haiku': 'Haiku',
+      'netbsd': 'NetBSD',
+      'sunos': 'SunOS'
+    };
+    const osName = osNames[osType] || osType;
+    
     return {
       type: 'function',
       function: {
         name: 'execute_terminal',
-        description: 'Execute a terminal command in VS Code terminal with user approval. Commands run in workspace root directory. Some commands may be auto-approved based on user settings.',
+        description: `Execute a terminal command in VS Code terminal with user approval. Commands run in workspace root directory on ${osName} (${osType}). Some commands may be auto-approved based on user settings. Output includes both stdout and stderr.`,
         parameters: {
           type: 'object',
           properties: {
             command: {
               type: 'string',
-              description: 'Command to execute in VS Code terminal (runs in workspace root). Simple commands like ls, pwd, git status may be auto-approved.'
+              description: `Command to execute in VS Code terminal (runs in workspace root on ${osName}). Simple commands like ls, pwd, git status may be auto-approved.`
             },
             newTerminal: {
               type: 'boolean',
@@ -128,18 +147,7 @@ export class ExecuteTerminalTool implements BaseTool {
       
       if (autoApproved) {
         console.log(`[ExecuteTerminalTool] Command auto-approved, executing immediately: ${command}`);
-        
-        // Execute immediately without user approval
-        const terminal = this.getOrCreateTerminal(newTerminal, workspaceRoot);
-        terminal.show(true);
-        terminal.sendText(command);
-        
-        console.log(`[ExecuteTerminalTool] Auto-approved command executed successfully: ${command}`);
-        
-        return {
-          success: true,
-          content: `Command auto-approved and executed: ${command}\n\nThe terminal is now active and you can see the command execution. You can interact with the command if it requires input.\nWorking directory: ${workspaceRoot}\n\n✅ This command was automatically approved based on your auto-approve settings.`
-        };
+        return await this.executeCommandWithOutput(command, workspaceRoot);
       }
 
       // Command requires manual approval
@@ -205,21 +213,8 @@ export class ExecuteTerminalTool implements BaseTool {
 
       console.log(`[ExecuteTerminalTool] Command approved by user, executing: ${command}`);
 
-      // Execute the approved command (always in workspace root)
-      const terminal = this.getOrCreateTerminal(newTerminal, workspaceRoot);
-      
-      // Show the terminal so user can see what's happening
-      terminal.show(true); // true = take focus to show the command execution
-
-      // Execute command
-      terminal.sendText(command);
-
-      console.log(`[ExecuteTerminalTool] Command sent to terminal successfully: ${command}`);
-
-      return {
-        success: true,
-        content: `Command executed in VS Code terminal: ${command}\n\nThe terminal is now active and you can see the command execution. You can interact with the command if it requires input.\nWorking directory: ${workspaceRoot}`
-      };
+      // Execute the approved command using child_process to capture output
+      return await this.executeCommandWithOutput(command, workspaceRoot);
 
     } catch (error: any) {
       console.error(`[ExecuteTerminalTool] Error executing command:`, error);
@@ -229,6 +224,93 @@ export class ExecuteTerminalTool implements BaseTool {
         error: `Failed to execute command in terminal: ${error.message}`
       };
     }
+  }
+
+  private async executeCommandWithOutput(command: string, workspaceRoot: string): Promise<ToolResult> {
+    return new Promise((resolve) => {
+      console.log(`[ExecuteTerminalTool] Executing command with output capture: ${command}`);
+      console.log(`[ExecuteTerminalTool] Working directory: ${workspaceRoot}`);
+
+      // Also show in VS Code terminal for user visibility
+      const terminal = this.getOrCreateTerminal(false, workspaceRoot);
+      terminal.show(true);
+      terminal.sendText(`# Executing: ${command}`);
+      terminal.sendText(command);
+
+      // Execute with child_process to capture output
+      const child = child_process.exec(command, {
+        cwd: workspaceRoot,
+        timeout: 60000, // 60 second timeout
+        maxBuffer: 1024 * 1024 * 10, // 10MB buffer
+        env: { ...process.env } // Inherit environment variables
+      });
+
+      let stdout = '';
+      let stderr = '';
+      let hasOutput = false;
+
+      // Capture stdout
+      if (child.stdout) {
+        child.stdout.on('data', (data: Buffer) => {
+          const text = data.toString();
+          stdout += text;
+          hasOutput = true;
+        });
+      }
+
+      // Capture stderr
+      if (child.stderr) {
+        child.stderr.on('data', (data: Buffer) => {
+          const text = data.toString();
+          stderr += text;
+          hasOutput = true;
+        });
+      }
+
+      // Handle completion
+      child.on('close', (code: number | null, signal: string | null) => {
+        console.log(`[ExecuteTerminalTool] Command completed with code: ${code}, signal: ${signal}`);
+        
+        // Combine stdout and stderr as user would see in terminal
+        let combinedOutput = '';
+        if (stdout) {
+          combinedOutput += stdout;
+        }
+        if (stderr) {
+          if (combinedOutput) combinedOutput += '\n';
+          combinedOutput += stderr;
+        }
+
+        // If no output, indicate command completed
+        if (!hasOutput) {
+          combinedOutput = '(Command completed with no output)';
+        }
+
+        // Include exit code info for non-zero exits
+        let statusInfo = '';
+        if (code !== 0 && code !== null) {
+          statusInfo = `\n[Exit code: ${code}]`;
+        }
+        if (signal) {
+          statusInfo += `\n[Terminated by signal: ${signal}]`;
+        }
+
+        resolve({
+          success: code === 0 || code === null,
+          content: `Command: ${command}\nWorking directory: ${workspaceRoot}\n\nOutput:\n${combinedOutput}${statusInfo}`
+        });
+      });
+
+      // Handle errors
+      child.on('error', (error: Error) => {
+        console.error(`[ExecuteTerminalTool] Command execution error:`, error);
+        resolve({
+          success: false,
+          content: '',
+          error: `Failed to execute command: ${error.message}`
+        });
+      });
+    });
   }
 
   private getOrCreateTerminal(forceNew: boolean = false, workspaceRoot?: string): vscode.Terminal {
