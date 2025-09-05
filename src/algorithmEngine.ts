@@ -6,6 +6,7 @@ import * as path from 'path';
 import { ChatService } from './chatService';
 import { PlanningService } from './planningService';
 import { PlanContextManager } from './planContextManager';
+import { ToolsService } from './tools';
 
 /**
  * Interface for algorithm execution context
@@ -24,6 +25,11 @@ export interface AlgorithmContext {
   sendToLLM: (message: string) => Promise<string>; // Promise-based
   getConfig: (key: string) => any; // Read-only config access
   getVariable: (variableKey: string) => string | undefined; // Get algorithm variables
+  isInterrupted: () => boolean; // Check if algorithm should stop
+  tools?: {
+    execute: (toolName: string, args: any) => Promise<{success: boolean; content?: string; error?: string}>;
+    getAvailableTools: () => string[]; // List available tool names
+  };
   planningService?: {
     showPlan: (planId: string) => { success: boolean; plan?: any; error?: string };
     listPlans: () => { success: boolean; plans?: Array<{id: string, name: string, shortDescription?: string}>; error?: string };
@@ -53,6 +59,7 @@ export class AlgorithmEngine {
   private static instance: AlgorithmEngine;
   private chatService?: ChatService;
   private planningService?: PlanningService;
+  private toolsService?: ToolsService;
   private logs: string[] = [];
   private currentChatCallback?: (update: any) => void;
   private configStore: Map<string, any> = new Map(); // Config management in RAM
@@ -73,6 +80,10 @@ export class AlgorithmEngine {
 
   public setPlanningService(planningService: PlanningService): void {
     this.planningService = planningService;
+  }
+
+  public setToolsService(toolsService: ToolsService): void {
+    this.toolsService = toolsService;
   }
 
   /**
@@ -216,11 +227,12 @@ export class AlgorithmEngine {
         info: (...args: any[]) => this.log('info', ...args)
       },
       sendResponse: (message: string) => {
-        // Store the final response for retrieval
+        // Store the final response for retrieval - no interrupt check needed
         this.algorithmResponses[mode] = message;
       },
       // Send notice message to chat
       sendNotice: (content: string) => {
+        // Send notice without interrupt check - notices are informational
         if (this.chatService && this.chatService.sendNoticeMessage) {
           this.chatService.sendNoticeMessage(content);
         }
@@ -236,10 +248,21 @@ export class AlgorithmEngine {
         return variables[variableKey];
       },
       
+      // Check if algorithm should stop due to interrupt
+      isInterrupted: () => {
+        return this.chatService ? this.chatService.getIsInterrupted() : false;
+      },
+      
       // LLM communication - now Promise-based with optional mode
       sendToLLM: async (prompt: string, mode?: string): Promise<string> => {
         return new Promise((resolve, reject) => {
           try {
+            // Check for interruption before making LLM call
+            if (this.chatService && this.chatService.getIsInterrupted()) {
+              reject(new Error('Algorithm execution was interrupted'));
+              return;
+            }
+            
             if (!this.chatService) {
               reject(new Error('ChatService not available'));
               return;
@@ -248,6 +271,11 @@ export class AlgorithmEngine {
             this.chatService.sendOrchestrationRequest(
               prompt, 
               (response: string) => {
+                // Check for interruption again after LLM response
+                if (this.chatService && this.chatService.getIsInterrupted()) {
+                  reject(new Error('Algorithm execution was interrupted'));
+                  return;
+                }
                 resolve(response);
               }, 
               this.currentChatCallback,
@@ -262,24 +290,44 @@ export class AlgorithmEngine {
       // Planning service integration (if available)
       planningService: this.planningService ? {
         showPlan: (planId: string) => {
+          // Check for interruption before planning operation
+          if (this.chatService && this.chatService.getIsInterrupted()) {
+            throw new Error('Algorithm execution was interrupted');
+          }
+          
           if (!this.planningService) {
             return { success: false, error: 'Planning service not available' };
           }
           return this.planningService.showPlan(planId, true); // Include point descriptions
         },
         listPlans: () => {
+          // Check for interruption before planning operation
+          if (this.chatService && this.chatService.getIsInterrupted()) {
+            throw new Error('Algorithm execution was interrupted');
+          }
+          
           if (!this.planningService) {
             return { success: false, error: 'Planning service not available' };
           }
           return this.planningService.listPlans(true); // Include short descriptions
         },
         createPlan: (id: string, name: string, shortDescription: string, longDescription: string) => {
+          // Check for interruption before planning operation
+          if (this.chatService && this.chatService.getIsInterrupted()) {
+            throw new Error('Algorithm execution was interrupted');
+          }
+          
           if (!this.planningService) {
             return { success: false, error: 'Planning service not available' };
           }
           return this.planningService.createPlan(id, name, shortDescription, longDescription);
         },
         evaluatePlanCompletion: (planId: string) => {
+          // Check for interruption before planning operation
+          if (this.chatService && this.chatService.getIsInterrupted()) {
+            throw new Error('Algorithm execution was interrupted');
+          }
+          
           if (!this.planningService) {
             return { success: false, error: 'Planning service not available' };
           }
@@ -298,6 +346,43 @@ export class AlgorithmEngine {
           manager.setCurrentPlanId(planId);
         }
       },
+      
+      // Tools service integration (if available)
+      tools: this.toolsService ? {
+        execute: async (toolName: string, args: any) => {
+          // Check for interruption before tool execution
+          if (this.chatService && this.chatService.getIsInterrupted()) {
+            throw new Error('Algorithm execution was interrupted');
+          }
+          
+          if (!this.toolsService) {
+            return { success: false, error: 'Tools service not available' };
+          }
+          
+          try {
+            const result = await this.toolsService.executeTool(toolName, args);
+            return result;
+          } catch (error) {
+            return {
+              success: false,
+              error: error instanceof Error ? error.message : String(error)
+            };
+          }
+        },
+        getAvailableTools: () => {
+          // Check for interruption before tool list access
+          if (this.chatService && this.chatService.getIsInterrupted()) {
+            throw new Error('Algorithm execution was interrupted');
+          }
+          
+          if (!this.toolsService) {
+            return [];
+          }
+          
+          const definitions = this.toolsService.getToolDefinitions();
+          return Object.keys(definitions);
+        }
+      } : undefined,
       
       // Available modes (excluding current mode)
       getAvailableModes: () => {

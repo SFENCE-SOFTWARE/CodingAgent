@@ -383,11 +383,26 @@ export class PlanningService {
     const result = {
       id: plan.id,
       name: plan.name,
+      shortDescription: plan.shortDescription,
       longDescription: plan.longDescription,
+      reviewed: plan.reviewed,
+      needsWork: plan.needsWork,
+      accepted: plan.accepted,
       points: plan.points.map(point => ({
         id: point.id,
         shortName: point.shortName,
-        ...(includePointDescriptions && { shortDescription: point.shortDescription })
+        shortDescription: point.shortDescription,
+        detailedDescription: point.detailedDescription,
+        dependsOn: point.dependsOn,
+        implemented: point.implemented,
+        reviewed: point.reviewed,
+        tested: point.tested,
+        needRework: point.needRework,
+        comment: point.comment,
+        ...(includePointDescriptions && { 
+          acceptanceCriteria: point.acceptanceCriteria,
+          expectedOutputs: point.expectedOutputs
+        })
       }))
     };
 

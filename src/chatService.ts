@@ -54,6 +54,9 @@ export class ChatService {
     const planningService = PlanningService.getInstance();
     this.algorithmEngine.setPlanningService(planningService);
     
+    // Register tools service with algorithm engine
+    this.algorithmEngine.setToolsService(this.tools);
+    
     // Get workspace root for history persistence
     this.workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || null;
     
@@ -184,6 +187,10 @@ export class ChatService {
       this.currentAbortController.abort('Hard interrupt requested');
       this.currentAbortController = null;
     }
+  }
+
+  getIsInterrupted(): boolean {
+    return this.isInterrupted;
   }
 
   requestCorrection(): void {
@@ -350,6 +357,10 @@ export class ChatService {
 
   private resetInterrupt(): void {
     this.isInterrupted = false;
+  }
+
+  public resetInterruptFlag(): void {
+    this.resetInterrupt();
   }
 
   private getIterationThreshold(): number {

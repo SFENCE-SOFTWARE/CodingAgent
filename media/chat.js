@@ -267,6 +267,10 @@
     const content = messageInput.value.trim();
     if (!content || isLoading) return;
     
+    // Reset interrupt pending state for new message
+    isInterruptPending = false;
+    updateInterruptButtonVisibility();
+    
     // Add user message immediately to ensure it shows up
     const userMessage = {
       id: Date.now().toString(),
