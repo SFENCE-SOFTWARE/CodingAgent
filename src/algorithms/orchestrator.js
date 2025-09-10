@@ -53,10 +53,9 @@ async function handleUserMessage(message, context) {
     // Step 2: Categorize the request
     try {
         const categorizationPrompt = `Analyze this user request and categorize it. Respond with exactly one of these options:
-- NEW (if user wants to create a new plan)
-- OPEN <plan_id> (if user wants to open/work with an existing plan, replace <plan_id> with the actual plan ID mentioned)
-- TOOL (if user wants to execute a specific tool or action that can be handled by available tools)
-- QUESTION (for any other type of request - questions, general help, etc.)
+- OPEN <plan_id> — Use this if the request can be fulfilled by opening and continuing work on an existing plan. If a plan ID is mentioned, replace <plan_id> with that ID. If both opening an existing plan and creating a new plan are possible, choose OPEN.
+- NEW — Use this if the user's request can be fulfilled by creating and implementing a new plan.
+- QUESTION — Use this for any other type of request, such as questions, general help, or anything unrelated to creating or opening a plan.
 
 User request: "${workingMessage}"`;
         
@@ -114,22 +113,6 @@ User request: "${workingMessage}"`;
                 context.sendResponse(`Plan opening requested for "${planId}" but planning service is not available.`);
                 return 'Planning service not available';
             }
-            
-        } else if (categoryTrimmed === 'TOOL') {
-            context.console.info('Tool request detected - analyzing for direct tool execution');
-            
-            // Try to handle with tools directly
-            const toolResult = await handleToolRequest(workingMessage, context);
-            if (toolResult.handled) {
-                return toolResult.result;
-            }
-            
-            // If tool handling didn't work, fall back to current mode
-            context.console.info('Tool request not handled directly, forwarding to current mode');
-            const response = await context.sendToLLM(message);
-            context.sendResponse(response);
-            return 'Tool request handled by current mode';
-            
         } else {
             // QUESTION or anything else - forward to current mode instead of LLM
             context.console.info('General question detected, forwarding to current mode');
@@ -142,115 +125,6 @@ User request: "${workingMessage}"`;
         context.console.error('Request categorization failed:', error.message);
         // Rethrow error to allow proper interruption handling
         throw error;
-    }
-}
-
-/**
- * Attempts to handle tool requests directly without LLM delegation
- * @param {string} message - User message
- * @param {object} context - Algorithm context
- * @returns {Promise<{handled: boolean, result?: string}>}
- */
-async function handleToolRequest(message, context) {
-    if (!context.tools) {
-        context.console.warn('Tools service not available');
-        return { handled: false };
-    }
-    
-    try {
-        // Get available tools
-        const availableTools = context.tools.getAvailableTools();
-        context.console.info(`Available tools: ${availableTools.join(', ')}`);
-        
-        // Simple pattern matching for common tool requests
-        const lowerMessage = message.toLowerCase();
-        
-        // File listing
-        if (lowerMessage.includes('list') && (lowerMessage.includes('file') || lowerMessage.includes('directory'))) {
-            context.console.info('Detected file listing request');
-            context.sendNotice('📂 **Listing files...**');
-            
-            const result = await context.tools.execute('listFiles', { path: '.' });
-            if (result.success) {
-                context.sendResponse(`Files in current directory:\n\`\`\`\n${result.content}\n\`\`\``);
-                return { handled: true, result: 'File listing completed' };
-            } else {
-                context.sendResponse(`Failed to list files: ${result.error}`);
-                return { handled: true, result: 'File listing failed' };
-            }
-        }
-        
-        // File reading
-        if (lowerMessage.includes('read') && lowerMessage.includes('file')) {
-            // Try to extract filename from message
-            const words = message.split(/\s+/);
-            let filename = null;
-            
-            for (let i = 0; i < words.length; i++) {
-                if (words[i].toLowerCase() === 'file' && i + 1 < words.length) {
-                    filename = words[i + 1];
-                    break;
-                }
-                // Look for file extensions
-                if (words[i].includes('.') && (words[i].includes('.js') || words[i].includes('.ts') || words[i].includes('.json') || words[i].includes('.md'))) {
-                    filename = words[i];
-                    break;
-                }
-            }
-            
-            if (filename) {
-                context.console.info(`Detected file reading request for: ${filename}`);
-                context.sendNotice(`📖 **Reading file: ${filename}...**`);
-                
-                const result = await context.tools.execute('readFile', { filePath: filename });
-                if (result.success) {
-                    context.sendResponse(`Content of ${filename}:\n\`\`\`\n${result.content}\n\`\`\``);
-                    return { handled: true, result: 'File reading completed' };
-                } else {
-                    context.sendResponse(`Failed to read file ${filename}: ${result.error}`);
-                    return { handled: true, result: 'File reading failed' };
-                }
-            }
-        }
-        
-        // Terminal commands
-        if (lowerMessage.includes('run') || lowerMessage.includes('execute') || lowerMessage.includes('terminal')) {
-            // Try to extract command
-            let command = null;
-            
-            // Look for common patterns
-            if (lowerMessage.includes('npm ')) {
-                const npmMatch = message.match(/npm\s+[^\s]+/i);
-                if (npmMatch) {command = npmMatch[0];}
-            } else if (lowerMessage.includes('git ')) {
-                const gitMatch = message.match(/git\s+[^\s]+(?:\s+[^\s]+)*/i);
-                if (gitMatch) {command = gitMatch[0];}
-            } else if (lowerMessage.includes('ls') || lowerMessage.includes('dir')) {
-                command = 'ls -la';
-            }
-            
-            if (command) {
-                context.console.info(`Detected terminal command request: ${command}`);
-                context.sendNotice(`⚡ **Executing command: ${command}...**`);
-                
-                const result = await context.tools.execute('executeTerminal', { command: command });
-                if (result.success) {
-                    context.sendResponse(`Command output:\n\`\`\`\n${result.content}\n\`\`\``);
-                    return { handled: true, result: 'Terminal command completed' };
-                } else {
-                    context.sendResponse(`Failed to execute command: ${result.error}`);
-                    return { handled: true, result: 'Terminal command failed' };
-                }
-            }
-        }
-        
-        // If no pattern matched, not handled
-        context.console.info('No tool pattern matched for the request');
-        return { handled: false };
-        
-    } catch (error) {
-        context.console.error('Tool request handling failed:', error.message);
-        return { handled: false };
     }
 }
 

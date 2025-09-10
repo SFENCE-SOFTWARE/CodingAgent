@@ -4,6 +4,7 @@ import { BaseTool, ToolInfo, ToolDefinition, ToolResult } from '../types';
 import * as vscode from 'vscode';
 
 export class AskUserTool implements BaseTool {
+  private static chatService: any = null; // Reference to ChatService for user interaction management
   getToolInfo(): ToolInfo {
     return {
       name: 'ask_user',
@@ -96,6 +97,11 @@ export class AskUserTool implements BaseTool {
       // Store the resolver for this request
       AskUserTool.pendingRequests.set(requestId, resolve);
 
+      // Notify ChatService that we're waiting for user interaction
+      if (AskUserTool.chatService && AskUserTool.chatService.setWaitingForUserInteraction) {
+        AskUserTool.chatService.setWaitingForUserInteraction(true);
+      }
+
       // Send request to extension
       const payload = {
         type: 'askUserRequest',
@@ -115,6 +121,12 @@ export class AskUserTool implements BaseTool {
       setTimeout(() => {
         if (AskUserTool.pendingRequests.has(requestId)) {
           AskUserTool.pendingRequests.delete(requestId);
+          
+          // Notify ChatService that user interaction is complete
+          if (AskUserTool.chatService && AskUserTool.chatService.setWaitingForUserInteraction) {
+            AskUserTool.chatService.setWaitingForUserInteraction(false);
+          }
+          
           resolve({ cancelled: true });
         }
       }, 5 * 60 * 1000);
@@ -125,6 +137,10 @@ export class AskUserTool implements BaseTool {
   private static pendingRequests = new Map<string, (response: { answer?: string; cancelled: boolean }) => void>();
   private static messageHandler: ((payload: any) => void) | null = null;
   private static interruptHandler: (() => void) | null = null;
+
+  static setChatService(chatService: any) {
+    AskUserTool.chatService = chatService;
+  }
 
   static setMessageHandler(handler: (payload: any) => void) {
     AskUserTool.messageHandler = handler;
@@ -138,6 +154,11 @@ export class AskUserTool implements BaseTool {
     const resolver = AskUserTool.pendingRequests.get(requestId);
     if (resolver) {
       AskUserTool.pendingRequests.delete(requestId);
+      
+      // Notify ChatService that user interaction is complete
+      if (AskUserTool.chatService && AskUserTool.chatService.setWaitingForUserInteraction) {
+        AskUserTool.chatService.setWaitingForUserInteraction(false);
+      }
       
       // If user cancelled, immediately trigger interrupt
       if (cancelled && AskUserTool.interruptHandler) {

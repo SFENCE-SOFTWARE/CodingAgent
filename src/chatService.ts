@@ -7,6 +7,7 @@ import { OpenAIService } from './openai_html_api';
 import { ToolsService } from './tools';
 import { LoggingService } from './loggingService';
 import { AskUserTool } from './tools/askUser';
+import { ExecuteTerminalTool } from './tools/executeTerminal';
 import { PlanContextManager } from './planContextManager';
 import { AlgorithmEngine } from './algorithmEngine';
 import { PlanningService } from './planningService';
@@ -30,6 +31,7 @@ export class ChatService {
   private algorithmEngine: AlgorithmEngine;
   private streamingCallback?: (update: StreamingUpdate) => void;
   private isInterrupted: boolean = false;
+  private isWaitingForUserInteraction: boolean = false; // Pauses interrupt timeout during user interactions
   private pendingCorrection: string | null = null;
   private isWaitingForCorrection: boolean = false;
   private isWaitingForIterationContinue: boolean = false;
@@ -77,6 +79,10 @@ export class ChatService {
     AskUserTool.setInterruptHandler(() => {
       this.isInterrupted = true;
     });
+    
+    // Set up tool references to ChatService for user interaction management
+    AskUserTool.setChatService(this);
+    ExecuteTerminalTool.setChatService(this);
     
     // Set up plan context manager callback
     const planContextManager = PlanContextManager.getInstance();
@@ -177,11 +183,21 @@ export class ChatService {
   }
 
   interruptLLM(): void {
+    // Don't interrupt during user interactions (askUser, terminal approval, etc.)
+    if (this.isWaitingForUserInteraction) {
+      console.log('[ChatService] Interrupt request ignored - waiting for user interaction');
+      return;
+    }
+    
     this.isInterrupted = true;
+    console.log('[ChatService] LLM communication interrupted');
   }
 
   hardInterruptLLM(): void {
+    // Hard interrupt works even during user interactions
     this.isInterrupted = true;
+    console.log('[ChatService] Hard LLM communication interrupt');
+    
     // Immediately abort any ongoing request
     if (this.currentAbortController) {
       this.currentAbortController.abort('Hard interrupt requested');
@@ -191,6 +207,15 @@ export class ChatService {
 
   getIsInterrupted(): boolean {
     return this.isInterrupted;
+  }
+
+  setWaitingForUserInteraction(waiting: boolean): void {
+    this.isWaitingForUserInteraction = waiting;
+    console.log(`[ChatService] User interaction wait: ${waiting ? 'started' : 'ended'}`);
+  }
+
+  getIsWaitingForUserInteraction(): boolean {
+    return this.isWaitingForUserInteraction;
   }
 
   requestCorrection(): void {
@@ -930,8 +955,8 @@ export class ChatService {
     const iterationWarningThreshold = 10; // Show warning after 10 iterations
 
     while (normalizedToolCalls.length > 0) {
-      // Check for interrupt at the beginning of each iteration
-      if (this.isInterrupted) {
+      // Check for interrupt at the beginning of each iteration (but not during user interactions)
+      if (this.isInterrupted && !this.isWaitingForUserInteraction) {
         console.log('[CodingAgent] Tool calls loop interrupted by user');
         
         // Notify UI about tool calls ending due to interrupt

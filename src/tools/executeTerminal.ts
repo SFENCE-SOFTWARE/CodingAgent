@@ -78,9 +78,14 @@ function isCommandAutoApproved(command: string): boolean {
 }
 
 export class ExecuteTerminalTool implements BaseTool {
+  private static chatService: any = null; // Reference to ChatService for user interaction management
   private static activeTerminal: vscode.Terminal | undefined;
   private static pendingCommands: Map<string, PendingCommand> = new Map();
   private static commandApprovalCallback?: (commandId: string, command: string, cwd: string) => Promise<boolean>;
+
+  static setChatService(chatService: any) {
+    ExecuteTerminalTool.chatService = chatService;
+  }
 
   getToolInfo(): ToolInfo {
     return {
@@ -184,6 +189,12 @@ export class ExecuteTerminalTool implements BaseTool {
       // Request approval from UI (pass workspace root as cwd)
       if (ExecuteTerminalTool.commandApprovalCallback) {
         console.log(`[ExecuteTerminalTool] Calling approval callback for command: ${commandId}`);
+        
+        // Notify ChatService that we're waiting for user interaction
+        if (ExecuteTerminalTool.chatService && ExecuteTerminalTool.chatService.setWaitingForUserInteraction) {
+          ExecuteTerminalTool.chatService.setWaitingForUserInteraction(true);
+        }
+        
         ExecuteTerminalTool.commandApprovalCallback(commandId, command, workspaceRoot);
       } else {
         console.error(`[ExecuteTerminalTool] No approval callback set - cannot request user approval`);
@@ -198,6 +209,11 @@ export class ExecuteTerminalTool implements BaseTool {
       // Wait for user approval
       console.log(`[ExecuteTerminalTool] Waiting for user approval for command: ${commandId}`);
       const approved = await approvalPromise;
+      
+      // Notify ChatService that user interaction is complete
+      if (ExecuteTerminalTool.chatService && ExecuteTerminalTool.chatService.setWaitingForUserInteraction) {
+        ExecuteTerminalTool.chatService.setWaitingForUserInteraction(false);
+      }
       
       // Clean up pending command
       ExecuteTerminalTool.pendingCommands.delete(commandId);
