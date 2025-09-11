@@ -108,7 +108,8 @@ export class AskUserTool implements BaseTool {
         requestId,
         question,
         context,
-        urgency
+        urgency,
+        mode: AskUserTool.currentMode
       };
 
       // Get the extension context and send message
@@ -117,19 +118,8 @@ export class AskUserTool implements BaseTool {
         AskUserTool.messageHandler(payload);
       }
 
-      // Set timeout (5 minutes)
-      setTimeout(() => {
-        if (AskUserTool.pendingRequests.has(requestId)) {
-          AskUserTool.pendingRequests.delete(requestId);
-          
-          // Notify ChatService that user interaction is complete
-          if (AskUserTool.chatService && AskUserTool.chatService.setWaitingForUserInteraction) {
-            AskUserTool.chatService.setWaitingForUserInteraction(false);
-          }
-          
-          resolve({ cancelled: true });
-        }
-      }, 5 * 60 * 1000);
+      // No timeout - wait indefinitely for user response
+      // User must explicitly respond or cancel the request
     });
   }
 
@@ -137,9 +127,14 @@ export class AskUserTool implements BaseTool {
   private static pendingRequests = new Map<string, (response: { answer?: string; cancelled: boolean }) => void>();
   private static messageHandler: ((payload: any) => void) | null = null;
   private static interruptHandler: (() => void) | null = null;
+  private static currentMode: string = 'Unknown';
 
   static setChatService(chatService: any) {
     AskUserTool.chatService = chatService;
+  }
+
+  static setCurrentMode(mode: string) {
+    AskUserTool.currentMode = mode;
   }
 
   static setMessageHandler(handler: (payload: any) => void) {

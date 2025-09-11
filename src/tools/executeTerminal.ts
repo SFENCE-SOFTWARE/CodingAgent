@@ -176,11 +176,8 @@ export class ExecuteTerminalTool implements BaseTool {
         pendingCommand.resolvePromise = resolve;
         pendingCommand.rejectPromise = reject;
         
-        // Set timeout for approval (5 minutes)
-        setTimeout(() => {
-          ExecuteTerminalTool.pendingCommands.delete(commandId);
-          reject(new Error('Command approval timeout - no user response within 5 minutes'));
-        }, 5 * 60 * 1000);
+        // No timeout - wait indefinitely for user response
+        // User must explicitly approve or reject the command
       });
 
       // Store pending command

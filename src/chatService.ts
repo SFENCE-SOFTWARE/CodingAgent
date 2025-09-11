@@ -84,6 +84,10 @@ export class ChatService {
     AskUserTool.setChatService(this);
     ExecuteTerminalTool.setChatService(this);
     
+    // Initialize AskUserTool with current mode
+    const initialMode = this.openai.getCurrentMode();
+    AskUserTool.setCurrentMode(initialMode);
+    
     // Set up plan context manager callback
     const planContextManager = PlanContextManager.getInstance();
     planContextManager.setUpdateCallback((planId: string | null) => {
@@ -1765,6 +1769,8 @@ export class ChatService {
 
   async setMode(mode: string): Promise<void> {
     await this.openai.setCurrentMode(mode);
+    // Update AskUserTool with current mode
+    AskUserTool.setCurrentMode(mode);
     // Notify UI about configuration change
     if (this.configurationChangeCallback) {
       this.configurationChangeCallback();

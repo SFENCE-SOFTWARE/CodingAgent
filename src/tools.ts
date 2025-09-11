@@ -28,6 +28,7 @@ import { MemorySearchTool } from './tools/memorySearch';
 import { MemoryListTool } from './tools/memoryList';
 import { MemoryExportTool } from './tools/memoryExport';
 import { AskUserTool } from './tools/askUser';
+import { ExecutePythonTool } from './tools/executePython';
 
 // Planning tools
 import { PlanNewTool } from './tools/planNew';
@@ -127,6 +128,7 @@ export class ToolsService {
       new MemoryListTool(this.memoryService),
       new MemoryExportTool(this.memoryService),
       new AskUserTool(),
+      new ExecutePythonTool(),
 
       // Planning tools
       new PlanNewTool(this.workspaceRoot),

@@ -33,7 +33,7 @@ suite('Plan Evaluation Tests', () => {
     planningService.createPlan(planId, 'Test Plan', 'Short desc', 'Long desc');
     
     // Add a point
-    planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Coder');
+    planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Expected outputs', 'Expected inputs');
     
     // Review the plan
     planningService.setPlanReviewed(planId, 'Plan looks good');
@@ -57,7 +57,11 @@ suite('Plan Evaluation Tests', () => {
     planningService.createPlan(planId, 'Test Plan', 'Short desc', 'Long desc');
     
     // Add a point
-    planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Coder');
+    const addResult = planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Expected outputs', 'Expected inputs');
+    const pointId = addResult.pointId!;
+    
+    // Set point as independent (no dependencies)
+    planningService.setPointDependencies(planId, pointId, ['-1'], []);
     
     // Evaluate the plan (should fail on plan not reviewed)
     const result = planningService.evaluatePlanCompletion(planId);
@@ -77,7 +81,7 @@ suite('Plan Evaluation Tests', () => {
     planningService.createPlan(planId, 'Test Plan', 'Short desc', 'Long desc');
     
     // Add a point
-    const addResult = planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Coder');
+    const addResult = planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Expected outputs', 'Expected inputs');
     const pointId = addResult.pointId!;
     
     // Review the plan
@@ -106,7 +110,7 @@ suite('Plan Evaluation Tests', () => {
     planningService.createPlan(planId, 'Test Plan', 'Short desc', 'Long desc');
     
     // Add a point
-    const addResult = planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Coder');
+    const addResult = planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Expected outputs', 'Expected inputs');
     const pointId = addResult.pointId!;
     
     // Review the plan
@@ -129,7 +133,7 @@ suite('Plan Evaluation Tests', () => {
     planningService.createPlan(planId, 'Test Plan', 'Short desc', 'Long desc');
     
     // Add a point
-    const addResult = planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Coder');
+    const addResult = planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Expected outputs', 'Expected inputs');
     const pointId = addResult.pointId!;
     
     // Review the plan
@@ -155,7 +159,7 @@ suite('Plan Evaluation Tests', () => {
     planningService.createPlan(planId, 'Test Plan', 'Short desc', 'Long desc');
     
     // Add a point
-    const addResult = planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Coder');
+    const addResult = planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Expected outputs', 'Expected inputs');
     const pointId = addResult.pointId!;
     
     // Review the plan
@@ -184,7 +188,7 @@ suite('Plan Evaluation Tests', () => {
     planningService.createPlan(planId, 'Test Plan', 'Short desc', 'Long desc');
     
     // Add a point
-    const addResult = planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Coder');
+    const addResult = planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Expected outputs', 'Expected inputs');
     const pointId = addResult.pointId!;
     
     // Review the plan
@@ -215,7 +219,7 @@ suite('Plan Evaluation Tests', () => {
     planningService.createPlan(planId, 'Test Plan', 'Short desc', 'Long desc');
     
     // Add a point
-    const addResult = planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Coder');
+    const addResult = planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Expected outputs', 'Expected inputs');
     const pointId = addResult.pointId!;
     
     // Review the plan
@@ -247,7 +251,7 @@ suite('Plan Evaluation Tests', () => {
     planningService.createPlan(planId, 'Test Plan', 'Short desc', 'Long desc');
     
     // Add two points
-    const addResult1 = planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Coder');
+    const addResult1 = planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Expected outputs', 'Expected inputs');
     const pointId1 = addResult1.pointId!;
     const addResult2 = planningService.addPoint(planId, pointId1, 'Point 2', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Coder');
     const pointId2 = addResult2.pointId!;
@@ -274,7 +278,7 @@ suite('Plan Evaluation Tests', () => {
     planningService.createPlan(planId, 'Test Plan', 'Short desc', 'Long desc');
     
     // Add a point
-    const addResult = planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Coder');
+    const addResult = planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Expected outputs', 'Expected inputs');
     const pointId = addResult.pointId!;
     
     // Review the plan
@@ -302,7 +306,7 @@ suite('Plan Evaluation Tests', () => {
     planContextManager.setCurrentPlanId(planId);
     
     // Add a point
-    planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Coder');
+    planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Expected outputs', 'Expected inputs');
     
     // Execute the tool
     const result = await planEvaluateTool.execute({}, testWorkspaceRoot);
