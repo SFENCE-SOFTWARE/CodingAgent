@@ -10,6 +10,8 @@ export class PlanVisualizationPanel {
   private readonly _panel: vscode.WebviewPanel;
   private readonly _extensionUri: vscode.Uri;
   private _disposables: vscode.Disposable[] = [];
+  private _currentPlanId: string = '';
+  private _toolsService: ToolsService | null = null;
 
   public static createOrShow(extensionUri: vscode.Uri, planId: string, toolsService: ToolsService) {
     const column = vscode.window.activeTextEditor
@@ -19,6 +21,9 @@ export class PlanVisualizationPanel {
     // If we already have a panel, show it and update content.
     if (PlanVisualizationPanel.currentPanel) {
       PlanVisualizationPanel.currentPanel._panel.reveal(column);
+      // Update the stored planId and toolsService
+      PlanVisualizationPanel.currentPanel._currentPlanId = planId;
+      PlanVisualizationPanel.currentPanel._toolsService = toolsService;
       PlanVisualizationPanel.currentPanel._updateContent(planId, toolsService);
       return;
     }
@@ -47,9 +52,27 @@ export class PlanVisualizationPanel {
   private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri, planId: string, toolsService: ToolsService) {
     this._panel = panel;
     this._extensionUri = extensionUri;
+    this._currentPlanId = planId;
+    this._toolsService = toolsService;
 
     // Set the webview's initial html content
     this._updateContent(planId, toolsService);
+
+    // Listen for messages from the webview
+    this._panel.webview.onDidReceiveMessage(
+      async (message) => {
+        switch (message.command) {
+          case 'refresh':
+            // Use stored planId and toolsService for refresh
+            if (this._toolsService) {
+              await this._updateContent(this._currentPlanId, this._toolsService);
+            }
+            break;
+        }
+      },
+      null,
+      this._disposables
+    );
 
     // Listen for when the panel is disposed
     // This happens when the user closes the panel or when the panel is closed programmatically
@@ -65,7 +88,7 @@ export class PlanVisualizationPanel {
       }
 
       // Get plan data
-      const planResult = planningService.showPlan(planId);
+      const planResult = planningService.showPlan(planId, true); // Include point descriptions
       if (!planResult.success) {
         this._panel.webview.html = this._getErrorHtml(`Failed to get plan: ${planResult.error}`);
         return;
@@ -307,6 +330,10 @@ export class PlanVisualizationPanel {
             if (typeof acquireVsCodeApi !== 'undefined') {
                 const vscode = acquireVsCodeApi();
                 vscode.postMessage({ command: 'refresh' });
+            } else {
+                // Fallback for development/testing
+                console.log('Refresh requested');
+                window.location.reload();
             }
         }
     </script>
@@ -315,16 +342,22 @@ export class PlanVisualizationPanel {
   }
 
   private _getPointStatus(point: any): string {
-    // Debug logging
-    console.log(`[PlanVisualization] Point ${point.id}: implemented=${point.implemented}, reviewed=${point.reviewed}, tested=${point.tested}, needRework=${point.needRework}`);
+    // Access status data from the correct structure
+    const implemented = point.implemented;
+    const reviewed = point.reviewed;
+    const tested = point.tested;
+    const needRework = point.needRework;
     
-    if (point.implemented && point.reviewed && point.tested) {
+    // Debug logging
+    console.log(`[PlanVisualization] Point ${point.id}: implemented=${implemented}, reviewed=${reviewed}, tested=${tested}, needRework=${needRework}`);
+    
+    if (implemented && reviewed && tested) {
       return 'Complete';
-    } else if (point.needRework) {
+    } else if (needRework) {
       return 'Needs Rework';
-    } else if (point.implemented && point.reviewed) {
+    } else if (implemented && reviewed) {
       return 'Ready for Testing';
-    } else if (point.implemented) {
+    } else if (implemented) {
       return 'Ready for Review';
     } else {
       return 'Pending';
