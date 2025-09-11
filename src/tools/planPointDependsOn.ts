@@ -32,7 +32,7 @@ export class PlanPointDependsOnTool implements BaseTool {
               items: {
                 type: 'string'
               },
-              description: 'List of point IDs that this point depends on (must be completed first)',
+              description: 'List of point IDs that this point depends on (must be completed first). Use ["-1"] to explicitly mark as having no dependencies.',
               default: []
             },
             care_on: {

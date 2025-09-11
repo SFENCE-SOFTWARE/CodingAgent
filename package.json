@@ -399,7 +399,7 @@
                   "plan_point_show",
                   "plan_add_points",
                   "plan_change_point",
-                  "plan_point_care_on",
+                  "plan_point_depends_on",
                   "plan_point_remove"
                 ],
                 "fallbackMessage": "I'm ready to create and refine implementation plans. What project needs detailed planning?",

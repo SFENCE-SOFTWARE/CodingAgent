@@ -52,9 +52,13 @@ export class PlanAddPointsTool implements BaseTool {
                   expected_outputs: {
                     type: 'string',
                     description: 'Expected outputs and deliverables. For analysis tasks, specify memory keys or files to be created. Example: "Analysis stored in memory key \'user-research-2024\'" or "Updated config.json file" or "Documentation in docs/api.md"'
+                  },
+                  expected_inputs: {
+                    type: 'string',
+                    description: 'Expected inputs and prerequisites for this point. Specify what data, files, or previous work is needed. Example: "User research data from memory key \'survey-2024\'" or "Existing config.json file" or "Requirements from point 1"'
                   }
                 },
-                required: ['short_name', 'short_description', 'detailed_description', 'acceptance_criteria', 'expected_outputs'],
+                required: ['short_name', 'short_description', 'detailed_description', 'acceptance_criteria', 'expected_outputs', 'expected_inputs'],
                 additionalProperties: false
               },
               minItems: 1
@@ -81,11 +85,11 @@ export class PlanAddPointsTool implements BaseTool {
     // Validate each point structure
     for (let i = 0; i < points.length; i++) {
       const point = points[i];
-      if (!point.short_name || !point.short_description || !point.detailed_description || !point.acceptance_criteria) {
+      if (!point.short_name || !point.short_description || !point.detailed_description || !point.acceptance_criteria || !point.expected_outputs || !point.expected_inputs) {
         return {
           success: false,
           content: '',
-          error: `Point at index ${i} is missing required fields: short_name, short_description, detailed_description, acceptance_criteria`
+          error: `Point at index ${i} is missing required fields: short_name, short_description, detailed_description, acceptance_criteria, expected_outputs, expected_inputs`
         };
       }
     }

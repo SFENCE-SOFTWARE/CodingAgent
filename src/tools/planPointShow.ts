@@ -29,19 +29,22 @@ export class PlanPointShowTool implements BaseTool {
             },
             sections: {
               type: 'array',
-              description: 'Array of section names to display. Available sections: "plan_short_description", "plan_long_description", "short_description", "long_description", "expected_outputs", "acceptance_criteria", "comments", "state", "care_on_points"',
+              description: 'Array of section names to display. Use "all" to display all sections. Available sections: "plan_short_description", "plan_long_description", "short_description", "long_description", "expected_inputs", "expected_outputs", "acceptance_criteria", "depends_on_points", "care_on_points", "comments", "state"',
               items: {
                 type: 'string',
                 enum: [
+                  'all',
                   'plan_short_description',
                   'plan_long_description', 
                   'short_description',
                   'long_description',
+                  'expected_inputs',
                   'expected_outputs',
                   'acceptance_criteria',
+                  'depends_on_points',
+                  'care_on_points',
                   'comments',
-                  'state',
-                  'care_on_points'
+                  'state'
                 ]
               },
               minItems: 1
@@ -97,18 +100,36 @@ export class PlanPointShowTool implements BaseTool {
         };
       }
 
-      // Get plan info for plan sections
-      let planInfo = null;
-      if (sections.includes('plan_short_description') || sections.includes('plan_long_description')) {
-        const planResult = planningService.showPlan(currentPlanId);
-        planInfo = planResult.success ? planResult.plan : null;
-      }
-
       const point = pointResult.point;
       let content = `Plan: ${currentPlanId}\nPoint ID: ${point.id}\n\n`;
 
+      // Handle "all" sections - expand to all available sections
+      let sectionsToShow = sections;
+      if (sections.includes('all')) {
+        sectionsToShow = [
+          'plan_short_description',
+          'plan_long_description',
+          'short_description', 
+          'long_description',
+          'expected_inputs',
+          'expected_outputs',
+          'acceptance_criteria',
+          'depends_on_points',
+          'care_on_points',
+          'state',
+          'comments'
+        ];
+      }
+
+      // Get plan info for plan sections
+      let planInfo = null;
+      if (sectionsToShow.includes('plan_short_description') || sectionsToShow.includes('plan_long_description')) {
+        const planResult = planningService.showPlan(currentPlanId, true); // Include point descriptions
+        planInfo = planResult.success ? planResult.plan : null;
+      }
+
       // Build selective content based on requested sections
-      for (const section of sections) {
+      for (const section of sectionsToShow) {
         switch (section) {
           case 'plan_short_description':
             if (planInfo && planInfo.shortDescription) {
@@ -129,6 +150,14 @@ export class PlanPointShowTool implements BaseTool {
 
           case 'long_description':
             content += `📖 Detailed Description:\n${point.detailedDescription}\n\n`;
+            break;
+
+          case 'expected_inputs':
+            if (point.expectedInputs) {
+              content += `📥 Expected Inputs:\n${point.expectedInputs}\n\n`;
+            } else {
+              content += `📥 Expected Inputs: Not specified\n\n`;
+            }
             break;
 
           case 'expected_outputs':
@@ -162,6 +191,36 @@ export class PlanPointShowTool implements BaseTool {
               content += ` - ${point.state.reworkReason}`;
             }
             content += `\n\n`;
+            break;
+
+          case 'depends_on_points':
+            // Get depends_on information from the point data
+            if (point.dependsOn && point.dependsOn.length > 0) {
+              content += `🔗 Depends On Points:\n`;
+              // Get plan to look up point details
+              const planResult = planningService.showPlan(currentPlanId, true);
+              if (planResult.success && planResult.plan) {
+                point.dependsOn.forEach((depId: string) => {
+                  if (depId === '-1') {
+                    content += `  - Independent (no dependencies)\n`;
+                  } else {
+                    const depPoint = planResult.plan.points.find((p: any) => p.id === depId);
+                    if (depPoint) {
+                      content += `  - [${depPoint.id}] ${depPoint.shortName}\n`;
+                    } else {
+                      content += `  - [${depId}] Point not found\n`;
+                    }
+                  }
+                });
+              } else {
+                point.dependsOn.forEach((depId: string) => {
+                  content += `  - [${depId}]\n`;
+                });
+              }
+              content += '\n';
+            } else {
+              content += `🔗 Depends On Points: Not set\n\n`;
+            }
             break;
 
           case 'care_on_points':

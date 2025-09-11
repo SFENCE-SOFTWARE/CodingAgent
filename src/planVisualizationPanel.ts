@@ -118,23 +118,37 @@ export class PlanVisualizationPanel {
     
     let pointsHtml = '';
     if (points.length === 0) {
-      pointsHtml = '<tr><td colspan="6" style="text-align: center; color: var(--vscode-descriptionForeground);">No points defined</td></tr>';
+      pointsHtml = '<tr><td colspan="11" style="text-align: center; color: var(--vscode-descriptionForeground);">No points defined</td></tr>';
     } else {
       pointsHtml = points.map((point: any) => {
         const status = this._getPointStatus(point);
         const statusColor = this._getStatusColor(status);
+        
         const dependsOn = point.dependsOn && point.dependsOn.length > 0 
-          ? point.dependsOn.join(', ') 
+          ? point.dependsOn.map((dep: string) => dep === '-1' ? 'Independent' : dep).join(', ') 
+          : 'Not set';
+          
+        const careOn = point.careOnPoints && point.careOnPoints.length > 0
+          ? point.careOnPoints.join(', ')
           : 'None';
+          
+        const comments = point.comments && point.comments.length > 0
+          ? point.comments.join('; ')
+          : '';
         
         return `
           <tr>
             <td>${point.id}</td>
-            <td>${this._escapeHtml(point.shortName)}</td>
-            <td>${this._escapeHtml(point.detailedDescription || point.shortDescription || 'No description')}</td>
-            <td>${dependsOn}</td>
+            <td><strong>${this._escapeHtml(point.shortName)}</strong></td>
+            <td>${this._escapeHtml(point.shortDescription)}</td>
+            <td>${this._escapeHtml(point.detailedDescription || 'No detailed description')}</td>
+            <td>${this._escapeHtml(point.acceptanceCriteria || 'No criteria')}</td>
+            <td>${this._escapeHtml(point.expectedInputs || 'Not specified')}</td>
+            <td>${this._escapeHtml(point.expectedOutputs || 'Not specified')}</td>
+            <td>${this._escapeHtml(dependsOn)}</td>
+            <td>${this._escapeHtml(careOn)}</td>
             <td><span class="status-badge" style="background-color: ${statusColor}">${status}</span></td>
-            <td>${this._escapeHtml(point.comment || '')}</td>
+            <td>${this._escapeHtml(comments)}</td>
           </tr>
         `;
       }).join('');
@@ -189,13 +203,27 @@ export class PlanVisualizationPanel {
             border-collapse: collapse;
             margin-top: 20px;
             background-color: var(--vscode-editor-background);
+            font-size: 12px;
+            overflow-x: auto;
         }
         
         th, td {
-            padding: 12px;
+            padding: 8px;
             text-align: left;
             border-bottom: 1px solid var(--vscode-widget-border);
             vertical-align: top;
+            word-wrap: break-word;
+            max-width: 200px;
+        }
+        
+        th:first-child, td:first-child {
+            min-width: 40px;
+            max-width: 40px;
+        }
+        
+        th:nth-child(2), td:nth-child(2) {
+            min-width: 120px;
+            max-width: 150px;
         }
         
         th {
@@ -242,10 +270,13 @@ export class PlanVisualizationPanel {
     
     <div class="plan-info">
         <h3>${this._escapeHtml(plan.name)}</h3>
-        <p><strong>Description:</strong> ${this._escapeHtml(plan.shortDescription)}</p>
-        <p><strong>Details:</strong> ${this._escapeHtml(plan.longDescription)}</p>
+        <p><strong>Short Description:</strong> ${this._escapeHtml(plan.shortDescription)}</p>
+        <p><strong>Long Description:</strong> ${this._escapeHtml(plan.longDescription)}</p>
         <p><strong>Status:</strong> ${this._getePlanStatus(plan)}</p>
         <p><strong>Total Points:</strong> ${points.length}</p>
+        <p><strong>Reviewed:</strong> ${plan.reviewed ? '✅ Yes' : '❌ No'}${plan.reviewedComment ? ` - ${this._escapeHtml(plan.reviewedComment)}` : ''}</p>
+        <p><strong>Accepted:</strong> ${plan.accepted ? '✅ Yes' : '❌ No'}${plan.acceptedComment ? ` - ${this._escapeHtml(plan.acceptedComment)}` : ''}</p>
+        <p><strong>Needs Work:</strong> ${plan.needsWork ? '⚠️ Yes' : '✅ No'}${plan.needsWorkComments ? ` - ${plan.needsWorkComments.join('; ')}` : ''}</p>
     </div>
     
     <h2>Plan Points</h2>
@@ -254,10 +285,15 @@ export class PlanVisualizationPanel {
             <tr>
                 <th>ID</th>
                 <th>Title</th>
-                <th>Description</th>
+                <th>Short Description</th>
+                <th>Long Description</th>
+                <th>Acceptance Criteria</th>
+                <th>Expected Inputs</th>
+                <th>Expected Outputs</th>
                 <th>Depends On</th>
+                <th>Care On</th>
                 <th>Status</th>
-                <th>Comment</th>
+                <th>Comments</th>
             </tr>
         </thead>
         <tbody>

@@ -11,12 +11,13 @@ export interface PlanPoint {
   detailedDescription: string;
   acceptanceCriteria: string;
   expectedOutputs: string;
+  expectedInputs: string;  // New: expected inputs for the point
   status: string;
   careOn: boolean;
   comment: string;
   careOnComment: string;
   careOnPoints: string[];
-  dependsOn: string[];  // New: points that this point depends on
+  dependsOn: string[];  // Points that this point depends on (use "-1" for no dependencies)
   implemented: boolean;
   reviewed: boolean;
   reviewedComment: string;
@@ -204,7 +205,8 @@ export class PlanningService {
     shortDescription: string,
     detailedDescription: string,
     acceptanceCriteria: string,
-    expectedOutputs: string = ''
+    expectedOutputs: string = '',
+    expectedInputs: string = ''
   ): { success: boolean; pointId?: string; error?: string } {
     const plan = this.plans.get(planId);
     if (!plan) {
@@ -224,6 +226,7 @@ export class PlanningService {
       detailedDescription,
       acceptanceCriteria,
       expectedOutputs,
+      expectedInputs,
       status: 'pending',
       careOn: false,
       comment: '',
@@ -269,6 +272,7 @@ export class PlanningService {
       detailed_description: string;
       acceptance_criteria: string;
       expected_outputs: string;
+      expected_inputs?: string;
     }>
   ): { success: boolean; pointIds?: string[]; error?: string } {
     const plan = this.plans.get(planId);
@@ -298,6 +302,7 @@ export class PlanningService {
         detailedDescription: pointData.detailed_description,
         acceptanceCriteria: pointData.acceptance_criteria,
         expectedOutputs: pointData.expected_outputs,
+        expectedInputs: pointData.expected_inputs || '',
         status: 'pending',
         careOn: false,
         comment: '',
@@ -342,7 +347,7 @@ export class PlanningService {
   public changePoint(
     planId: string,
     pointId: string,
-    updates: Partial<Pick<PlanPoint, 'shortName' | 'shortDescription' | 'detailedDescription' | 'acceptanceCriteria' | 'expectedOutputs'>>
+    updates: Partial<Pick<PlanPoint, 'shortName' | 'shortDescription' | 'detailedDescription' | 'acceptanceCriteria' | 'expectedOutputs' | 'expectedInputs'>>
   ): { success: boolean; error?: string } {
     const plan = this.plans.get(planId);
     if (!plan) {
@@ -362,6 +367,7 @@ export class PlanningService {
     if (updates.detailedDescription !== undefined) {point.detailedDescription = updates.detailedDescription;}
     if (updates.acceptanceCriteria !== undefined) {point.acceptanceCriteria = updates.acceptanceCriteria;}
     if (updates.expectedOutputs !== undefined) {point.expectedOutputs = updates.expectedOutputs;}
+    if (updates.expectedInputs !== undefined) {point.expectedInputs = updates.expectedInputs;}
 
     point.updatedAt = Date.now();
     plan.updatedAt = Date.now();
@@ -401,7 +407,8 @@ export class PlanningService {
         comment: point.comment,
         ...(includePointDescriptions && { 
           acceptanceCriteria: point.acceptanceCriteria,
-          expectedOutputs: point.expectedOutputs
+          expectedOutputs: point.expectedOutputs,
+          expectedInputs: point.expectedInputs
         })
       }))
     };
@@ -420,9 +427,9 @@ export class PlanningService {
       return { success: false, error: `Point with ID '${pointId}' not found in plan '${planId}'` };
     }
 
-    // Validate dependsOn point IDs
+    // Validate dependsOn point IDs (allow "-1" as special case)
     for (const dependsOnId of dependsOnPointIds) {
-      if (!this.validatePointId(plan, dependsOnId)) {
+      if (dependsOnId !== '-1' && !this.validatePointId(plan, dependsOnId)) {
         return { success: false, error: `Depends-on point with ID '${dependsOnId}' not found in plan '${planId}'` };
       }
     }
@@ -508,6 +515,9 @@ export class PlanningService {
       shortDescription: point.shortDescription,
       detailedDescription: point.detailedDescription,
       acceptanceCriteria: point.acceptanceCriteria,
+      expectedOutputs: point.expectedOutputs,
+      expectedInputs: point.expectedInputs,
+      dependsOn: point.dependsOn,
       state: {
         implemented: point.implemented,
         reviewed: point.reviewed,
@@ -851,6 +861,119 @@ export class PlanningService {
   }
 
   /**
+   * Performs procedural validation of plan points checking all required fields and dependencies
+   * Returns first validation issue found, or null if plan is valid
+   */
+  public validatePlanProcedurally(planId: string): { success: boolean; issue?: { type: string; pointId?: string; message: string }; error?: string } {
+    const plan = this.plans.get(planId);
+    if (!plan) {
+      return { success: false, error: `Plan with ID '${planId}' not found` };
+    }
+
+    // Check each point for required fields and valid dependencies
+    for (const point of plan.points) {
+      // Check required fields
+      if (!point.shortName || point.shortName.trim() === '') {
+        return {
+          success: true,
+          issue: {
+            type: 'missing_field',
+            pointId: point.id,
+            message: `Point ${point.id} is missing short name`
+          }
+        };
+      }
+
+      if (!point.shortDescription || point.shortDescription.trim() === '') {
+        return {
+          success: true,
+          issue: {
+            type: 'missing_field',
+            pointId: point.id,
+            message: `Point ${point.id} is missing short description`
+          }
+        };
+      }
+
+      if (!point.detailedDescription || point.detailedDescription.trim() === '') {
+        return {
+          success: true,
+          issue: {
+            type: 'missing_field',
+            pointId: point.id,
+            message: `Point ${point.id} is missing detailed description`
+          }
+        };
+      }
+
+      if (!point.acceptanceCriteria || point.acceptanceCriteria.trim() === '') {
+        return {
+          success: true,
+          issue: {
+            type: 'missing_field',
+            pointId: point.id,
+            message: `Point ${point.id} is missing acceptance criteria`
+          }
+        };
+      }
+
+      if (!point.expectedOutputs || point.expectedOutputs.trim() === '') {
+        return {
+          success: true,
+          issue: {
+            type: 'missing_field',
+            pointId: point.id,
+            message: `Point ${point.id} is missing expected outputs`
+          }
+        };
+      }
+
+      if (!point.expectedInputs || point.expectedInputs.trim() === '') {
+        return {
+          success: true,
+          issue: {
+            type: 'missing_field',
+            pointId: point.id,
+            message: `Point ${point.id} is missing expected inputs`
+          }
+        };
+      }
+
+      // Check dependencies - must have at least one dependency or explicitly marked as "-1"
+      if (!point.dependsOn || point.dependsOn.length === 0) {
+        return {
+          success: true,
+          issue: {
+            type: 'missing_dependencies',
+            pointId: point.id,
+            message: `Point ${point.id} has no dependencies set. Use "-1" to mark as independent or specify dependent point IDs`
+          }
+        };
+      }
+
+      // If dependencies are set, validate them (except for "-1")
+      for (const depId of point.dependsOn) {
+        if (depId !== '-1') {
+          // Check if the dependency point exists
+          if (!plan.points.some(p => p.id === depId)) {
+            return {
+              success: true,
+              issue: {
+                type: 'invalid_dependency',
+                pointId: point.id,
+                message: `Point ${point.id} depends on non-existent point ${depId}`
+              }
+            };
+          }
+        }
+      }
+    }
+
+    // All checks passed
+    return { success: true };
+  }
+
+  /**
    * Evaluates plan completion status and generates corrective prompts if needed
    * New priority order: plan not reviewed -> points need rework -> points not reviewed -> points not tested -> points not implemented -> plan accepted
    * Rule: Points which are not implemented cannot be marked as not reviewed or not tested
@@ -859,6 +982,27 @@ export class PlanningService {
     const plan = this.plans.get(planId);
     if (!plan) {
       return { success: false, error: `Plan with ID '${planId}' not found` };
+    }
+
+    // Step 0: Procedural validation (highest priority) - only run if plan is waiting for review
+    if (!plan.reviewed && !plan.needsWork) {
+      const validationResult = this.validatePlanProcedurally(planId);
+      if (!validationResult.success) {
+        return { success: false, error: validationResult.error };
+      }
+      
+      if (validationResult.issue) {
+        return {
+          success: true,
+          result: {
+            isDone: false,
+            nextStepPrompt: `Please fix this issue in the plan: ${validationResult.issue.message}`,
+            failedStep: 'plan_review',
+            failedPoints: validationResult.issue.pointId ? [validationResult.issue.pointId] : undefined,
+            reason: validationResult.issue.message
+          }
+        };
+      }
     }
 
     // Step 1: Check if plan needs rework (highest priority)
