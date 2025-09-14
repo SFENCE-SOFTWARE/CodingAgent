@@ -405,6 +405,7 @@
                   "plan_point_show",
                   "plan_add_points",
                   "plan_change_point",
+                  "plan_change",
                   "plan_point_depends_on",
                   "plan_point_remove"
                 ],

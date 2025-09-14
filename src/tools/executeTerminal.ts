@@ -308,9 +308,13 @@ export class ExecuteTerminalTool implements BaseTool {
           statusInfo += `\n[Terminated by signal: ${signal}]`;
         }
 
+        const fullOutput = `Command: ${command}\nWorking directory: ${workspaceRoot}\n\nOutput:\n${combinedOutput}${statusInfo}`;
+        const isSuccess = code === 0 || code === null;
+
         resolve({
-          success: code === 0 || code === null,
-          content: `Command: ${command}\nWorking directory: ${workspaceRoot}\n\nOutput:\n${combinedOutput}${statusInfo}`
+          success: isSuccess,
+          content: isSuccess ? fullOutput : '',
+          error: isSuccess ? undefined : fullOutput
         });
       });
 

@@ -58,7 +58,13 @@ export class PlanShowTool implements BaseTool {
       if (result.success) {
         const plan = result.plan!;
         let content = `Plan: ${plan.name} (ID: ${plan.id})\n\n`;
-        content += `Description:\n${plan.longDescription}\n\n`;
+        
+        // Show short description if available
+        if (plan.shortDescription) {
+          content += `Short Description: ${plan.shortDescription}\n\n`;
+        }
+        
+        content += `Long Description:\n${plan.longDescription}\n\n`;
         
         // Show plan review and acceptance status
         if (plan.accepted) {

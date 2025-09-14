@@ -52,10 +52,19 @@ async function handleUserMessage(message, context) {
     
     // Step 2: Categorize the request
     try {
-        const categorizationPrompt = `Analyze this user request and categorize it. Respond with exactly one of these options:
-- OPEN <plan_id> — Use this if the request can be fulfilled by opening and continuing work on an existing plan. If a plan ID is mentioned, replace <plan_id> with that ID. If both opening an existing plan and creating a new plan are possible, choose OPEN.
-- NEW — Use this if the user's request can be fulfilled by creating and implementing a new plan.
-- QUESTION — Use this for any other type of request, such as questions, general help, or anything unrelated to creating or opening a plan.
+        const categorizationPrompt = `Analyze this user request and categorize it. You must respond with exactly one of these formats:
+
+**OPEN <existing_plan_id>** — Use this if the request can be fulfilled by opening and continuing work on an existing plan. Replace <existing_plan_id> with the actual ID of an existing plan that matches the request. Only use plan IDs that exist in the system.
+
+**NEW <new_plan_id>** — Use this if the user's request requires creating a new plan. Replace <new_plan_id> with a short, descriptive plan ID (lowercase, use dashes, max 30 chars, must NOT conflict with existing plan IDs). Generate the ID based on the request content.
+
+**QUESTION** — Use this for any other type of request, such as questions, general help, or anything unrelated to creating or opening a plan.
+
+Rules:
+- Always use plan_list tool to show existing plans.
+- For OPEN: The existing_plan_id MUST be from the existing plans list below
+- For NEW: The new_plan_id MUST be unique (not in the existing plans list) and descriptive
+- If both OPEN and NEW are possible, prefer OPEN for existing plans
 
 User request: "${workingMessage}"`;
         
@@ -65,27 +74,66 @@ User request: "${workingMessage}"`;
         context.console.info(`Request categorized as: ${categoryTrimmed}`);
         
         // Handle different categories
-        if (categoryTrimmed === 'NEW') {
-            context.console.info('Plan creation request detected - calling Architect mode');
+        if (categoryTrimmed.startsWith('NEW ')) {
+            // Extract plan ID from the response
+            const planId = categoryTrimmed.substring(4).trim().toLowerCase();
+            context.console.info(`Plan creation request detected with plan_id: ${planId}`);
             
-            // Send notice about mode switch
-            context.sendNotice('🏗️ **Switching to Architect mode for plan creation...**');
-            
-            // Create plan using Architect mode
-            const architectPrompt = `Create a plan for the user's request and summarize the output in two sentences, explaining what you did and how, without listing individual points.\n\nUser's request: "${workingMessage}"`;
+            // Create the plan using orchestrator algorithm
+            if (context.planningService) {
+                const createResult = context.planningService.createPlan(
+                    planId,
+                    'New Plan',  // Will be updated by architect
+                    workingMessage,  // Original request as short description
+                    `Original request: "${message}"\nTranslated request: "${workingMessage}"\nLanguage: ${detectedLanguage}`
+                );
+                
+                if (createResult.success) {
+                    // Set the plan as current
+                    if (context.planContextManager) {
+                        context.planContextManager.setCurrentPlanId(planId);
+                    }
+                    
+                    context.console.info(`Plan ${planId} created successfully`);
+                    
+                    // Send notice about mode switch
+                    context.sendNotice(`🏗️ **Plan '${planId}' created. Switching to Architect mode...**`);
+                    
+                    // Ask Architect to populate the pre-created plan
+                    const architectPrompt = `A plan with ID '${planId}' has been pre-created for you. Please populate this existing plan with appropriate content:
 
-            const architectResponse = await context.sendToLLM(architectPrompt, 'Architect');
-            
-            // Send notice about switching back
-            context.sendNotice('🔄 **Switching back to Orchestrator mode...**');
-            
-            context.sendResponse(architectResponse);
-            
-            // After creating plan, continue with plan execution cycle
-            // Note: The Architect mode should have created a plan and set it as current
-            await executePlanCycle(context);
-            
-            return 'Plan created and execution cycle initiated';
+1. Update the plan name and descriptions to better reflect the request
+2. Add detailed points to accomplish the user's request
+3. Summarize what you did in 2-3 sentences
+
+The plan already contains:
+- Original request: "${message}"
+- Translated request: "${workingMessage}" 
+- Language: ${detectedLanguage}
+
+User's request: "${workingMessage}"
+
+Focus on populating the existing plan, not creating a new one.`;
+
+                    const architectResponse = await context.sendToLLM(architectPrompt, 'Architect');
+                    
+                    // Send notice about switching back
+                    context.sendNotice('🔄 **Switching back to Orchestrator mode...**');
+                    
+                    context.sendResponse(architectResponse);
+                    
+                    // After populating plan, continue with plan execution cycle
+                    await executePlanCycle(context);
+                    
+                    return 'Plan created and execution cycle initiated';
+                } else {
+                    context.sendResponse(`Failed to create plan: ${createResult.error}`);
+                    return `Plan creation failed: ${createResult.error}`;
+                }
+            } else {
+                context.sendResponse('Plan creation requested but planning service is not available.');
+                return 'Planning service not available';
+            }
             
         } else if (categoryTrimmed.startsWith('OPEN ')) {
             // Extract plan ID from original category (preserving case)

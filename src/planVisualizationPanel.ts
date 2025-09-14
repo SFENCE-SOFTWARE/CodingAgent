@@ -295,6 +295,7 @@ export class PlanVisualizationPanel {
         <h3>${this._escapeHtml(plan.name)}</h3>
         <p><strong>Short Description:</strong> ${this._escapeHtml(plan.shortDescription)}</p>
         <p><strong>Long Description:</strong> ${this._escapeHtml(plan.longDescription)}</p>
+        ${this._renderOriginalRequest(plan.longDescription)}
         <p><strong>Status:</strong> ${this._getePlanStatus(plan)}</p>
         <p><strong>Total Points:</strong> ${points.length}</p>
         <p><strong>Reviewed:</strong> ${plan.reviewed ? '✅ Yes' : '❌ No'}${plan.reviewedComment ? ` - ${this._escapeHtml(plan.reviewedComment)}` : ''}</p>
@@ -395,6 +396,40 @@ export class PlanVisualizationPanel {
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
+  }
+
+  private _renderOriginalRequest(longDescription: string): string {
+    if (!longDescription) {
+      return '';
+    }
+
+    // Extract original request from long description
+    const originalMatch = longDescription.match(/Original request: "(.*?)"/);
+    const translatedMatch = longDescription.match(/Translated request: "(.*?)"/);
+    const languageMatch = longDescription.match(/Language: (.+?)(?:\n|$)/);
+
+    if (!originalMatch) {
+      return ''; // No original request found
+    }
+
+    const originalRequest = originalMatch[1];
+    const translatedRequest = translatedMatch ? translatedMatch[1] : '';
+    const language = languageMatch ? languageMatch[1] : '';
+
+    let html = `<div style="background-color: var(--vscode-textBlockQuote-background); border-left: 4px solid var(--vscode-textBlockQuote-border); padding: 10px; margin: 10px 0;">
+      <p><strong>🎯 Original Request:</strong> ${this._escapeHtml(originalRequest)}</p>`;
+
+    if (translatedRequest && translatedRequest !== originalRequest) {
+      html += `<p><strong>🌐 Translated:</strong> ${this._escapeHtml(translatedRequest)}</p>`;
+    }
+
+    if (language) {
+      html += `<p><strong>🗣️ Language:</strong> ${this._escapeHtml(language)}</p>`;
+    }
+
+    html += `</div>`;
+
+    return html;
   }
 
   public dispose() {

@@ -1198,4 +1198,29 @@ export class PlanningService {
 
     return { success: true };
   }
+
+  /**
+   * Update plan's name and descriptions
+   */
+  public updatePlanDetails(planId: string, name?: string, shortDescription?: string, longDescription?: string): { success: boolean; error?: string } {
+    const plan = this.plans.get(planId);
+    if (!plan) {
+      return { success: false, error: `Plan with ID '${planId}' not found` };
+    }
+
+    if (name !== undefined) {
+      plan.name = name;
+    }
+    if (shortDescription !== undefined) {
+      plan.shortDescription = shortDescription;
+    }
+    if (longDescription !== undefined) {
+      plan.longDescription = longDescription;
+    }
+
+    plan.updatedAt = Date.now();
+    this.savePlan(plan);
+
+    return { success: true };
+  }
 }
