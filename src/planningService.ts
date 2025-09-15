@@ -41,6 +41,11 @@ export interface Plan {
   needsWorkComments?: string[];  // Changed to array
   accepted: boolean;
   acceptedComment?: string;
+  logs: PlanLogEntry[];  // New: activity logs for the plan
+  // Language and translation fields for orchestrator algorithm
+  detectedLanguage?: string;  // Language detected by orchestrator (e.g., "czech", "english")
+  originalRequest?: string;   // Original user request before translation
+  translatedRequest?: string; // Translated request (only if translation was needed)
   createdAt: number;
   updatedAt: number;
 }
@@ -58,6 +63,15 @@ export interface PlanState {
   pendingPoints: string[];
 }
 
+export interface PlanLogEntry {
+  timestamp: number;
+  type: 'point' | 'plan';
+  action: string; // e.g., 'implemented', 'reviewed', 'tested', 'accepted', 'needs_rework'
+  target: string; // point ID or plan ID
+  message: string; // formatted log message
+  details?: string; // optional additional details (comments, etc.)
+}
+
 export interface PlanEvaluationResult {
   isDone: boolean;
   nextStepPrompt: string; // Always required now - even for done plans
@@ -71,6 +85,7 @@ export class PlanningService {
   private static instance: PlanningService;
   private plans: Map<string, Plan> = new Map();
   private plansDirectory: string;
+  private lastLogTimestamp: number = 0;
 
   private constructor(workspaceRoot?: string) {
     const root = workspaceRoot || vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
@@ -112,6 +127,22 @@ export class PlanningService {
             const filePath = path.join(this.plansDirectory, file);
             const content = fs.readFileSync(filePath, 'utf8');
             const plan: Plan = JSON.parse(content);
+            
+            // Migration: Add logs array if it doesn't exist
+            if (!plan.logs) {
+              plan.logs = [];
+              // Add initial log entry for existing plans
+              plan.logs.push({
+                timestamp: plan.createdAt || Date.now(),
+                type: 'plan',
+                action: 'created',
+                target: plan.id,
+                message: `Plan created`,
+                details: plan.name
+              });
+              this.savePlan(plan); // Save migrated plan
+            }
+            
             this.plans.set(plan.id, plan);
           } catch (error) {
             console.warn(`Failed to load plan from ${file}:`, error);
@@ -125,11 +156,37 @@ export class PlanningService {
 
   private savePlan(plan: Plan): void {
     try {
+      this.ensureDirectoryExists(); // Ensure directory exists before saving
       const filePath = path.join(this.plansDirectory, `${plan.id}.json`);
       const content = JSON.stringify(plan, null, 2);
       fs.writeFileSync(filePath, content, 'utf8');
     } catch (error) {
       throw new Error(`Failed to save plan ${plan.id}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  private addLogEntry(plan: Plan, type: 'point' | 'plan', action: string, target: string, message: string, details?: string): void {
+    // Ensure unique timestamps by incrementing if necessary
+    let timestamp = Date.now();
+    if (timestamp <= this.lastLogTimestamp) {
+      timestamp = this.lastLogTimestamp + 1;
+    }
+    this.lastLogTimestamp = timestamp;
+
+    const logEntry: PlanLogEntry = {
+      timestamp,
+      type,
+      action,
+      target,
+      message,
+      details
+    };
+    
+    plan.logs.push(logEntry);
+    
+    // Keep only last 100 log entries to prevent excessive file sizes
+    if (plan.logs.length > 100) {
+      plan.logs = plan.logs.slice(-100);
     }
   }
 
@@ -174,9 +231,55 @@ export class PlanningService {
       reviewed: false,
       needsWork: false,
       accepted: false,
+      logs: [],
       createdAt: Date.now(),
       updatedAt: Date.now()
     };
+
+    // Add initial log entry
+    this.addLogEntry(plan, 'plan', 'created', id, `Plan created`, name);
+
+    this.plans.set(id, plan);
+    this.savePlan(plan);
+
+    return { success: true };
+  }
+
+  /**
+   * Create plan with language and translation information (for orchestrator algorithm)
+   */
+  public createPlanWithLanguageInfo(
+    id: string, 
+    name: string, 
+    shortDescription: string, 
+    longDescription: string,
+    detectedLanguage: string,
+    originalRequest: string,
+    translatedRequest?: string
+  ): { success: boolean; error?: string } {
+    if (this.plans.has(id)) {
+      return { success: false, error: `Plan with ID '${id}' already exists` };
+    }
+
+    const plan: Plan = {
+      id,
+      name,
+      shortDescription,
+      longDescription,
+      points: [],
+      reviewed: false,
+      needsWork: false,
+      accepted: false,
+      logs: [],
+      detectedLanguage,
+      originalRequest,
+      translatedRequest,
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+
+    // Add initial log entry
+    this.addLogEntry(plan, 'plan', 'created', id, `Plan created`, name);
 
     this.plans.set(id, plan);
     this.savePlan(plan);
@@ -394,6 +497,10 @@ export class PlanningService {
       reviewed: plan.reviewed,
       needsWork: plan.needsWork,
       accepted: plan.accepted,
+      // Language and translation fields
+      detectedLanguage: plan.detectedLanguage,
+      originalRequest: plan.originalRequest,
+      translatedRequest: plan.translatedRequest,
       points: plan.points.map(point => ({
         id: point.id,
         shortName: point.shortName,
@@ -573,6 +680,10 @@ export class PlanningService {
     point.needRework = false;
     point.updatedAt = Date.now();
     plan.updatedAt = Date.now();
+    
+    // Add log entry
+    this.addLogEntry(plan, 'point', 'implemented', pointId, `Point ${pointId} new state implemented`, point.shortName);
+    
     this.savePlan(plan);
 
     return { success: true };
@@ -599,6 +710,10 @@ export class PlanningService {
     point.reviewedComment = comment;
     point.updatedAt = Date.now();
     plan.updatedAt = Date.now();
+    
+    // Add log entry
+    this.addLogEntry(plan, 'point', 'reviewed', pointId, `Point ${pointId} new state reviewed`, comment ? comment : point.shortName);
+    
     this.savePlan(plan);
 
     return { success: true };
@@ -625,6 +740,10 @@ export class PlanningService {
     point.testedComment = comment;
     point.updatedAt = Date.now();
     plan.updatedAt = Date.now();
+    
+    // Add log entry
+    this.addLogEntry(plan, 'point', 'tested', pointId, `Point ${pointId} new state tested`, comment ? comment : point.shortName);
+    
     this.savePlan(plan);
 
     return { success: true };
@@ -643,6 +762,10 @@ export class PlanningService {
     plan.accepted = false;  // Reset acceptance when plan structure is reviewed
     plan.acceptedComment = undefined;
     plan.updatedAt = Date.now();
+    
+    // Add log entry
+    this.addLogEntry(plan, 'plan', 'reviewed', planId, `Plan new state reviewed`, comment ? comment : plan.name);
+    
     this.savePlan(plan);
 
     return { success: true };
@@ -661,6 +784,10 @@ export class PlanningService {
     plan.accepted = false;
     plan.acceptedComment = undefined;
     plan.updatedAt = Date.now();
+    
+    // Add log entry
+    this.addLogEntry(plan, 'plan', 'needs_work', planId, `Plan new state needs work`, comments.join('; '));
+    
     this.savePlan(plan);
 
     return { success: true };
@@ -686,6 +813,10 @@ export class PlanningService {
     plan.needsWork = false;
     plan.needsWorkComments = undefined;
     plan.updatedAt = Date.now();
+    
+    // Add log entry
+    this.addLogEntry(plan, 'plan', 'accepted', planId, `Plan new state accepted`, comment ? comment : plan.name);
+    
     this.savePlan(plan);
 
     return { success: true };
@@ -710,6 +841,10 @@ export class PlanningService {
     point.reworkReason = reworkReason;
     point.updatedAt = Date.now();
     plan.updatedAt = Date.now();
+    
+    // Add log entry
+    this.addLogEntry(plan, 'point', 'needs_rework', pointId, `Point ${pointId} new state needs rework`, reworkReason);
+    
     this.savePlan(plan);
 
     return { success: true };
@@ -1222,5 +1357,27 @@ export class PlanningService {
     this.savePlan(plan);
 
     return { success: true };
+  }
+
+  /**
+   * Get activity logs for a plan
+   */
+  public getPlanLogs(planId: string, limit?: number): { success: boolean; logs?: PlanLogEntry[]; error?: string } {
+    const plan = this.plans.get(planId);
+    if (!plan) {
+      return { success: false, error: `Plan with ID '${planId}' not found` };
+    }
+
+    let logs = plan.logs || [];
+    
+    // Sort logs by timestamp (newest first)
+    logs = logs.sort((a, b) => b.timestamp - a.timestamp);
+    
+    // Apply limit if specified
+    if (limit && limit > 0) {
+      logs = logs.slice(0, limit);
+    }
+
+    return { success: true, logs };
   }
 }

@@ -79,13 +79,16 @@ User request: "${workingMessage}"`;
             const planId = categoryTrimmed.substring(4).trim().toLowerCase();
             context.console.info(`Plan creation request detected with plan_id: ${planId}`);
             
-            // Create the plan using orchestrator algorithm
+            // Create the plan using orchestrator algorithm with language information
             if (context.planningService) {
-                const createResult = context.planningService.createPlan(
+                const createResult = context.planningService.createPlanWithLanguageInfo(
                     planId,
                     'New Plan',  // Will be updated by architect
-                    workingMessage,  // Original request as short description
-                    `Original request: "${message}"\nTranslated request: "${workingMessage}"\nLanguage: ${detectedLanguage}`
+                    workingMessage,  // Use working message (translated if needed) as short description
+                    `Plan created from user request.`, // Clean long description
+                    detectedLanguage,
+                    message, // Original request
+                    workingMessage !== message ? workingMessage : undefined // Translated request (only if different)
                 );
                 
                 if (createResult.success) {
@@ -106,10 +109,10 @@ User request: "${workingMessage}"`;
 2. Add detailed points to accomplish the user's request
 3. Summarize what you did in 2-3 sentences
 
-The plan already contains:
+The plan contains language information:
+- Detected language: ${detectedLanguage}
 - Original request: "${message}"
-- Translated request: "${workingMessage}" 
-- Language: ${detectedLanguage}
+${workingMessage !== message ? `- Translated request: "${workingMessage}"` : '- No translation was needed'}
 
 User's request: "${workingMessage}"
 

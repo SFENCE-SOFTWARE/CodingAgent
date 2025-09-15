@@ -94,11 +94,15 @@ export class PlanVisualizationPanel {
         return;
       }
 
+      // Get plan logs (limit to last 50)
+      const logsResult = planningService.getPlanLogs(planId, 50);
+      const logs = logsResult.success ? logsResult.logs! : [];
+
       // Update panel title
       this._panel.title = `Plan Visualization: ${planId}`;
 
       // Generate and set HTML content
-      this._panel.webview.html = this._getPlanVisualizationHtml(planResult.plan!);
+      this._panel.webview.html = this._getPlanVisualizationHtml(planResult.plan!, logs);
 
     } catch (error) {
       console.error('Failed to update plan visualization content:', error);
@@ -136,7 +140,7 @@ export class PlanVisualizationPanel {
 </html>`;
   }
 
-  private _getPlanVisualizationHtml(plan: any): string {
+  private _getPlanVisualizationHtml(plan: any, logs: any[] = []): string {
     const points = plan.points || [];
     
     let pointsHtml = '';
@@ -284,6 +288,60 @@ export class PlanVisualizationPanel {
         .refresh-btn:hover {
             background-color: var(--vscode-button-hoverBackground);
         }
+        
+        .activity-logs {
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid var(--vscode-widget-border);
+            border-radius: 4px;
+        }
+        
+        .log-entry {
+            padding: 12px;
+            border-bottom: 1px solid var(--vscode-widget-border);
+            background-color: var(--vscode-editor-background);
+        }
+        
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+        
+        .log-entry:hover {
+            background-color: var(--vscode-list-hoverBackground);
+        }
+        
+        .log-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+        
+        .log-icon {
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        
+        .log-message {
+            flex-grow: 1;
+            color: var(--vscode-foreground);
+            font-weight: 500;
+        }
+        
+        .log-timestamp {
+            font-size: 11px;
+            color: var(--vscode-descriptionForeground);
+            flex-shrink: 0;
+        }
+        
+        .log-details {
+            margin-top: 6px;
+            font-size: 12px;
+            color: var(--vscode-descriptionForeground);
+            font-style: italic;
+            padding-left: 24px;
+        }
     </style>
 </head>
 <body>
@@ -295,7 +353,7 @@ export class PlanVisualizationPanel {
         <h3>${this._escapeHtml(plan.name)}</h3>
         <p><strong>Short Description:</strong> ${this._escapeHtml(plan.shortDescription)}</p>
         <p><strong>Long Description:</strong> ${this._escapeHtml(plan.longDescription)}</p>
-        ${this._renderOriginalRequest(plan.longDescription)}
+        ${this._renderLanguageInfo(plan)}
         <p><strong>Status:</strong> ${this._getePlanStatus(plan)}</p>
         <p><strong>Total Points:</strong> ${points.length}</p>
         <p><strong>Reviewed:</strong> ${plan.reviewed ? '✅ Yes' : '❌ No'}${plan.reviewedComment ? ` - ${this._escapeHtml(plan.reviewedComment)}` : ''}</p>
@@ -324,6 +382,8 @@ export class PlanVisualizationPanel {
             ${pointsHtml}
         </tbody>
     </table>
+    
+    ${this._renderActivityLogs(logs)}
     
     <script>
         function refreshPlan() {
@@ -398,7 +458,32 @@ export class PlanVisualizationPanel {
       .replace(/'/g, '&#039;');
   }
 
-  private _renderOriginalRequest(longDescription: string): string {
+  private _renderLanguageInfo(plan: any): string {
+    // Use dedicated fields if available, otherwise fall back to parsing longDescription
+    if (plan.detectedLanguage || plan.originalRequest || plan.translatedRequest) {
+      let html = `<div style="background-color: var(--vscode-textBlockQuote-background); border-left: 4px solid var(--vscode-textBlockQuote-border); padding: 10px; margin: 10px 0;">`;
+      
+      if (plan.originalRequest) {
+        html += `<p><strong>🎯 Original Request:</strong> ${this._escapeHtml(plan.originalRequest)}</p>`;
+      }
+
+      if (plan.translatedRequest && plan.translatedRequest !== plan.originalRequest) {
+        html += `<p><strong>🌐 Translated:</strong> ${this._escapeHtml(plan.translatedRequest)}</p>`;
+      }
+
+      if (plan.detectedLanguage) {
+        html += `<p><strong>🗣️ Language:</strong> ${this._escapeHtml(plan.detectedLanguage)}</p>`;
+      }
+
+      html += `</div>`;
+      return html;
+    }
+
+    // Fallback: parse from longDescription for backward compatibility
+    return this._renderOriginalRequestFallback(plan.longDescription);
+  }
+
+  private _renderOriginalRequestFallback(longDescription: string): string {
     if (!longDescription) {
       return '';
     }
@@ -430,6 +515,74 @@ export class PlanVisualizationPanel {
     html += `</div>`;
 
     return html;
+  }
+
+  private _renderActivityLogs(logs: any[]): string {
+    if (!logs || logs.length === 0) {
+      return `
+        <h2>📋 Activity Log</h2>
+        <div class="plan-info">
+          <p><em>No activity logged yet.</em></p>
+        </div>
+      `;
+    }
+
+    const logsHtml = logs.map(log => {
+      const timestamp = new Date(log.timestamp).toLocaleString();
+      const icon = this._getLogIcon(log.type, log.action);
+      const actionText = this._formatLogAction(log.action);
+      
+      return `
+        <div class="log-entry">
+          <div class="log-header">
+            <span class="log-icon">${icon}</span>
+            <span class="log-message">${this._escapeHtml(log.message)}</span>
+            <span class="log-timestamp">${timestamp}</span>
+          </div>
+          ${log.details ? `<div class="log-details">${this._escapeHtml(log.details)}</div>` : ''}
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <h2>📋 Activity Log</h2>
+      <div class="activity-logs">
+        ${logsHtml}
+      </div>
+    `;
+  }
+
+  private _getLogIcon(type: string, action: string): string {
+    if (type === 'plan') {
+      switch (action) {
+        case 'created': return '🆕';
+        case 'reviewed': return '👀';
+        case 'accepted': return '✅';
+        case 'needs_work': return '⚠️';
+        default: return '📝';
+      }
+    } else { // point
+      switch (action) {
+        case 'implemented': return '🔨';
+        case 'reviewed': return '👁️';
+        case 'tested': return '🧪';
+        case 'needs_rework': return '🔄';
+        default: return '📋';
+      }
+    }
+  }
+
+  private _formatLogAction(action: string): string {
+    switch (action) {
+      case 'implemented': return 'Implemented';
+      case 'reviewed': return 'Reviewed';
+      case 'tested': return 'Tested';
+      case 'needs_work': return 'Needs Work';
+      case 'needs_rework': return 'Needs Rework';
+      case 'accepted': return 'Accepted';
+      case 'created': return 'Created';
+      default: return action.charAt(0).toUpperCase() + action.slice(1);
+    }
   }
 
   public dispose() {

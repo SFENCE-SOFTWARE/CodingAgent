@@ -34,6 +34,7 @@ export interface AlgorithmContext {
     showPlan: (planId: string) => { success: boolean; plan?: any; error?: string };
     listPlans: () => { success: boolean; plans?: Array<{id: string, name: string, shortDescription?: string}>; error?: string };
     createPlan: (id: string, name: string, shortDescription: string, longDescription: string) => { success: boolean; error?: string };
+    createPlanWithLanguageInfo: (id: string, name: string, shortDescription: string, longDescription: string, detectedLanguage: string, originalRequest: string, translatedRequest?: string) => { success: boolean; error?: string };
     evaluatePlanCompletion: (planId: string) => { success: boolean; result?: any; error?: string };
   };
   planContextManager?: {
@@ -321,6 +322,17 @@ export class AlgorithmEngine {
             return { success: false, error: 'Planning service not available' };
           }
           return this.planningService.createPlan(id, name, shortDescription, longDescription);
+        },
+        createPlanWithLanguageInfo: (id: string, name: string, shortDescription: string, longDescription: string, detectedLanguage: string, originalRequest: string, translatedRequest?: string) => {
+          // Check for interruption before planning operation
+          if (this.chatService && this.chatService.getIsInterrupted()) {
+            throw new Error('Algorithm execution was interrupted');
+          }
+          
+          if (!this.planningService) {
+            return { success: false, error: 'Planning service not available' };
+          }
+          return this.planningService.createPlanWithLanguageInfo(id, name, shortDescription, longDescription, detectedLanguage, originalRequest, translatedRequest);
         },
         evaluatePlanCompletion: (planId: string) => {
           // Check for interruption before planning operation
