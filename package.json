@@ -643,6 +643,48 @@
             "default": "Plan is done. Nothing has to be done.",
             "description": "Template for done prompt.",
             "scope": "window"
+          },
+          "codingagent.plan.recommendedModePlanRework": {
+            "type": "string",
+            "default": "Architect",
+            "description": "Recommended mode for plan rework tasks",
+            "scope": "window"
+          },
+          "codingagent.plan.recommendedModePlanReview": {
+            "type": "string", 
+            "default": "Plan Reviewer",
+            "description": "Recommended mode for plan review tasks",
+            "scope": "window"
+          },
+          "codingagent.plan.recommendedModeRework": {
+            "type": "string",
+            "default": "", 
+            "description": "Recommended mode for point rework tasks",
+            "scope": "window"
+          },
+          "codingagent.plan.recommendedModeImplementation": {
+            "type": "string",
+            "default": "",
+            "description": "Recommended mode for implementation tasks",
+            "scope": "window"
+          },
+          "codingagent.plan.recommendedModeCodeReview": {
+            "type": "string",
+            "default": "Reviewer",
+            "description": "Recommended mode for code review tasks", 
+            "scope": "window"
+          },
+          "codingagent.plan.recommendedModeTesting": {
+            "type": "string",
+            "default": "Tester",
+            "description": "Recommended mode for testing tasks",
+            "scope": "window"
+          },
+          "codingagent.plan.recommendedModeAcceptance": {
+            "type": "string",
+            "default": "Approver",
+            "description": "Recommended mode for plan acceptance tasks",
+            "scope": "window"
           }
         }
       },

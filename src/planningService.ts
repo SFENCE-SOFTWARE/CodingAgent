@@ -78,7 +78,10 @@ export interface PlanEvaluationResult {
   failedStep?: 'plan_rework' | 'plan_review' | 'rework' | 'implementation' | 'code_review' | 'testing' | 'acceptance';
   failedPoints?: string[];
   reason?: string;
-  doneCallback?: () => void;  // New: callback to call when task is completed
+  recommendedMode?: string; // New: recommended mode for this step from configuration
+  // New: callback to call when task is completed. Receives optional feedback:
+  // (success?: boolean, info?: string) => void
+  doneCallback?: (success?: boolean, info?: string) => void;
 }
 
 export class PlanningService {
@@ -1134,7 +1137,8 @@ export class PlanningService {
             nextStepPrompt: `Please fix this issue in the plan: ${validationResult.issue.message}`,
             failedStep: 'plan_review',
             failedPoints: validationResult.issue.pointId ? [validationResult.issue.pointId] : undefined,
-            reason: validationResult.issue.message
+            reason: validationResult.issue.message,
+            recommendedMode: this.getRecommendedMode('plan_review')
           }
         };
       }
@@ -1153,9 +1157,12 @@ export class PlanningService {
           nextStepPrompt: this.generateCorrectionPrompt('plan_rework', [], firstComment, planId),
           failedStep: 'plan_rework',
           reason: firstComment,
-          doneCallback: () => {
-            this.removeFirstNeedWorkComment(planId);
-          }
+          recommendedMode: this.getRecommendedMode('plan_rework'),
+              doneCallback: (success?: boolean, info?: string) => {
+                // Accept optional feedback from orchestrator/LLM when the change was applied.
+                // Currently we ignore feedback content and simply remove the first need-work comment.
+                this.removeFirstNeedWorkComment(planId);
+              }
         }
       };
     }
@@ -1168,7 +1175,8 @@ export class PlanningService {
           isDone: false,
           nextStepPrompt: this.generateCorrectionPrompt('plan_review', [], 'Plan has not been reviewed yet', planId),
           failedStep: 'plan_review',
-          reason: 'Plan has not been reviewed yet'
+          reason: 'Plan has not been reviewed yet',
+          recommendedMode: this.getRecommendedMode('plan_review')
         }
       };
     }
@@ -1185,7 +1193,8 @@ export class PlanningService {
           nextStepPrompt: this.generateCorrectionPrompt('rework', [firstPoint.id], 'Plan point needs rework', planId),
           failedStep: 'rework',
           failedPoints: [firstPoint.id],
-          reason: `Plan point ${firstPoint.id} needs rework`
+          reason: `Plan point ${firstPoint.id} needs rework`,
+          recommendedMode: this.getRecommendedMode('rework')
         }
       };
     }
@@ -1203,7 +1212,8 @@ export class PlanningService {
           nextStepPrompt: this.generateCorrectionPrompt('code_review', [firstPoint.id], 'Plan point is not reviewed', planId),
           failedStep: 'code_review',
           failedPoints: [firstPoint.id],
-          reason: `Plan point ${firstPoint.id} is not reviewed`
+          reason: `Plan point ${firstPoint.id} is not reviewed`,
+          recommendedMode: this.getRecommendedMode('code_review')
         }
       };
     }
@@ -1219,7 +1229,8 @@ export class PlanningService {
           nextStepPrompt: this.generateCorrectionPrompt('testing', [firstUntestedPoint.id], `Plan point ${firstUntestedPoint.id} is not tested`, planId),
           failedStep: 'testing',
           failedPoints: [firstUntestedPoint.id],
-          reason: `Plan point ${firstUntestedPoint.id} is not tested`
+          reason: `Plan point ${firstUntestedPoint.id} is not tested`,
+          recommendedMode: this.getRecommendedMode('testing')
         }
       };
     }
@@ -1235,7 +1246,8 @@ export class PlanningService {
           nextStepPrompt: this.generateCorrectionPrompt('implementation', [firstUnimplementedPoint.id], `Plan point ${firstUnimplementedPoint.id} is not implemented`, planId),
           failedStep: 'implementation',
           failedPoints: [firstUnimplementedPoint.id],
-          reason: `Plan point ${firstUnimplementedPoint.id} is not implemented`
+          reason: `Plan point ${firstUnimplementedPoint.id} is not implemented`,
+          recommendedMode: this.getRecommendedMode('implementation')
         }
       };
     }
@@ -1248,7 +1260,8 @@ export class PlanningService {
           isDone: false,
           nextStepPrompt: this.generateCorrectionPrompt('acceptance', [], 'Plan has not been accepted yet', planId),
           failedStep: 'acceptance',
-          reason: 'Plan has not been accepted yet'
+          reason: 'Plan has not been accepted yet',
+          recommendedMode: this.getRecommendedMode('acceptance')
         }
       };
     }
@@ -1258,13 +1271,14 @@ export class PlanningService {
       success: true,
       result: {
         isDone: true,
-        nextStepPrompt: this.generateCorrectionPrompt('done', [], '', planId)
+        nextStepPrompt: this.generateCorrectionPrompt('done', [], '', planId),
+        recommendedMode: this.getRecommendedMode('done')
       }
     };
   }
 
   /**
-   * Generates corrective prompts with configurable templates
+   * Generates corrective prompts with configurable templates and recommended modes
    */
   private generateCorrectionPrompt(step: string, pointIds: string[], reason: string, planId?: string): string {
     const config = vscode.workspace.getConfiguration('codingagent.plan');
@@ -1303,6 +1317,26 @@ export class PlanningService {
     }
     
     return template;
+  }
+
+  /**
+   * Gets recommended mode for a plan step from configuration
+   */
+  private getRecommendedMode(step: string): string {
+    const config = vscode.workspace.getConfiguration('codingagent.plan');
+    
+    const modeMapping = {
+      plan_rework: config.get('recommendedModePlanRework', 'Architect'),
+      plan_review: config.get('recommendedModePlanReview', 'Plan Reviewer'),
+      rework: config.get('recommendedModeRework', 'Coder'),
+      implementation: config.get('recommendedModeImplementation', 'Coder'),
+      code_review: config.get('recommendedModeCodeReview', 'Reviewer'),
+      testing: config.get('recommendedModeTesting', 'Tester'),
+      acceptance: config.get('recommendedModeAcceptance', 'Approver'),
+      done: ''
+    };
+
+    return modeMapping[step as keyof typeof modeMapping] || '';
   }
 
   /**

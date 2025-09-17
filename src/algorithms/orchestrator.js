@@ -252,17 +252,24 @@ async function executePlanCycle(context) {
         
         context.sendNotice(`🔧 ${actionMessage}`);
         
-        // Step 1: Ask LLM to select appropriate mode for this action
-        context.console.info('Step 1: Asking LLM to select mode for action...');
+        // Step 1: Check if we have a recommended mode from plan evaluation
+        let selectedMode = evaluation.recommendedMode && evaluation.recommendedMode.trim();
+        let trimmedMode = selectedMode;
         
-        const availableModes = context.getAvailableModes();
-        if (!availableModes || availableModes.trim().length === 0) {
-            context.console.warn('No available modes found, skipping LLM delegation');
-            context.sendNotice(`⚠️ **No available modes found for delegation**`);
-            break;
-        }
-        
-        const modeSelectionPrompt = `You need to select the most appropriate mode to handle this plan action.
+        if (selectedMode) {
+            context.console.info(`Using recommended mode from plan evaluation: ${selectedMode}`);
+        } else {
+            // Step 1: Ask LLM to select appropriate mode for this action
+            context.console.info('No recommended mode provided, asking LLM to select mode for action...');
+            
+            const availableModes = context.getAvailableModes();
+            if (!availableModes || availableModes.trim().length === 0) {
+                context.console.warn('No available modes found, skipping LLM delegation');
+                context.sendNotice(`⚠️ **No available modes found for delegation**`);
+                break;
+            }
+            
+            const modeSelectionPrompt = `You need to select the most appropriate mode to handle this plan action.
 
 Available modes:
 ${availableModes}
@@ -272,10 +279,11 @@ Action description: ${evaluation.nextStepPrompt}
 Reason: ${evaluation.reason}
 
 Respond with ONLY the mode name (e.g., "Coder" or "Reviewer"), nothing else.`;
-        
-        const selectedMode = await context.sendToLLM(modeSelectionPrompt);
-        const trimmedMode = selectedMode.trim();
-        context.console.info(`LLM selected mode: ${trimmedMode}`);
+            
+            selectedMode = await context.sendToLLM(modeSelectionPrompt);
+            trimmedMode = selectedMode.trim();
+            context.console.info(`LLM selected mode: ${trimmedMode}`);
+        }
         
         // Step 2: Ask LLM to generate specific prompt for the selected mode
         context.console.info('Step 2: Asking LLM to generate prompt for selected mode...');
@@ -322,10 +330,22 @@ Respond with ONLY "YES" if the change was successful and complete, or "NO" if it
             
             if (wasSuccessful) {
                 context.console.info('LLM confirmed change was successful, executing done callback...');
-                evaluation.doneCallback();
-                context.sendNotice(`✅ **Change confirmed successful, callback executed**`);
+                // Provide feedback to the callback: success flag and the mode response for context
+                try {
+                    evaluation.doneCallback(true, delegatedResponse);
+                    context.sendNotice(`✅ **Change confirmed successful, callback executed**`);
+                } catch (cbError) {
+                    context.console.error('Error executing doneCallback:', cbError && cbError.message ? cbError.message : cbError);
+                    context.sendNotice(`⚠️ **Callback execution failed: ${cbError && cbError.message ? cbError.message : String(cbError)}**`);
+                }
             } else {
                 context.console.info('LLM confirmed change was not successful, skipping callback');
+                // Inform callback that change did not succeed (callback implementations may decide what to do)
+                try {
+                    evaluation.doneCallback(false, delegatedResponse);
+                } catch (cbError) {
+                    context.console.error('Error executing doneCallback (failure path):', cbError && cbError.message ? cbError.message : cbError);
+                }
                 context.sendNotice(`⚠️ **Change not confirmed successful, callback not executed**`);
             }
         }

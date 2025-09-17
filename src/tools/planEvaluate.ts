@@ -1,4 +1,4 @@
-// src/tools/planEvaluate.ts
+// src/tools/planEval        description: 'Evaluate the current active plan progress, return completion status and next step prompt. May include a done callback for completed tasks (signature: (success?: boolean, info?: string) => void) and recommendedMode for orchestrator.',ate.ts
 
 import { BaseTool, ToolInfo, ToolDefinition, ToolResult } from '../types';
 import { PlanningService } from '../planningService';
@@ -19,7 +19,7 @@ export class PlanEvaluateTool implements BaseTool {
       type: 'function',
       function: {
         name: 'plan_evaluate',
-        description: 'Evaluate the current active plan progress, return completion status and next step prompt. May include a done callback for completed tasks.',
+  description: 'Evaluate the current active plan progress, return completion status and next step prompt. May include a done callback for completed tasks (signature: (success?: boolean, info?: string) => void).',
         parameters: {
           type: 'object',
           properties: {},
