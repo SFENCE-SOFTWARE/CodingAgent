@@ -69,10 +69,11 @@ suite('Plan Evaluation Tests', () => {
     assert.strictEqual(result.success, true);
     assert.strictEqual(result.result?.isDone, false);
     assert.strictEqual(result.result?.failedStep, 'plan_review');
-    assert.strictEqual(result.result?.reason, 'Plan has not been reviewed yet');
+    assert.strictEqual(result.result?.reason, 'Plan review checklist in progress');
     
-    // The prompt should instruct requesting the Plan Reviewer to perform a review
-    assert.ok(result.result?.nextStepPrompt?.includes('Plan Reviewer') || result.result?.nextStepPrompt?.includes('review the plan'));
+    // The prompt should provide a specific checklist item for review
+    assert.ok(result.result?.nextStepPrompt, 'Should have a next step prompt');
+    assert.ok(result.result?.nextStepPrompt?.includes('Point') || result.result?.nextStepPrompt?.includes('Plan:'), 'Should provide specific checklist item');
   });
 
   test('should detect incomplete plan - points need rework', async () => {

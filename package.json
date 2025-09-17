@@ -685,6 +685,18 @@
             "default": "Approver",
             "description": "Recommended mode for plan acceptance tasks",
             "scope": "window"
+          },
+          "codingagent.plan.reviewChecklistForPoints": {
+            "type": "string",
+            "default": "* Check that point has clear acceptance criteria.\n* Verify point has expected outputs defined.\n* Ensure point has expected inputs specified.\n* Confirm point dependencies are properly set.",
+            "description": "Checklist items applied to each plan point during review (one item per line, starting with '* ')",
+            "scope": "window"
+          },
+          "codingagent.plan.reviewChecklistForPlan": {
+            "type": "string",
+            "default": "* Verify all points are logically ordered.\n* Check that plan has clear overall structure.\n* Confirm plan description matches the points.\n* Ensure plan is feasible and well-defined.",
+            "description": "Checklist items applied to the plan as a whole during review (one item per line, starting with '* ')",
+            "scope": "window"
           }
         }
       },

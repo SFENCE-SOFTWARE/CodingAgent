@@ -41,6 +41,7 @@ export interface Plan {
   needsWorkComments?: string[];  // Changed to array
   accepted: boolean;
   acceptedComment?: string;
+  reviewChecklist?: string[]; // New: checklist for plan review (populated on first review attempt)
   logs: PlanLogEntry[];  // New: activity logs for the plan
   // Language and translation fields for orchestrator algorithm
   detectedLanguage?: string;  // Language detected by orchestrator (e.g., "czech", "english")
@@ -1169,16 +1170,43 @@ export class PlanningService {
 
     // Step 2: Check if plan is reviewed (second priority)
     if (!plan.reviewed) {
-      return {
-        success: true,
-        result: {
-          isDone: false,
-          nextStepPrompt: this.generateCorrectionPrompt('plan_review', [], 'Plan has not been reviewed yet', planId),
-          failedStep: 'plan_review',
-          reason: 'Plan has not been reviewed yet',
-          recommendedMode: this.getRecommendedMode('plan_review')
-        }
-      };
+      // Initialize checklist if not done already
+      const initResult = this.initializeReviewChecklist(planId);
+      if (!initResult.success) {
+        return { success: false, error: initResult.error };
+      }
+      
+      // Check if we have checklist items to process
+      if (plan.reviewChecklist && plan.reviewChecklist.length > 0) {
+        // Return the first checklist item as the next step
+        const firstItem = plan.reviewChecklist[0];
+        return {
+          success: true,
+          result: {
+            isDone: false,
+            nextStepPrompt: firstItem,
+            failedStep: 'plan_review',
+            reason: 'Plan review checklist in progress',
+            recommendedMode: this.getRecommendedMode('plan_review'),
+            doneCallback: (success?: boolean, info?: string) => {
+              // Remove the first checklist item and mark as reviewed if checklist is empty
+              this.removeFirstChecklistItem(planId);
+            }
+          }
+        };
+      } else {
+        // Fallback to default behavior when checklist is empty
+        return {
+          success: true,
+          result: {
+            isDone: false,
+            nextStepPrompt: this.generateCorrectionPrompt('plan_review', [], 'Plan has not been reviewed yet', planId),
+            failedStep: 'plan_review',
+            reason: 'Plan has not been reviewed yet',
+            recommendedMode: this.getRecommendedMode('plan_review')
+          }
+        };
+      }
     }
 
     // Step 3: Check if any points need rework (third priority)
@@ -1278,8 +1306,108 @@ export class PlanningService {
   }
 
   /**
-   * Generates corrective prompts with configurable templates and recommended modes
+   * Initialize review checklist for a plan from configuration
    */
+  private initializeReviewChecklist(planId: string): { success: boolean; error?: string } {
+    const plan = this.plans.get(planId);
+    if (!plan) {
+      return { success: false, error: `Plan with ID '${planId}' not found` };
+    }
+
+    // Skip if checklist is already initialized
+    if (plan.reviewChecklist && plan.reviewChecklist.length > 0) {
+      return { success: true };
+    }
+
+    const config = vscode.workspace.getConfiguration('codingagent.plan');
+    const pointChecklistText = config.get('reviewChecklistForPoints', '');
+    const planChecklistText = config.get('reviewChecklistForPlan', '');
+    
+    const checklist: string[] = [];
+    
+    // Add point-specific checklist items for each plan point
+    if (pointChecklistText && plan.points.length > 0) {
+      const pointItems = this.parseChecklistText(pointChecklistText);
+      for (const point of plan.points) {
+        for (const item of pointItems) {
+          checklist.push(`Point ${point.id}: ${item}`);
+        }
+      }
+    }
+    
+    // Add plan-wide checklist items
+    if (planChecklistText) {
+      const planItems = this.parseChecklistText(planChecklistText);
+      for (const item of planItems) {
+        checklist.push(`Plan: ${item}`);
+      }
+    }
+    
+    plan.reviewChecklist = checklist;
+    plan.updatedAt = Date.now();
+    this.savePlan(plan);
+    
+    return { success: true };
+  }
+
+  /**
+   * Parse checklist text from configuration (format: "* Item 1\n* Item 2")
+   */
+  private parseChecklistText(text: string): string[] {
+    if (!text || text.trim() === '') {
+      return [];
+    }
+    
+    return text
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.startsWith('* '))
+      .map(line => line.substring(2).trim())
+      .filter(line => line.length > 0);
+  }
+
+  /**
+   * Remove the first item from review checklist
+   */
+  private removeFirstChecklistItem(planId: string): { success: boolean; error?: string } {
+    const plan = this.plans.get(planId);
+    if (!plan) {
+      return { success: false, error: `Plan with ID '${planId}' not found` };
+    }
+
+    if (!plan.reviewChecklist || plan.reviewChecklist.length === 0) {
+      return { success: false, error: 'Plan does not have any checklist items' };
+    }
+
+    // Remove the first item
+    plan.reviewChecklist.shift();
+    
+    // If no items remain and plan doesn't need work, mark as reviewed
+    if (plan.reviewChecklist.length === 0 && !plan.needsWork) {
+      plan.reviewed = true;
+      plan.reviewedComment = 'All checklist items completed';
+      
+      // Add log entry
+      this.addLogEntry(plan, 'plan', 'reviewed', planId, 'Plan marked as reviewed after completing all checklist items');
+    }
+
+    plan.updatedAt = Date.now();
+    this.savePlan(plan);
+
+    return { success: true };
+  }
+
+  /**
+   * Gets the current review checklist for a plan
+   */
+  public getPlanReviewChecklist(planId: string): { success: boolean; checklist?: string[]; error?: string } {
+    const plan = this.plans.get(planId);
+    if (!plan) {
+      return { success: false, error: `Plan with ID '${planId}' not found` };
+    }
+
+    return { success: true, checklist: plan.reviewChecklist || [] };
+  }
   private generateCorrectionPrompt(step: string, pointIds: string[], reason: string, planId?: string): string {
     const config = vscode.workspace.getConfiguration('codingagent.plan');
     
