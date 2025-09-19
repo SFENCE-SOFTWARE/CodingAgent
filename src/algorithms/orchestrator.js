@@ -126,7 +126,7 @@ Focus on populating the existing plan, not creating a new one.`;
                     context.sendResponse(architectResponse);
                     
                     // After populating plan, continue with plan execution cycle
-                    await executePlanCycle(context);
+                    await executePlanCycle(context, workingMessage);
                     
                     return 'Plan created and execution cycle initiated';
                 } else {
@@ -153,7 +153,7 @@ Focus on populating the existing plan, not creating a new one.`;
                     context.sendResponse(`Successfully loaded plan "${planId}": ${planResult.plan.name}\n\nDescription: ${planResult.plan.shortDescription}\n\nPlan is now active.`);
                     
                     // After opening plan, continue with plan execution cycle
-                    await executePlanCycle(context);
+                    await executePlanCycle(context, workingMessage);
                     
                     return `Plan "${planId}" loaded and execution cycle initiated`;
                 } else {
@@ -182,8 +182,9 @@ Focus on populating the existing plan, not creating a new one.`;
 /**
  * Executes plan evaluation cycle until plan is complete or interrupted
  * @param {object} context - Algorithm context
+ * @param {string} workingMessage - The processed user message (translated if needed)
  */
-async function executePlanCycle(context) {
+async function executePlanCycle(context, workingMessage) {
     context.console.info('Starting plan execution cycle...');
     
     // Debug counter to limit iterations during development
@@ -219,7 +220,22 @@ async function executePlanCycle(context) {
         }
         
         // Evaluate current plan state
-        const evaluationResult = context.planningService.evaluatePlanCompletion(currentPlanId);
+        // Check if this is a new plan (no points and not reviewed yet) - use new creation workflow
+        let evaluationResult;
+        const planInfo = context.planningService.showPlan(currentPlanId, true);
+        
+        if (planInfo.success && planInfo.plan && 
+            (!planInfo.plan.points || planInfo.plan.points.length === 0) && 
+            !planInfo.plan.reviewed && 
+            !planInfo.plan.accepted &&
+            !planInfo.plan.pointsCreated) {
+            
+            context.console.info('New plan detected - using creation workflow');
+            evaluationResult = context.planningService.evaluateNewPlanCreation(currentPlanId, workingMessage);
+        } else {
+            context.console.info('Existing plan detected - using normal workflow');
+            evaluationResult = context.planningService.evaluatePlanCompletion(currentPlanId);
+        }
         
         if (!evaluationResult.success) {
             context.console.error(`Plan evaluation failed: ${evaluationResult.error}`);

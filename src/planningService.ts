@@ -49,6 +49,14 @@ export interface Plan {
   originalRequest?: string;   // Original user request before translation
   translatedRequest?: string; // Translated request (only if translation was needed)
   architecture?: string;     // New: JSON architectural design for the plan
+  // New plan creation workflow states
+  creationStep?: string;     // Current step in creation workflow: 'description_update', 'description_review', 'architecture_creation', 'architecture_review', 'points_creation', 'complete'
+  descriptionsUpdated?: boolean;  // Whether descriptions have been updated
+  descriptionsReviewed?: boolean; // Whether descriptions have been reviewed
+  architectureCreated?: boolean;  // Whether architecture has been created
+  architectureReviewed?: boolean; // Whether architecture has been reviewed
+  pointsCreated?: boolean;       // Whether points have been created
+  creationChecklist?: string[];  // Current checklist for creation workflow
   createdAt: number;
   updatedAt: number;
 }
@@ -78,7 +86,8 @@ export interface PlanLogEntry {
 export interface PlanEvaluationResult {
   isDone: boolean;
   nextStepPrompt: string; // Always required now - even for done plans
-  failedStep?: 'plan_rework' | 'plan_review' | 'rework' | 'implementation' | 'code_review' | 'testing' | 'acceptance';
+  failedStep?: 'plan_rework' | 'plan_review' | 'rework' | 'implementation' | 'code_review' | 'testing' | 'acceptance' | 
+               'plan_description_update' | 'plan_description_review' | 'plan_architecture_creation' | 'plan_architecture_rework' | 'plan_architecture_review' | 'plan_points_creation' | 'plan_points_rework' | '';
   failedPoints?: string[];
   reason?: string;
   recommendedMode?: string; // New: recommended mode for this step from configuration
@@ -513,6 +522,12 @@ export class PlanningService {
       needsWork: plan.needsWork,
       accepted: plan.accepted,
       architecture: plan.architecture,
+      // New plan creation workflow state
+      creationStep: plan.creationStep,
+      descriptionsUpdated: plan.descriptionsUpdated,
+      descriptionsReviewed: plan.descriptionsReviewed,
+      architectureCreated: plan.architectureCreated,
+      architectureReviewed: plan.architectureReviewed,
       // Language and translation fields
       detectedLanguage: plan.detectedLanguage,
       originalRequest: plan.originalRequest,
@@ -617,6 +632,10 @@ export class PlanningService {
     }
 
     plan.architecture = architecture;
+    // If this is part of new plan creation workflow, mark as created
+    if (plan.creationStep && !plan.architectureCreated) {
+      plan.architectureCreated = true;
+    }
     plan.updatedAt = Date.now();
     this.savePlan(plan);
 
@@ -1589,5 +1608,330 @@ export class PlanningService {
     }
 
     return { success: true, logs };
+  }
+
+  /**
+   * Evaluates new plan creation workflow and returns the next step
+   */
+  public evaluateNewPlanCreation(planId: string, originalRequest?: string): { success: boolean; result?: PlanEvaluationResult; error?: string } {
+    const plan = this.plans.get(planId);
+    if (!plan) {
+      return { success: false, error: `Plan with ID '${planId}' not found` };
+    }
+
+    // Store original request if provided
+    if (originalRequest && !plan.originalRequest) {
+      plan.originalRequest = originalRequest;
+      plan.updatedAt = Date.now();
+      this.savePlan(plan);
+    }
+
+    const request = plan.originalRequest || originalRequest || 'No request specified';
+
+    // Step 1: Check if plan needs description update
+    if (!plan.descriptionsUpdated) {
+      plan.creationStep = 'description_update';
+      plan.updatedAt = Date.now();
+      this.savePlan(plan);
+
+      const prompt = this.getConfig('codingagent.plan.creation.promptDescriptionUpdate')
+        .replace('{originalRequest}', request)
+        .replace('{shortDescription}', plan.shortDescription || '')
+        .replace('{longDescription}', plan.longDescription || '');
+
+      return {
+        success: true,
+        result: {
+          isDone: false,
+          nextStepPrompt: prompt,
+          failedStep: 'plan_description_update',
+          reason: 'Plan descriptions need to be updated',
+          recommendedMode: this.getConfig('codingagent.plan.creation.recommendedModeDescriptionUpdate'),
+          doneCallback: (success?: boolean, info?: string) => {
+            if (success) {
+              plan.descriptionsUpdated = true;
+              plan.updatedAt = Date.now();
+              this.savePlan(plan);
+            }
+          }
+        }
+      };
+    }
+
+    // Step 2: Check if plan descriptions need review
+    if (!plan.descriptionsReviewed) {
+      plan.creationStep = 'description_review';
+      
+      // Initialize checklist if not done already
+      if (!plan.creationChecklist) {
+        const checklistText = this.getConfig('codingagent.plan.creation.checklistDescriptionReview');
+        plan.creationChecklist = this.parseChecklistText(checklistText);
+      }
+
+      plan.updatedAt = Date.now();
+      this.savePlan(plan);
+
+      // If we have checklist items, return the first one
+      if (plan.creationChecklist && plan.creationChecklist.length > 0) {
+        const firstItem = plan.creationChecklist[0];
+        const checklistPrompt = `**PLAN CREATION STEP: Review Plan Descriptions**\n\n${firstItem}\n\n**Long Description:**\n${plan.longDescription}\n\n**User Requirements:**\n${request}`;
+        
+        return {
+          success: true,
+          result: {
+            isDone: false,
+            nextStepPrompt: checklistPrompt,
+            failedStep: 'plan_description_review',
+            reason: 'Plan descriptions need review',
+            recommendedMode: this.getConfig('codingagent.plan.creation.recommendedModeDescriptionReview'),
+            doneCallback: (success?: boolean, info?: string) => {
+              if (success && plan.creationChecklist) {
+                plan.creationChecklist.shift(); // Remove first item
+                if (plan.creationChecklist.length === 0) {
+                  plan.descriptionsReviewed = true;
+                }
+                plan.updatedAt = Date.now();
+                this.savePlan(plan);
+              }
+            }
+          }
+        };
+      } else {
+        // Fallback if no checklist
+        plan.descriptionsReviewed = true;
+        plan.updatedAt = Date.now();
+        this.savePlan(plan);
+      }
+    }
+
+    // Step 3: Check if architecture needs to be created
+    if (!plan.architectureCreated || !plan.architecture) {
+      plan.creationStep = 'architecture_creation';
+      plan.updatedAt = Date.now();
+      this.savePlan(plan);
+
+      const prompt = this.getConfig('codingagent.plan.creation.promptArchitectureCreation')
+        .replace('{shortDescription}', plan.shortDescription || '')
+        .replace('{longDescription}', plan.longDescription || '')
+        .replace('{originalRequest}', request);
+
+      return {
+        success: true,
+        result: {
+          isDone: false,
+          nextStepPrompt: prompt,
+          failedStep: 'plan_architecture_creation',
+          reason: 'Plan architecture needs to be created',
+          recommendedMode: this.getConfig('codingagent.plan.creation.recommendedModeArchitectureCreation'),
+          doneCallback: (success?: boolean, info?: string) => {
+            if (success) {
+              plan.architectureCreated = true;
+              plan.updatedAt = Date.now();
+              this.savePlan(plan);
+            }
+          }
+        }
+      };
+    }
+
+    // Step 4: Procedural validation of architecture
+    if (plan.architecture && plan.architectureCreated && !plan.architectureReviewed) {
+      const validationResult = this.validateArchitectureJson(plan.architecture);
+      if (!validationResult.success) {
+        const reworkPrompt = `**PLAN CREATION STEP: Fix Architecture Design**\n\nThe architecture design has validation issues that need to be resolved.\n\n**Current Architecture:** ${plan.architecture}\n\n**Validation Issues:** ${validationResult.error}\n\n**Instructions:**\n1. Please fix the architecture JSON format issues\n2. Ensure the JSON is valid and properly structured\n3. Include required components and connections arrays\n4. Each component must have at least id and name properties\n5. Use the plan_set_architecture tool to update the architecture\n\n**Expected Output:** Valid architecture JSON that passes validation.`;
+        
+        return {
+          success: true,
+          result: {
+            isDone: false,
+            nextStepPrompt: reworkPrompt,
+            failedStep: 'plan_architecture_rework',
+            reason: `Architecture validation failed: ${validationResult.error}`,
+            recommendedMode: this.getConfig('codingagent.plan.creation.recommendedModeArchitectureCreation'),
+            doneCallback: (success?: boolean, info?: string) => {
+              // Architecture will be validated again on next evaluation
+            }
+          }
+        };
+      }
+      
+      // Architecture passed validation, now proceed to review
+    }
+
+    // Step 5: Check if architecture needs review (only if architecture is valid and created)
+    if (plan.architectureCreated && plan.architecture && !plan.architectureReviewed) {
+      plan.creationStep = 'architecture_review';
+      
+      // Initialize checklist if not done already
+      if (!plan.creationChecklist || plan.creationChecklist.length === 0) {
+        const checklistText = this.getConfig('codingagent.plan.creation.checklistArchitectureReview');
+        plan.creationChecklist = this.parseChecklistText(checklistText);
+      }
+
+      plan.updatedAt = Date.now();
+      this.savePlan(plan);
+
+      // If we have checklist items, return the first one
+      if (plan.creationChecklist && plan.creationChecklist.length > 0) {
+        const firstItem = plan.creationChecklist[0];
+        const checklistPrompt = `**PLAN CREATION STEP: Review Architecture Design**\n\n${firstItem}\n\n**Plan Architecture:**\n${plan.architecture}\n\n**Plan Long Description:**\n${plan.longDescription}`;
+        
+        return {
+          success: true,
+          result: {
+            isDone: false,
+            nextStepPrompt: checklistPrompt,
+            failedStep: 'plan_architecture_review',
+            reason: 'Plan architecture needs review',
+            recommendedMode: this.getConfig('codingagent.plan.creation.recommendedModeArchitectureReview'),
+            doneCallback: (success?: boolean, info?: string) => {
+              if (success && plan.creationChecklist) {
+                plan.creationChecklist.shift(); // Remove first item
+                if (plan.creationChecklist.length === 0) {
+                  plan.architectureReviewed = true;
+                }
+                plan.updatedAt = Date.now();
+                this.savePlan(plan);
+              }
+            }
+          }
+        };
+      } else {
+        // Fallback if no checklist
+        plan.architectureReviewed = true;
+        plan.updatedAt = Date.now();
+        this.savePlan(plan);
+      }
+    }
+
+    // Step 6: Check if points need to be created
+    if (!plan.pointsCreated || plan.points.length === 0) {
+      plan.creationStep = 'points_creation';
+      plan.updatedAt = Date.now();
+      this.savePlan(plan);
+
+      const prompt = this.getConfig('codingagent.plan.creation.promptPlanPointsCreation')
+        .replace('{longDescription}', plan.longDescription || '')
+        .replace('{architecture}', plan.architecture || 'No architecture defined')
+        .replace('{originalRequest}', request);
+
+      return {
+        success: true,
+        result: {
+          isDone: false,
+          nextStepPrompt: prompt,
+          failedStep: 'plan_points_creation',
+          reason: 'Plan implementation points need to be created',
+          recommendedMode: this.getConfig('codingagent.plan.creation.recommendedModePlanPointsCreation'),
+          doneCallback: (success?: boolean, info?: string) => {
+            if (success) {
+              plan.pointsCreated = true;
+              plan.updatedAt = Date.now();
+              this.savePlan(plan);
+            }
+          }
+        }
+      };
+    }
+
+    // Step 7: Procedural validation of points
+    if (plan.points.length > 0) {
+      const validationResult = this.validatePlanProcedurally(planId);
+      if (!validationResult.success) {
+        return { success: false, error: validationResult.error };
+      }
+      
+      if (validationResult.issue) {
+        return {
+          success: true,
+          result: {
+            isDone: false,
+            nextStepPrompt: `Please fix this issue in the plan points: ${validationResult.issue.message}`,
+            failedStep: 'plan_points_rework',
+            failedPoints: validationResult.issue.pointId ? [validationResult.issue.pointId] : undefined,
+            reason: validationResult.issue.message,
+            recommendedMode: this.getConfig('codingagent.plan.creation.recommendedModePlanPointsCreation')
+          }
+        };
+      }
+    }
+
+    // Step 8: Plan creation is complete!
+    plan.creationStep = 'complete';
+    plan.updatedAt = Date.now();
+    this.savePlan(plan);
+
+    const completionPrompt = this.getConfig('codingagent.plan.creation.promptCreationComplete')
+      .replace('{planId}', planId)
+      .replace('{pointCount}', plan.points.length.toString())
+      .replace('{originalRequest}', request);
+
+    return {
+      success: true,
+      result: {
+        isDone: true,
+        nextStepPrompt: completionPrompt,
+        failedStep: '',
+        reason: 'Plan creation completed successfully'
+      }
+    };
+  }
+
+  /**
+   * Validates architecture JSON format and Mermaid compatibility
+   */
+  private validateArchitectureJson(architectureJson: string): { success: boolean; error?: string } {
+    try {
+      const architecture = JSON.parse(architectureJson);
+      
+      // Check required structure
+      if (!architecture.components || !Array.isArray(architecture.components)) {
+        return { success: false, error: 'Missing or invalid "components" array' };
+      }
+      
+      if (!architecture.connections || !Array.isArray(architecture.connections)) {
+        return { success: false, error: 'Missing or invalid "connections" array' };
+      }
+      
+      // Validate components
+      for (const component of architecture.components) {
+        if (!component.id || !component.name) {
+          return { success: false, error: 'Each component must have "id" and "name" properties' };
+        }
+      }
+      
+      // Validate connections
+      for (const connection of architecture.connections) {
+        if (!connection.from || !connection.to) {
+          return { success: false, error: 'Each connection must have "from" and "to" properties' };
+        }
+        
+        // Check that referenced components exist
+        const componentIds = architecture.components.map((c: any) => c.id);
+        if (!componentIds.includes(connection.from)) {
+          return { success: false, error: `Connection references non-existent component: ${connection.from}` };
+        }
+        if (!componentIds.includes(connection.to)) {
+          return { success: false, error: `Connection references non-existent component: ${connection.to}` };
+        }
+      }
+      
+      // Check that we have some content
+      if (architecture.components.length === 0) {
+        return { success: false, error: 'Architecture must contain at least one component' };
+      }
+      
+      return { success: true };
+      
+    } catch (error) {
+      return { success: false, error: `Invalid JSON format: ${error instanceof Error ? error.message : 'Unknown error'}` };
+    }
+  }
+
+  /**
+   * Helper to get configuration value
+   */
+  private getConfig(key: string): string {
+    return vscode.workspace.getConfiguration().get(key) || '';
   }
 }

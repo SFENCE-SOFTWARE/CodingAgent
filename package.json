@@ -698,6 +698,72 @@
             "default": "* Verify all points are logically ordered.\n* Check that plan has clear overall structure.\n* Confirm plan description matches the points.\n* Ensure plan is feasible and well-defined.",
             "description": "Checklist items applied to the plan as a whole during review (one item per line, starting with '* ')",
             "scope": "window"
+          },
+          "codingagent.plan.creation.promptDescriptionUpdate": {
+            "type": "string",
+            "default": "**PLAN CREATION STEP: Update Plan Descriptions**\n\nPlease update both the short and long description of this plan to better reflect the user's request.\n\n**User's Original Request:** {originalRequest}\n\n**Current Short Description:** {shortDescription}\n**Current Long Description:** {longDescription}\n\n**Instructions:**\n1. Create a clear, concise short description that summarizes what the plan will accomplish\n2. Create a comprehensive long description that includes all user requirements and technical details\n3. Ensure both descriptions are consistent and well-structured\n4. Use the plan_change tool to update both descriptions\n\n**Expected Output:** Updated plan with improved short and long descriptions.",
+            "description": "Template for plan description update prompt. Placeholders: {originalRequest}, {shortDescription}, {longDescription}",
+            "scope": "window"
+          },
+          "codingagent.plan.creation.checklistDescriptionReview": {
+            "type": "string",
+            "default": "* Je kratky popis srozumitelnym schrnutim dlouheho popisu k jehoz pochopeni neni nutne cist dlouhy popis?\n* Obsahuje dlouhy popis vsechny pozadavky uzivatele?",
+            "description": "Checklist for plan description review (one item per line, starting with '* ')",
+            "scope": "window"
+          },
+          "codingagent.plan.creation.promptArchitectureCreation": {
+            "type": "string",
+            "default": "**PLAN CREATION STEP: Create Architecture Design**\n\nPlease create a comprehensive architectural design for this plan in JSON format.\n\n**Plan Information:**\n- Short Description: {shortDescription}\n- Long Description: {longDescription}\n- User Request: {originalRequest}\n\n**JSON Format Requirements:**\n```json\n{\n  \"components\": [\n    {\n      \"id\": \"unique-component-id\",\n      \"name\": \"Component Name\",\n      \"type\": \"service|database|api|frontend|backend|etc\",\n      \"description\": \"Component description\"\n    }\n  ],\n  \"connections\": [\n    {\n      \"from\": \"source-component-id\",\n      \"to\": \"target-component-id\",\n      \"type\": \"api|data|event|etc\",\n      \"description\": \"Connection description\"\n    }\n  ]\n}\n```\n\n**Instructions:**\n1. Design components that support all requirements from the long description\n2. Create logical connections between components\n3. Use descriptive IDs and names\n4. Include all necessary architectural elements\n5. Store the architecture using plan_set_architecture tool\n\n**Expected Output:** Complete JSON architecture stored in the plan.",
+            "description": "Template for architecture creation prompt. Placeholders: {shortDescription}, {longDescription}, {originalRequest}",
+            "scope": "window"
+          },
+          "codingagent.plan.creation.checklistArchitectureReview": {
+            "type": "string",
+            "default": "* Obsahuje navrh architektury vsechny pozadovane veci?\n* Je architektonicky navrh technicky spravny a realizovatelny?",
+            "description": "Checklist for architecture review (one item per line, starting with '* ')",
+            "scope": "window"
+          },
+          "codingagent.plan.creation.promptPlanPointsCreation": {
+            "type": "string",
+            "default": "**PLAN CREATION STEP: Create Implementation Points**\n\nPlease create detailed implementation points for this plan based on the architecture and requirements.\n\n**Plan Information:**\n- Long Description: {longDescription}\n- Architecture: {architecture}\n- User Request: {originalRequest}\n\n**Instructions:**\n1. Break down the implementation into logical, manageable points\n2. Each point should focus on a specific deliverable or component\n3. Include all necessary details for each point:\n   - Clear short name and description\n   - Detailed implementation instructions\n   - Review and testing instructions\n   - Expected inputs and outputs\n   - Dependencies on other points\n4. Order points based on logical dependencies\n5. Use plan_add_points tool to add all points\n\n**Quality Guidelines:**\n- Each point should be implementable by one specialist\n- Dependencies should be minimal and realistic\n- Instructions should be clear and testable\n- Points should align with the architecture\n\n**Expected Output:** Complete set of implementation points covering all requirements.",
+            "description": "Template for plan points creation prompt. Placeholders: {longDescription}, {architecture}, {originalRequest}",
+            "scope": "window"
+          },
+          "codingagent.plan.creation.promptCreationComplete": {
+            "type": "string",
+            "default": "**PLAN CREATION COMPLETED SUCCESSFULLY** ✅\n\nThe multi-step plan creation process has been completed successfully.\n\n**Plan Status:**\n- Plan ID: {planId}\n- Descriptions: ✅ Updated and reviewed\n- Architecture: ✅ Created and reviewed\n- Implementation Points: ✅ Created and validated\n- Total Points: {pointCount}\n\n**Next Steps:**\nThe plan is now ready for implementation. The orchestrator will begin the normal execution cycle to work through the implementation points systematically.\n\n**Original Request:** {originalRequest}",
+            "description": "Template for plan creation completion message. Placeholders: {planId}, {pointCount}, {originalRequest}",
+            "scope": "window"
+          },
+          "codingagent.plan.creation.recommendedModeDescriptionUpdate": {
+            "type": "string",
+            "default": "Architect",
+            "description": "Recommended mode for plan description update step",
+            "scope": "window"
+          },
+          "codingagent.plan.creation.recommendedModeDescriptionReview": {
+            "type": "string", 
+            "default": "Plan Reviewer",
+            "description": "Recommended mode for plan description review step",
+            "scope": "window"
+          },
+          "codingagent.plan.creation.recommendedModeArchitectureCreation": {
+            "type": "string",
+            "default": "Architect", 
+            "description": "Recommended mode for architecture creation step",
+            "scope": "window"
+          },
+          "codingagent.plan.creation.recommendedModeArchitectureReview": {
+            "type": "string",
+            "default": "Plan Reviewer",
+            "description": "Recommended mode for architecture review step", 
+            "scope": "window"
+          },
+          "codingagent.plan.creation.recommendedModePlanPointsCreation": {
+            "type": "string",
+            "default": "Architect",
+            "description": "Recommended mode for plan points creation step",
+            "scope": "window"
           }
         }
       },
