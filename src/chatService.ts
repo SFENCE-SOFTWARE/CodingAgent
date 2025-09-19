@@ -1830,14 +1830,9 @@ export class ChatService {
       // We can detect this by checking if we're currently in a delegated mode call
       // This is a simple heuristic - in real implementation this would need more sophisticated tracking
       
-      // Execute plan evaluation
-      const planEvaluate = this.tools.getToolByName('plan_evaluate');
-      if (!planEvaluate) {
-        console.warn('Plan evaluate tool not found');
-        return;
-      }
-      
-      const result = await planEvaluate.execute({ plan_id: currentPlanId }, this.workspaceRoot || '');
+      // Execute plan evaluation using planning service
+      const planningService = PlanningService.getInstance(this.workspaceRoot || undefined);
+      const result = await planningService.evaluatePlanCompletion(currentPlanId);
       
       if (!result.success) {
         // Evaluation failed - just log it, don't interrupt user flow
@@ -1846,34 +1841,26 @@ export class ChatService {
       }
       
       // Check if plan needs action
-      if (result.content && result.content.includes('is not complete')) {
-        // Extract the corrective prompt from the result
-        const lines = result.content.split('\n');
-        const promptIndex = lines.findIndex((line: string) => line.includes('Corrective prompt:'));
+      if (result.result && !result.result.isDone) {
+        // Plan needs action
+        const evaluationMessage: ChatMessage = {
+          id: this.generateId(),
+          role: 'assistant',
+          content: `🔍 **Automatic Plan Evaluation**\n\n${result.result.reason}\n\n**Next Step:** ${result.result.nextStepPrompt}\n\n*This evaluation was triggered automatically after your request. You can continue with the suggested corrective action or proceed with other tasks.*`,
+          timestamp: Date.now(),
+          model: this.openai.getCurrentModel(),
+          mode: this.openai.getCurrentMode()
+        };
         
-        if (promptIndex >= 0 && promptIndex + 1 < lines.length) {
-          const correctionPrompt = lines.slice(promptIndex + 1).join('\n').trim();
-          
-          // Send automatic evaluation result as a system message
-          const evaluationMessage: ChatMessage = {
-            id: this.generateId(),
-            role: 'assistant',
-            content: `🔍 **Automatic Plan Evaluation**\n\n${result.content}\n\n*This evaluation was triggered automatically after your request. You can continue with the suggested corrective action or proceed with other tasks.*`,
-            timestamp: Date.now(),
-            model: this.openai.getCurrentModel(),
-            mode: this.openai.getCurrentMode()
-          };
-          
-          this.messages.push(evaluationMessage);
-          this.saveChatHistory();
-          
-          // Send to UI via callback if available
-          if (callback) {
-            callback({
-              type: 'message_ready',
-              message: evaluationMessage
-            });
-          }
+        this.messages.push(evaluationMessage);
+        this.saveChatHistory();
+        
+        // Send to UI via callback if available
+        if (callback) {
+          callback({
+            type: 'message_ready',
+            message: evaluationMessage
+          });
         }
       }
       

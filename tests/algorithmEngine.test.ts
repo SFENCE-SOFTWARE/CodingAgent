@@ -17,10 +17,17 @@ suite('AlgorithmEngine Tests', () => {
 
   teardown(async () => {
     // Clean up test configuration
-    const config = vscode.workspace.getConfiguration('codingagent.algorithm');
-    await config.update('enabled', {}, vscode.ConfigurationTarget.Global);
-    await config.update('scriptPath', {}, vscode.ConfigurationTarget.Global);
-    await config.update('variables', {}, vscode.ConfigurationTarget.Global);
+    try {
+      const config = vscode.workspace.getConfiguration('codingagent.algorithm');
+      if (config && config.update) {
+        await config.update('enabled', {}, 1);
+        await config.update('scriptPath', {}, 1);
+        await config.update('variables', {}, 1);
+      }
+    } catch (error) {
+      // Ignore cleanup errors in test environment
+      console.warn('Failed to clean up test configuration:', error);
+    }
   });
 
   test('AlgorithmEngine singleton', () => {
@@ -36,7 +43,7 @@ suite('AlgorithmEngine Tests', () => {
 
   test('isAlgorithmEnabled - enabled when configured', async () => {
     const config = vscode.workspace.getConfiguration('codingagent.algorithm');
-    await config.update('enabled', { [testMode]: true }, vscode.ConfigurationTarget.Global);
+    await config.update('enabled', { [testMode]: true }, 1);
     
     const enabled = algorithmEngine.isAlgorithmEnabled(testMode);
     assert.strictEqual(enabled, true, 'Algorithm should be enabled when configured');
@@ -62,7 +69,7 @@ suite('AlgorithmEngine Tests', () => {
   test('getAlgorithmScriptPath - returns custom path when configured', async () => {
     const customPath = '/custom/path/script.js';
     const config = vscode.workspace.getConfiguration('codingagent.algorithm');
-    await config.update('scriptPath', { [testMode]: customPath }, vscode.ConfigurationTarget.Global);
+    await config.update('scriptPath', { [testMode]: customPath }, 1);
     
     const scriptPath = algorithmEngine.getAlgorithmScriptPath(testMode);
     assert.strictEqual(scriptPath, customPath, 'Should return custom script path');
@@ -75,7 +82,7 @@ suite('AlgorithmEngine Tests', () => {
 
   test('executeAlgorithm - returns error when script not found', async () => {
     const config = vscode.workspace.getConfiguration('codingagent.algorithm');
-    await config.update('enabled', { [testMode]: true }, vscode.ConfigurationTarget.Global);
+    await config.update('enabled', { [testMode]: true }, 1);
     
     const result = await algorithmEngine.executeAlgorithm(testMode, 'test message');
     assert.strictEqual(result.handled, false, 'Should not handle when script not found');
@@ -95,8 +102,8 @@ suite('AlgorithmEngine Tests', () => {
 
     try {
       const config = vscode.workspace.getConfiguration('codingagent.algorithm');
-      await config.update('enabled', { [testMode]: true }, vscode.ConfigurationTarget.Global);
-      await config.update('scriptPath', { [testMode]: testScriptPath }, vscode.ConfigurationTarget.Global);
+      await config.update('enabled', { [testMode]: true }, 1);
+      await config.update('scriptPath', { [testMode]: testScriptPath }, 1);
       
       const result = await algorithmEngine.executeAlgorithm(testMode, 'hello world');
       assert.strictEqual(result.handled, true, 'Should handle the message');
@@ -121,8 +128,8 @@ suite('AlgorithmEngine Tests', () => {
 
     try {
       const config = vscode.workspace.getConfiguration('codingagent.algorithm');
-      await config.update('enabled', { [testMode]: true }, vscode.ConfigurationTarget.Global);
-      await config.update('scriptPath', { [testMode]: testScriptPath }, vscode.ConfigurationTarget.Global);
+      await config.update('enabled', { [testMode]: true }, 1);
+      await config.update('scriptPath', { [testMode]: testScriptPath }, 1);
       
       const result = await algorithmEngine.executeAlgorithm(testMode, 'test message');
       assert.strictEqual(result.handled, false, 'Should not handle when script throws error');
@@ -159,7 +166,7 @@ suite('AlgorithmEngine Tests', () => {
   test('orchestrator algorithm - complete workflow test', async () => {
     // Test that the real orchestrator.js script works correctly
     const config = vscode.workspace.getConfiguration('codingagent.algorithm');
-    await config.update('enabled', { 'Orchestrator': true }, vscode.ConfigurationTarget.Global);
+    await config.update('enabled', { 'Orchestrator': true }, 1);
     
     // Mock ChatService for LLM calls
     let llmCallCount = 0;
@@ -194,7 +201,7 @@ suite('AlgorithmEngine Tests', () => {
 
   test('orchestrator algorithm - plan opening test', async () => {
     const config = vscode.workspace.getConfiguration('codingagent.algorithm');
-    await config.update('enabled', { 'Orchestrator': true }, vscode.ConfigurationTarget.Global);
+    await config.update('enabled', { 'Orchestrator': true }, 1);
     
     // Mock ChatService for LLM calls - make responses synchronous to avoid timeouts
     const mockChatService = {
@@ -225,7 +232,7 @@ suite('AlgorithmEngine Tests', () => {
 
   test('orchestrator algorithm - new plan test', async () => {
     const config = vscode.workspace.getConfiguration('codingagent.algorithm');
-    await config.update('enabled', { 'Orchestrator': true }, vscode.ConfigurationTarget.Global);
+    await config.update('enabled', { 'Orchestrator': true }, 1);
     
     // Mock ChatService for LLM calls - make responses synchronous to avoid timeouts
     const mockChatService = {

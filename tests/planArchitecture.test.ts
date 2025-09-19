@@ -1,16 +1,25 @@
 // tests/planArchitecture.test.ts
 
 import * as assert from 'assert';
+import * as path from 'path';
+import * as fs from 'fs';
+import * as os from 'os';
 import { PlanningService } from '../src/planningService';
 import { PlanSetArchitectureTool } from '../src/tools/planSetArchitecture';
 
 suite('Plan Architecture Tests', () => {
+  let testWorkspaceRoot: string;
   let planningService: PlanningService;
   let architectureTool: PlanSetArchitectureTool;
   let testPlanId: string;
 
   setup(() => {
-    planningService = PlanningService.getInstance();
+    // Create a unique temporary directory for each test
+    testWorkspaceRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'plan-architecture-test-'));
+    
+    // Reset the singleton instance before each test
+    PlanningService.resetInstance();
+    planningService = PlanningService.getInstance(testWorkspaceRoot);
     architectureTool = new PlanSetArchitectureTool();
     
     // Create a test plan
@@ -28,7 +37,10 @@ suite('Plan Architecture Tests', () => {
 
   teardown(() => {
     // Clean up test plan
-    planningService.deletePlan(testPlanId, true);
+    if (planningService) {
+      planningService.deletePlan(testPlanId, true);
+    }
+    PlanningService.resetInstance();
   });
 
   test('should set plan architecture via tool', async () => {

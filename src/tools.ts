@@ -38,7 +38,6 @@ import { PlanAddPointsTool } from './tools/planAddPoints';
 import { PlanChangePointTool } from './tools/planChangePoint';
 import { PlanChangeTool } from './tools/planChange';
 import { PlanShowTool } from './tools/planShow';
-import { PlanPointDependsOnTool } from './tools/planPointDependsOn';
 import { PlanPointShowTool } from './tools/planPointShow';
 import { PlanPointCommentTool } from './tools/planPointComment';
 import { PlanPointImplementedTool } from './tools/planPointImplemented';
@@ -52,8 +51,8 @@ import { PlanStateTool } from './tools/planState';
 import { PlanDoneTool } from './tools/planDone';
 import { PlanDeleteTool } from './tools/planDelete';
 import { PlanPointRemoveTool } from './tools/planPointRemove';
-import { PlanEvaluateTool } from './tools/planEvaluate';
 import { PlanSetArchitectureTool } from './tools/planSetArchitecture';
+import { PlanReplacePlaceholdersTool } from './tools/planReplacePlaceholders';
 
 export class ToolsService {
   private workspaceRoot: string;
@@ -140,7 +139,6 @@ export class ToolsService {
       new PlanChangePointTool(),
       new PlanChangeTool(),
       new PlanShowTool(),
-      new PlanPointDependsOnTool(),
       new PlanPointShowTool(),
       new PlanPointCommentTool(),
       new PlanPointImplementedTool(),
@@ -154,8 +152,8 @@ export class ToolsService {
       new PlanDoneTool(),
       new PlanDeleteTool(),
       new PlanPointRemoveTool(),
-      new PlanEvaluateTool(),
-      new PlanSetArchitectureTool()
+      new PlanSetArchitectureTool(),
+      new PlanReplacePlaceholdersTool()
     ];
 
     // Add each tool to the registry

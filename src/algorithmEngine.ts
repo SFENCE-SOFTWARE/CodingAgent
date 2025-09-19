@@ -36,6 +36,7 @@ export interface AlgorithmContext {
     createPlan: (id: string, name: string, shortDescription: string, longDescription: string) => { success: boolean; error?: string };
     createPlanWithLanguageInfo: (id: string, name: string, shortDescription: string, longDescription: string, detectedLanguage: string, originalRequest: string, translatedRequest?: string) => { success: boolean; error?: string };
     evaluatePlanCompletion: (planId: string) => { success: boolean; result?: any; error?: string };
+    evaluateNewPlanCreation: (planId: string, originalRequest?: string) => { success: boolean; result?: any; error?: string };
   };
   planContextManager?: {
     getCurrentPlanId: () => string | null;
@@ -117,7 +118,8 @@ export class AlgorithmEngine {
    */
   private getBuiltInScriptPath(mode: string): string | null {
     // First try to get extension path
-    const extensionPath = vscode.extensions.getExtension('codding-agent')?.extensionPath;
+    const extension = vscode.extensions.getExtension('codding-agent');
+    const extensionPath = extension?.extensionPath;
     
     if (extensionPath) {
       const builtInPath = path.join(extensionPath, 'src', 'algorithms', `${mode.toLowerCase()}.js`);
@@ -344,6 +346,17 @@ export class AlgorithmEngine {
             return { success: false, error: 'Planning service not available' };
           }
           return this.planningService.evaluatePlanCompletion(planId);
+        },
+        evaluateNewPlanCreation: (planId: string, originalRequest?: string) => {
+          // Check for interruption before planning operation
+          if (this.chatService && this.chatService.getIsInterrupted()) {
+            throw new Error('Algorithm execution was interrupted');
+          }
+          
+          if (!this.planningService) {
+            return { success: false, error: 'Planning service not available' };
+          }
+          return this.planningService.evaluateNewPlanCreation(planId, originalRequest);
         }
       } : undefined,
       

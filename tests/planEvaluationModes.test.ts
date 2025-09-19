@@ -4,6 +4,41 @@ import * as assert from 'assert';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
+
+// Mock vscode module
+const mockConfig = {
+  get: (key: string, defaultValue?: any) => {
+    const configs: { [key: string]: any } = {
+      'recommendedModePlanRework': 'Architect',
+      'recommendedModePlanReview': 'Plan Reviewer', 
+      'recommendedModeRework': 'Coder',
+      'recommendedModeImplementation': 'Coder',
+      'recommendedModeCodeReview': 'Reviewer',
+      'recommendedModeTesting': 'Tester',
+      'recommendedModeAcceptance': 'Approver'
+    };
+    return configs[key] !== undefined ? configs[key] : defaultValue;
+  }
+};
+
+const mockVscode = {
+  workspace: {
+    getConfiguration: (section?: string) => {
+      return mockConfig;
+    }
+  }
+};
+
+// Mock the vscode module
+const Module = require('module');
+const originalRequire = Module.prototype.require;
+Module.prototype.require = function(id: string) {
+  if (id === 'vscode') {
+    return mockVscode;
+  }
+  return originalRequire.apply(this, arguments);
+};
+
 import { PlanningService } from '../src/planningService';
 
 suite('Plan Evaluation Mode Recommendations', () => {
@@ -23,6 +58,11 @@ suite('Plan Evaluation Mode Recommendations', () => {
     PlanningService.resetInstance();
   });
 
+  suiteTeardown(() => {
+    // Restore original require
+    Module.prototype.require = originalRequire;
+  });
+
   test('should return recommended modes for different plan states', () => {
     // Create a test plan
     const planId = 'test-plan-modes';
@@ -36,7 +76,7 @@ suite('Plan Evaluation Mode Recommendations', () => {
     const result1 = planningService.evaluatePlanCompletion(planId);
     assert.strictEqual(result1.success, true);
     assert.strictEqual(result1.result?.failedStep, 'plan_review');
-    assert.ok(result1.result?.recommendedMode); // Should have a recommended mode
+    assert.strictEqual(result1.result?.recommendedMode, 'Plan Reviewer'); // Should return Plan Reviewer for plan_review
     assert.strictEqual(typeof result1.result?.recommendedMode, 'string');
     
     // Review plan and test implementation state
@@ -44,7 +84,7 @@ suite('Plan Evaluation Mode Recommendations', () => {
     const result2 = planningService.evaluatePlanCompletion(planId);
     assert.strictEqual(result2.success, true);
     assert.strictEqual(result2.result?.failedStep, 'implementation');
-    assert.ok(result2.result?.recommendedMode); // Should have a recommended mode
+    assert.strictEqual(result2.result?.recommendedMode, 'Coder'); // Should return 'Coder' for implementation
     assert.strictEqual(typeof result2.result?.recommendedMode, 'string');
     
     // Set implemented and test review state
@@ -52,7 +92,7 @@ suite('Plan Evaluation Mode Recommendations', () => {
     const result3 = planningService.evaluatePlanCompletion(planId);
     assert.strictEqual(result3.success, true);
     assert.strictEqual(result3.result?.failedStep, 'code_review');
-    assert.ok(result3.result?.recommendedMode); // Should have a recommended mode
+    assert.strictEqual(result3.result?.recommendedMode, 'Reviewer'); // Should return Reviewer for code_review
     assert.strictEqual(typeof result3.result?.recommendedMode, 'string');
     
     // Set reviewed and test testing state
@@ -60,7 +100,7 @@ suite('Plan Evaluation Mode Recommendations', () => {
     const result4 = planningService.evaluatePlanCompletion(planId);
     assert.strictEqual(result4.success, true);
     assert.strictEqual(result4.result?.failedStep, 'testing');
-    assert.ok(result4.result?.recommendedMode); // Should have a recommended mode
+    assert.strictEqual(result4.result?.recommendedMode, 'Tester'); // Should return Tester for testing
     assert.strictEqual(typeof result4.result?.recommendedMode, 'string');
     
     // Set tested and test acceptance state
@@ -68,7 +108,7 @@ suite('Plan Evaluation Mode Recommendations', () => {
     const result5 = planningService.evaluatePlanCompletion(planId);
     assert.strictEqual(result5.success, true);
     assert.strictEqual(result5.result?.failedStep, 'acceptance');
-    assert.ok(result5.result?.recommendedMode); // Should have a recommended mode
+    assert.strictEqual(result5.result?.recommendedMode, 'Approver'); // Should return Approver for acceptance
     assert.strictEqual(typeof result5.result?.recommendedMode, 'string');
     
     // Set accepted - plan should be done
@@ -92,7 +132,7 @@ suite('Plan Evaluation Mode Recommendations', () => {
     const result = planningService.evaluatePlanCompletion(planId);
     assert.strictEqual(result.success, true);
     assert.strictEqual(result.result?.failedStep, 'plan_rework');
-    assert.ok(result.result?.recommendedMode); // Should have a recommended mode
+    assert.strictEqual(result.result?.recommendedMode, 'Architect'); // Should return Architect for plan_rework
     assert.strictEqual(typeof result.result?.recommendedMode, 'string');
   });
 
@@ -113,7 +153,7 @@ suite('Plan Evaluation Mode Recommendations', () => {
     const result = planningService.evaluatePlanCompletion(planId);
     assert.strictEqual(result.success, true);
     assert.strictEqual(result.result?.failedStep, 'rework');
-    assert.ok(result.result?.recommendedMode); // Should have a recommended mode
+    assert.strictEqual(result.result?.recommendedMode, 'Coder'); // Should return Coder for rework
     assert.strictEqual(typeof result.result?.recommendedMode, 'string');
   });
 });

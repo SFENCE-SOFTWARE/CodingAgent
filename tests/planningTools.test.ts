@@ -11,7 +11,6 @@ import { PlanListTool } from '../src/tools/planList';
 import { PlanAddPointsTool } from '../src/tools/planAddPoints';
 import { PlanChangePointTool } from '../src/tools/planChangePoint';
 import { PlanShowTool } from '../src/tools/planShow';
-import { PlanPointDependsOnTool } from '../src/tools/planPointDependsOn';
 import { PlanPointShowTool } from '../src/tools/planPointShow';
 import { PlanPointCommentTool } from '../src/tools/planPointComment';
 import { PlanPointImplementedTool } from '../src/tools/planPointImplemented';
@@ -38,7 +37,6 @@ suite('Planning Tools Test Suite', () => {
   let planAddPointsTool: PlanAddPointsTool;
   let planChangePointTool: PlanChangePointTool;
   let planShowTool: PlanShowTool;
-  let planPointDependsOnTool: PlanPointDependsOnTool;
   let planPointShowTool: PlanPointShowTool;
   let planPointCommentTool: PlanPointCommentTool;
   let planPointImplementedTool: PlanPointImplementedTool;
@@ -71,7 +69,6 @@ suite('Planning Tools Test Suite', () => {
     planAddPointsTool = new PlanAddPointsTool();
     planChangePointTool = new PlanChangePointTool();
     planShowTool = new PlanShowTool();
-    planPointDependsOnTool = new PlanPointDependsOnTool();
     planPointShowTool = new PlanPointShowTool();
     planPointCommentTool = new PlanPointCommentTool();
     planPointImplementedTool = new PlanPointImplementedTool();
@@ -120,7 +117,7 @@ suite('Planning Tools Test Suite', () => {
     test('All tools have proper info', () => {
       const tools = [
         planNewTool, planListTool, planAddPointsTool, planChangePointTool,
-        planShowTool, planPointDependsOnTool, planPointShowTool, planPointCommentTool,
+        planShowTool, planPointShowTool, planPointCommentTool,
         planPointImplementedTool, planPointReviewedTool, planPointTestedTool,
         planPointNeedReworkTool, planReviewedTool,
         planNeedWorksTool, planAcceptedTool, planStateTool, planDoneTool, planDeleteTool
@@ -648,29 +645,6 @@ suite('Planning Tools Test Suite', () => {
           expected_outputs: 'Test output'
         }]
       }, testWorkspaceRoot);
-    });
-
-    test('Set care-on points', async () => {
-      // Get all points to find the second one
-      const showResult = await planShowTool.execute({ plan_id: testPlanId }, testWorkspaceRoot);
-      // Extract second point ID from the plan content (this is a bit hacky but functional)
-      // Since we know we created 2 points, find both IDs
-      const pointIds = showResult.content.match(/Point ID: ([^\s]+)/g);
-      let secondPointId = '';
-      if (pointIds && pointIds.length >= 2) {
-        secondPointId = pointIds[1].replace('Point ID: ', '');
-      } else {
-        // Fallback: just use some point ID if we can't parse
-        secondPointId = testPointId; // Use same point for simplicity
-      }
-      const result = await planPointDependsOnTool.execute({
-        point_id: testPointId,
-        depends_on: [],
-        care_on: [secondPointId]
-      }, testWorkspaceRoot);
-
-      assert.strictEqual(result.success, true, 'Set dependencies should succeed');
-      assert.ok(result.content.includes(secondPointId), 'Result should mention care-on point');
     });
 
     test('Add comment to point', async () => {

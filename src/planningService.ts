@@ -1491,7 +1491,7 @@ export class PlanningService {
 
     let template = templates[step as keyof typeof templates] || `Please address the issue: <reason>`;
     
-    // Replace placeholders where present
+    // Replace legacy placeholders first
     if (template.indexOf('<id>') !== -1) {
       template = template.replace(/<id>/g, pointIds.join(', '));
     }
@@ -1499,19 +1499,12 @@ export class PlanningService {
       template = template.replace(/<reason>/g, reason);
     }
     
-    // For implementation, also replace <role> placeholder
-    if (step === 'implementation' && pointIds.length > 0 && planId) {
-      const plan = this.plans.get(planId);
-      if (plan) {
-        const point = plan.points.find(p => p.id === pointIds[0]);
-        if (point) {
-          // No role replacement needed since implementerRole was removed
-          // template = template.replace(/<role>/g, 'implementer');
-        }
-      }
-    }
+    // Replace failed point IDs placeholder
+    template = template.replace(/<failed_point_ids>/g, pointIds.join(', '));
     
-    return template;
+    // Apply comprehensive placeholder replacement
+    const firstPointId = pointIds.length > 0 ? pointIds[0] : undefined;
+    return this.replacePlaceholders(template, planId, firstPointId);
   }
 
   /**
@@ -1934,4 +1927,83 @@ export class PlanningService {
   private getConfig(key: string): string {
     return vscode.workspace.getConfiguration().get(key) || '';
   }
+
+  /**
+   * Replace placeholders in prompt templates with actual values
+   * Supports placeholders like <plan_long_description>, <plan_short_description>, etc.
+   */
+  public replacePlaceholders(promptTemplate: string, planId?: string, pointId?: string): string {
+    let result = promptTemplate;
+    
+    if (planId) {
+      const plan = this.plans.get(planId);
+      if (plan) {
+        // Plan-related placeholders
+        result = result.replace(/<plan_id>/g, plan.id);
+        result = result.replace(/<plan_name>/g, plan.name || '');
+        result = result.replace(/<plan_short_description>/g, plan.shortDescription || '');
+        result = result.replace(/<plan_long_description>/g, plan.longDescription || '');
+        result = result.replace(/<plan_architecture>/g, plan.architecture || '');
+        result = result.replace(/<plan_original_request>/g, plan.originalRequest || '');
+        result = result.replace(/<plan_translated_request>/g, plan.translatedRequest || '');
+        result = result.replace(/<plan_detected_language>/g, plan.detectedLanguage || '');
+        
+        // Point count information
+        result = result.replace(/<plan_points_count>/g, plan.points.length.toString());
+        result = result.replace(/<plan_implemented_count>/g, plan.points.filter(p => p.implemented).length.toString());
+        result = result.replace(/<plan_reviewed_count>/g, plan.points.filter(p => p.reviewed).length.toString());
+        result = result.replace(/<plan_tested_count>/g, plan.points.filter(p => p.tested).length.toString());
+        
+        if (pointId) {
+          const point = plan.points.find(p => p.id === pointId);
+          if (point) {
+            // Point-related placeholders
+            result = result.replace(/<point_id>/g, point.id);
+            result = result.replace(/<point_short_name>/g, point.shortName || '');
+            result = result.replace(/<point_short_description>/g, point.shortDescription || '');
+            result = result.replace(/<point_detailed_description>/g, point.detailedDescription || '');
+            result = result.replace(/<point_review_instructions>/g, point.reviewInstructions || '');
+            result = result.replace(/<point_testing_instructions>/g, point.testingInstructions || '');
+            result = result.replace(/<point_expected_outputs>/g, point.expectedOutputs || '');
+            result = result.replace(/<point_expected_inputs>/g, point.expectedInputs || '');
+            result = result.replace(/<point_rework_reason>/g, point.reworkReason || '');
+            result = result.replace(/<point_reviewed_comment>/g, point.reviewedComment || '');
+            result = result.replace(/<point_tested_comment>/g, point.testedComment || '');
+          }
+        }
+        
+        // Multiple point IDs for batch operations
+        if (promptTemplate.includes('<failed_point_ids>')) {
+          // This will be replaced by the calling function with actual failed point IDs
+          result = result.replace(/<failed_point_ids>/g, pointId || '');
+        }
+      }
+    }
+    
+    return result;
+  }
+
+  /**
+   * Main plan evaluation method that orchestrates all evaluation logic
+   * This replaces the distributed logic and centralizes everything here
+   */
+  public planEvaluate(planId: string, context?: any): { success: boolean; result?: PlanEvaluationResult; error?: string } {
+    const plan = this.plans.get(planId);
+    if (!plan) {
+      return { success: false, error: `Plan with ID '${planId}' not found` };
+    }
+
+    // Determine if this is a new plan creation or existing plan completion
+    const isNewPlan = (!plan.points || plan.points.length === 0) && 
+                     !plan.reviewed && 
+                     !plan.accepted &&
+                     !plan.pointsCreated;
+
+    if (isNewPlan) {
+      return this.evaluateNewPlanCreation(planId, plan.originalRequest);
+    } else {
+      return this.evaluatePlanCompletion(planId);
+    }
+  }
+
 }

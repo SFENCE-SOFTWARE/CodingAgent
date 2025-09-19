@@ -1,4 +1,4 @@
-// tests/planChecklistReviewFixed.test.ts
+// tests/planChecklistReview.test.ts
 
 import * as assert from 'assert';
 import * as path from 'path';
@@ -41,7 +41,7 @@ Module.prototype.require = function(id: string) {
 
 import { PlanningService } from '../src/planningService';
 
-suite('Plan Checklist Review Tests (Fixed)', () => {
+suite('Plan Checklist Review Tests', () => {
   let testWorkspaceRoot: string;
   let planningService: PlanningService;
 

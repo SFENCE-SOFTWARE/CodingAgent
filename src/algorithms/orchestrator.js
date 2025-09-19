@@ -99,33 +99,15 @@ User request: "${workingMessage}"`;
                     
                     context.console.info(`Plan ${planId} created successfully`);
                     
-                    // Send notice about mode switch
-                    context.sendNotice(`🏗️ **Plan '${planId}' created. Switching to Architect mode...**`);
+                    // Set the plan as current
+                    if (context.planContextManager) {
+                        context.planContextManager.setCurrentPlanId(planId);
+                    }
                     
-                    // Ask Architect to populate the pre-created plan
-                    const architectPrompt = `A plan with ID '${planId}' has been pre-created for you. Please populate this existing plan with appropriate content:
-
-1. Update the plan name and descriptions to better reflect the request
-2. Add detailed points to accomplish the user's request
-3. Summarize what you did in 2-3 sentences
-
-The plan contains language information:
-- Detected language: ${detectedLanguage}
-- Original request: "${message}"
-${workingMessage !== message ? `- Translated request: "${workingMessage}"` : '- No translation was needed'}
-
-User's request: "${workingMessage}"
-
-Focus on populating the existing plan, not creating a new one.`;
-
-                    const architectResponse = await context.sendToLLM(architectPrompt, 'Architect');
+                    context.sendNotice(`🏗️ **Plan '${planId}' created successfully**`);
+                    context.sendResponse(`Plan '${planId}' created and ready for development. Starting execution cycle...`);
                     
-                    // Send notice about switching back
-                    context.sendNotice('🔄 **Switching back to Orchestrator mode...**');
-                    
-                    context.sendResponse(architectResponse);
-                    
-                    // After populating plan, continue with plan execution cycle
+                    // Start plan execution cycle - this will handle all workflow steps automatically
                     await executePlanCycle(context, workingMessage);
                     
                     return 'Plan created and execution cycle initiated';
@@ -219,8 +201,7 @@ async function executePlanCycle(context, workingMessage) {
             break;
         }
         
-        // Evaluate current plan state
-        // Check if this is a new plan (no points and not reviewed yet) - use new creation workflow
+        // Evaluate current plan state using planningService directly
         let evaluationResult;
         const planInfo = context.planningService.showPlan(currentPlanId, true);
         
@@ -233,7 +214,7 @@ async function executePlanCycle(context, workingMessage) {
             context.console.info('New plan detected - using creation workflow');
             evaluationResult = context.planningService.evaluateNewPlanCreation(currentPlanId, workingMessage);
         } else {
-            context.console.info('Existing plan detected - using normal workflow');
+            context.console.info('Existing plan detected - using normal workflow');  
             evaluationResult = context.planningService.evaluatePlanCompletion(currentPlanId);
         }
         
