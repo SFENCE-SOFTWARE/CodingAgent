@@ -4,7 +4,7 @@ import * as assert from 'assert';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
-import { PlanningService } from '../src/planningService';
+import { Plan, PlanningService } from '../src/planningService';
 
 suite('Plan Activity Logging Test Suite', () => {
   let planningService: PlanningService;
@@ -58,7 +58,8 @@ suite('Plan Activity Logging Test Suite', () => {
         short_name: 'Test Point',
         short_description: 'Test point description',
         detailed_description: 'Detailed description',
-        acceptance_criteria: 'Test criteria',
+        review_instructions: 'Review criteria',
+        testing_instructions: 'Testing criteria',
         expected_outputs: 'Test outputs',
         expected_inputs: 'Test inputs'
       }]);
@@ -166,7 +167,8 @@ suite('Plan Activity Logging Test Suite', () => {
         short_name: 'Test Point',
         short_description: 'Test point description',
         detailed_description: 'Detailed description',
-        acceptance_criteria: 'Test criteria',
+        review_instructions: 'Review criteria',
+        testing_instructions: 'Testing criteria',
         expected_outputs: 'Test outputs',
         expected_inputs: 'Test inputs'
       }]);
@@ -236,7 +238,8 @@ suite('Plan Activity Logging Test Suite', () => {
         short_name: 'Test Point',
         short_description: 'Test point description',
         detailed_description: 'Detailed description',
-        acceptance_criteria: 'Test criteria',
+        review_instructions: 'Review criteria',
+        testing_instructions: 'Testing criteria',
         expected_outputs: 'Test outputs',
         expected_inputs: 'Test inputs'
       }]);

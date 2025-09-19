@@ -44,7 +44,8 @@ suite('Enhanced Plan Point Show Test Suite', () => {
       'Point 1',
       'Short description',
       'Detailed description',
-      'Acceptance criteria',
+      'Review instructions',
+      'Testing instructions',
       'Expected outputs',
       'Expected inputs'
     );
@@ -64,7 +65,8 @@ suite('Enhanced Plan Point Show Test Suite', () => {
     assert.ok(result.content.includes('Detailed Description'));
     assert.ok(result.content.includes('Expected Inputs'));
     assert.ok(result.content.includes('Expected Outputs'));
-    assert.ok(result.content.includes('Acceptance Criteria'));
+    assert.ok(result.content.includes('Review Instructions'));
+    assert.ok(result.content.includes('Testing Instructions'));
     assert.ok(result.content.includes('Depends On Points'));
     assert.ok(result.content.includes('Care-On Points'));
     assert.ok(result.content.includes('Status'));
@@ -81,7 +83,8 @@ suite('Enhanced Plan Point Show Test Suite', () => {
       'Point 1',
       'Short desc',
       'Detailed desc',
-      'Criteria',
+      'Review instructions',
+      'Testing instructions',
       'Outputs',
       'User data from database, config file'
     );
@@ -106,7 +109,8 @@ suite('Enhanced Plan Point Show Test Suite', () => {
       'Point 1',
       'Short desc',
       'Detailed desc',
-      'Criteria',
+      'Review instructions',
+      'Testing instructions',
       'Outputs',
       'Inputs'
     );
@@ -131,11 +135,11 @@ suite('Enhanced Plan Point Show Test Suite', () => {
     // Add two points
     planningService.addPoint(
       'test-plan', null, 'Point 1', 'Short 1', 'Detailed 1',
-      'Criteria 1', 'Outputs 1', 'Inputs 1'
+      'Review instructions 1', 'Testing instructions 1', 'Outputs 1', 'Inputs 1'
     );
     planningService.addPoint(
       'test-plan', '1', 'Point 2', 'Short 2', 'Detailed 2',
-      'Criteria 2', 'Outputs 2', 'Inputs 2'
+      'Review instructions 2', 'Testing instructions 2', 'Outputs 2', 'Inputs 2'
     );
     
     // Set dependencies
@@ -162,7 +166,8 @@ suite('Enhanced Plan Point Show Test Suite', () => {
       'Point 1',
       'Short desc',
       'Detailed desc',
-      'Criteria',
+      'Review instructions',
+      'Testing instructions',
       'Outputs',
       'Inputs'
     );
@@ -188,7 +193,8 @@ suite('Enhanced Plan Point Show Test Suite', () => {
       'Point 1',
       'Short desc',
       'Detailed desc',
-      'Criteria',
+      'Review instructions',
+      'Testing instructions',
       'Outputs',
       'Inputs'
     );
@@ -219,7 +225,8 @@ suite('Enhanced Plan Point Show Test Suite', () => {
       'Point 1',
       'Short desc',
       'Detailed desc',
-      'Criteria',
+      'Review instructions',
+      'Testing instructions',
       'Outputs',
       '' // Empty expected inputs
     );

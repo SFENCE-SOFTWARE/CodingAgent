@@ -38,7 +38,8 @@ suite('Plan GUI Data Loading Fixes', () => {
       short_name: 'Test Point',
       short_description: 'Test point short description',
       detailed_description: 'Test point detailed description',
-      acceptance_criteria: 'Test acceptance criteria',
+      review_instructions: 'Review instructions',
+      testing_instructions: 'Testing instructions',
       expected_outputs: 'Test expected outputs',
       expected_inputs: 'Test expected inputs'
     }]);
@@ -56,8 +57,11 @@ suite('Plan GUI Data Loading Fixes', () => {
     console.log('Point data loaded:', JSON.stringify(point, null, 2));
 
     // Verify all necessary fields are present
-    assert.ok(point.acceptanceCriteria, 'acceptanceCriteria should be present');
-    assert.strictEqual(point.acceptanceCriteria, 'Test acceptance criteria');
+    assert.ok(point.reviewInstructions, 'reviewInstructions should be present');
+    assert.strictEqual(point.reviewInstructions, 'Review instructions');
+    
+    assert.ok(point.testingInstructions, 'testingInstructions should be present');
+    assert.strictEqual(point.testingInstructions, 'Testing instructions');
     
     assert.ok(point.expectedInputs, 'expectedInputs should be present');
     assert.strictEqual(point.expectedInputs, 'Test expected inputs');
@@ -82,7 +86,8 @@ suite('Plan GUI Data Loading Fixes', () => {
       short_name: 'Test Point',
       short_description: 'Test point short description',
       detailed_description: 'Test point detailed description',
-      acceptance_criteria: 'Test acceptance criteria',
+      review_instructions: 'Review instructions',
+      testing_instructions: 'Testing instructions',
       expected_outputs: 'Test expected outputs',
       expected_inputs: 'Test expected inputs'
     }]);
@@ -100,7 +105,8 @@ suite('Plan GUI Data Loading Fixes', () => {
     console.log('Point data without descriptions:', JSON.stringify(point, null, 2));
 
     // Verify detailed fields are NOT present (this proves the bug existed)
-    assert.strictEqual(point.acceptanceCriteria, undefined, 'acceptanceCriteria should be missing');
+    assert.strictEqual(point.reviewInstructions, undefined, 'reviewInstructions should be missing');
+    assert.strictEqual(point.testingInstructions, undefined, 'testingInstructions should be missing');
     assert.strictEqual(point.expectedInputs, undefined, 'expectedInputs should be missing');
     assert.strictEqual(point.expectedOutputs, undefined, 'expectedOutputs should be missing');
 
@@ -120,7 +126,8 @@ suite('Plan GUI Data Loading Fixes', () => {
       short_name: 'Test Point',
       short_description: 'Test point short description',
       detailed_description: 'Test point detailed description',
-      acceptance_criteria: 'Test acceptance criteria',
+      review_instructions: 'Review instructions',
+      testing_instructions: 'Testing instructions',
       expected_outputs: 'Test expected outputs',
       expected_inputs: 'Test expected inputs'
     }]);

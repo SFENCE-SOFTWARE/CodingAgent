@@ -39,9 +39,13 @@ export class PlanChangePointTool implements BaseTool {
               type: ['string', 'null'],
               description: 'New detailed description of the point (null to keep current)'
             },
-            acceptance_criteria: {
+            review_instructions: {
               type: ['string', 'null'],
-              description: 'New acceptance criteria for the point (null to keep current)'
+              description: 'New instructions for reviewing this point (null to keep current) - what should be checked when reviewing the implementation'
+            },
+            testing_instructions: {
+              type: ['string', 'null'],
+              description: 'New instructions for testing this point (null to keep current) - what tests should be performed to validate the implementation'
             },
             expected_outputs: {
               type: ['string', 'null'],
@@ -50,6 +54,20 @@ export class PlanChangePointTool implements BaseTool {
             expected_inputs: {
               type: ['string', 'null'],
               description: 'New expected inputs and prerequisites (null to keep current). Specify what data, files, or previous work is needed. Example: "User research data from memory key \'survey-2024\'" or "Existing config.json file"'
+            },
+            depends_on: {
+              type: ['array', 'null'],
+              description: 'New array of point IDs that this point depends on (null to keep current). Use ["-1"] for no dependencies',
+              items: {
+                type: 'string'
+              }
+            },
+            care_on: {
+              type: ['array', 'null'],
+              description: 'New array of point IDs that this point cares about (null to keep current)',
+              items: {
+                type: 'string'
+              }
             }
           },
           required: ['point_id'],
@@ -60,7 +78,7 @@ export class PlanChangePointTool implements BaseTool {
   }
 
   async execute(args: any, workspaceRoot: string): Promise<ToolResult> {
-    const { point_id, short_name, short_description, detailed_description, acceptance_criteria, expected_outputs, expected_inputs } = args;
+    const { point_id, short_name, short_description, detailed_description, review_instructions, testing_instructions, expected_outputs, expected_inputs, depends_on, care_on } = args;
 
     // Get current plan from context
     const planContextManager = PlanContextManager.getInstance();
@@ -90,9 +108,12 @@ export class PlanChangePointTool implements BaseTool {
       if (short_name !== null && short_name !== undefined) {updates.shortName = short_name;}
       if (short_description !== null && short_description !== undefined) {updates.shortDescription = short_description;}
       if (detailed_description !== null && detailed_description !== undefined) {updates.detailedDescription = detailed_description;}
-      if (acceptance_criteria !== null && acceptance_criteria !== undefined) {updates.acceptanceCriteria = acceptance_criteria;}
+      if (review_instructions !== null && review_instructions !== undefined) {updates.reviewInstructions = review_instructions;}
+      if (testing_instructions !== null && testing_instructions !== undefined) {updates.testingInstructions = testing_instructions;}
       if (expected_outputs !== null && expected_outputs !== undefined) {updates.expectedOutputs = expected_outputs;}
       if (expected_inputs !== null && expected_inputs !== undefined) {updates.expectedInputs = expected_inputs;}
+      if (depends_on !== null && depends_on !== undefined) {updates.dependsOn = depends_on;}
+      if (care_on !== null && care_on !== undefined) {updates.careOnPoints = care_on;}
 
       if (Object.keys(updates).length === 0) {
         return {

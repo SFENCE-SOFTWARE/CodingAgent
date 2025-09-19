@@ -29,7 +29,8 @@ suite('Plan Evaluation Mode Recommendations', () => {
     planningService.createPlan(planId, 'Test Plan', 'Short desc', 'Long desc');
     
     // Add a test point
-    planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Expected outputs', 'Expected inputs');
+    planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Review instructions',
+        'Testing instructions', 'Expected outputs', 'Expected inputs');
     
     // Test plan review state
     const result1 = planningService.evaluatePlanCompletion(planId);
@@ -101,7 +102,8 @@ suite('Plan Evaluation Mode Recommendations', () => {
     planningService.createPlan(planId, 'Test Plan', 'Short desc', 'Long desc');
     
     // Add and review plan
-    planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Expected outputs', 'Expected inputs');
+    planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Review instructions',
+        'Testing instructions', 'Expected outputs', 'Expected inputs');
     planningService.setPlanReviewed(planId, 'Plan reviewed');
     
     // Set point to need rework

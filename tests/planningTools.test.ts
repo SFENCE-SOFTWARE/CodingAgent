@@ -215,7 +215,8 @@ suite('Planning Tools Test Suite', () => {
           short_name: 'Test Point',
           short_description: 'A test point for validation',
           detailed_description: 'A comprehensive test point used for validating the planning point system functionality',
-          acceptance_criteria: 'Point should be created successfully and appear in plan',
+          review_instructions: 'Point should be created successfully and appear in plan',
+          testing_instructions: 'Test that point appears correctly in plan output',
           expected_outputs: 'Test output',
           expected_inputs: 'Test plan and requirements'
         }]
@@ -245,7 +246,8 @@ suite('Planning Tools Test Suite', () => {
             short_name: 'Point 1',
             short_description: 'First test point',
             detailed_description: 'Detailed description for the first test point',
-            acceptance_criteria: 'First point acceptance criteria',
+            review_instructions: 'First point review instructions',
+            testing_instructions: 'First point testing instructions',
             expected_outputs: 'Test output 1',
             expected_inputs: 'Initial requirements'
           },
@@ -253,7 +255,8 @@ suite('Planning Tools Test Suite', () => {
             short_name: 'Point 2',
             short_description: 'Second test point',
             detailed_description: 'Detailed description for the second test point',
-            acceptance_criteria: 'Second point acceptance criteria',
+            review_instructions: 'Second point review instructions',
+            testing_instructions: 'Second point testing instructions',
             expected_outputs: 'Test output 2',
             expected_inputs: 'Results from Point 1'
           },
@@ -261,7 +264,8 @@ suite('Planning Tools Test Suite', () => {
             short_name: 'Point 3',
             short_description: 'Third test point',
             detailed_description: 'Detailed description for the third test point',
-            acceptance_criteria: 'Third point acceptance criteria',
+            review_instructions: 'Third point review instructions',
+            testing_instructions: 'Third point testing instructions',
             expected_outputs: 'Test output 3',
             expected_inputs: 'Results from Point 2'
           }
@@ -298,7 +302,8 @@ suite('Planning Tools Test Suite', () => {
           short_name: 'Test Point',
           short_description: 'A test point for validation',
           detailed_description: 'A comprehensive test point used for validating the planning point system functionality',
-          acceptance_criteria: 'Point should be created successfully and appear in plan',
+          review_instructions: 'Point should be created successfully and appear in plan',
+          testing_instructions: 'Test that point appears correctly in plan output',
           expected_inputs: 'Test requirements',
           expected_outputs: 'Test output'
         }]
@@ -336,7 +341,8 @@ suite('Planning Tools Test Suite', () => {
           short_name: 'Test Point',
           short_description: 'A test point for validation',
           detailed_description: 'A comprehensive test point used for validating the planning point system functionality',
-          acceptance_criteria: 'Point should be created successfully and appear in plan',
+          review_instructions: 'Point should be created successfully and appear in plan',
+          testing_instructions: 'Test that point appears correctly in plan output',
           expected_inputs: 'Test requirements',
           expected_outputs: 'Test output'
         }]
@@ -379,7 +385,8 @@ suite('Planning Tools Test Suite', () => {
           short_name: 'Test Point',
           short_description: 'A test point for validation',
           detailed_description: 'A comprehensive test point used for validating the planning point system functionality',
-          acceptance_criteria: 'Point should be created successfully and appear in plan',
+          review_instructions: 'Point should be created successfully and appear in plan',
+          testing_instructions: 'Test that point appears correctly in plan output',
           expected_inputs: 'Test requirements',
           expected_outputs: 'Test output'
         }]
@@ -416,7 +423,8 @@ suite('Planning Tools Test Suite', () => {
           short_name: 'Test Point',
           short_description: 'A test point for validation',
           detailed_description: 'A comprehensive test point used for validating the planning point system functionality',
-          acceptance_criteria: 'Point should be created successfully and appear in plan',
+          review_instructions: 'Point should be created successfully and appear in plan',
+          testing_instructions: 'Test that point appears correctly in plan output',
           expected_inputs: 'Test requirements',
           expected_outputs: 'Test output'
         }]
@@ -457,7 +465,8 @@ suite('Planning Tools Test Suite', () => {
           short_name: 'Test Point',
           short_description: 'A test point for validation',
           detailed_description: 'A comprehensive test point used for validating the planning point system functionality',
-          acceptance_criteria: 'Point should be created successfully and appear in plan',
+          review_instructions: 'Point should be created successfully and appear in plan',
+          testing_instructions: 'Test that point appears correctly in plan output',
           expected_inputs: 'Test requirements',
           expected_outputs: 'Test output'
         }]
@@ -521,7 +530,8 @@ suite('Planning Tools Test Suite', () => {
           short_name: 'Acceptance Test Point',
           short_description: 'A point for plan acceptance testing',
           detailed_description: 'A point created specifically for testing plan acceptance workflow',
-          acceptance_criteria: 'Point should be properly reviewed and tested before plan acceptance',
+          review_instructions: 'Point should be properly reviewed and tested before plan acceptance',
+          testing_instructions: 'Test all functionality before accepting plan',
           expected_inputs: 'Test requirements',
           expected_outputs: 'Test output for acceptance test'
         }]
@@ -613,7 +623,8 @@ suite('Planning Tools Test Suite', () => {
           short_name: 'Test Point',
           short_description: 'A test point for validation',
           detailed_description: 'A comprehensive test point used for validating the planning point system functionality',
-          acceptance_criteria: 'Point should be created successfully and appear in plan',
+          review_instructions: 'Point should be created successfully and appear in plan',
+          testing_instructions: 'Test that point appears correctly in plan output',
           expected_inputs: 'Test requirements',
           expected_outputs: 'Test output'
         }]
@@ -631,7 +642,8 @@ suite('Planning Tools Test Suite', () => {
           short_name: 'Second Point',
           short_description: 'Another test point',
           detailed_description: 'Another comprehensive test point used for validating dependencies',
-          acceptance_criteria: 'Point should be created successfully and can be used as dependency',
+          review_instructions: 'Point should be created successfully and can be used as dependency',
+          testing_instructions: 'Test that point can be properly used as dependency for other points',
           expected_inputs: 'Test requirements',
           expected_outputs: 'Test output'
         }]
@@ -688,7 +700,8 @@ suite('Planning Tools Test Suite', () => {
           short_name: 'Test Point',
           short_description: 'A test point for validation',
           detailed_description: 'A comprehensive test point used for validating the planning point system functionality',
-          acceptance_criteria: 'Point should be created successfully and appear in plan',
+          review_instructions: 'Point should be created successfully and appear in plan',
+          testing_instructions: 'Test that point appears correctly in plan output',
           expected_inputs: 'Test requirements',
           expected_outputs: 'Test output'
         }]
@@ -758,7 +771,8 @@ suite('Planning Tools Test Suite', () => {
           short_name: 'Test Point',
           short_description: 'A test point for validation',
           detailed_description: 'A comprehensive test point used for validating the planning point system functionality',
-          acceptance_criteria: 'Point should be created successfully and appear in plan',
+          review_instructions: 'Point should be created successfully and appear in plan',
+          testing_instructions: 'Test that point appears correctly in plan output',
           expected_inputs: 'Test requirements',
           expected_outputs: 'Test output'
         }]

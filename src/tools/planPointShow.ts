@@ -29,7 +29,7 @@ export class PlanPointShowTool implements BaseTool {
             },
             sections: {
               type: 'array',
-              description: 'Array of section names to display. Use "all" to display all sections. Available sections: "plan_short_description", "plan_long_description", "short_description", "long_description", "expected_inputs", "expected_outputs", "acceptance_criteria", "depends_on_points", "care_on_points", "comments", "state"',
+              description: 'Array of section names to display. Use "all" to display all sections. Available sections: "plan_short_description", "plan_long_description", "short_description", "long_description", "expected_inputs", "expected_outputs", "review_instructions", "testing_instructions", "depends_on_points", "care_on_points", "comments", "state"',
               items: {
                 type: 'string',
                 enum: [
@@ -40,7 +40,8 @@ export class PlanPointShowTool implements BaseTool {
                   'long_description',
                   'expected_inputs',
                   'expected_outputs',
-                  'acceptance_criteria',
+                  'review_instructions',
+                  'testing_instructions',
                   'depends_on_points',
                   'care_on_points',
                   'comments',
@@ -113,7 +114,8 @@ export class PlanPointShowTool implements BaseTool {
           'long_description',
           'expected_inputs',
           'expected_outputs',
-          'acceptance_criteria',
+          'review_instructions',
+          'testing_instructions',
           'depends_on_points',
           'care_on_points',
           'state',
@@ -168,27 +170,39 @@ export class PlanPointShowTool implements BaseTool {
             }
             break;
 
-          case 'acceptance_criteria':
-            content += `✅ Acceptance Criteria:\n${point.acceptanceCriteria}\n\n`;
+          case 'review_instructions':
+            if (point.reviewInstructions) {
+              content += `✅ Review Instructions:\n${point.reviewInstructions}\n\n`;
+            } else {
+              content += `✅ Review Instructions: Not specified\n\n`;
+            }
+            break;
+
+          case 'testing_instructions':
+            if (point.testingInstructions) {
+              content += `🧪 Testing Instructions:\n${point.testingInstructions}\n\n`;
+            } else {
+              content += `🧪 Testing Instructions: Not specified\n\n`;
+            }
             break;
 
           case 'state':
             content += `📊 Status:\n`;
-            content += `  Implemented: ${point.state.implemented ? '✅' : '❌'}\n`;
-            content += `  Reviewed: ${point.state.reviewed ? '✅' : '❌'}`;
-            if (point.state.reviewed && point.state.reviewedComment) {
-              content += ` - ${point.state.reviewedComment}`;
+            content += `  Implemented: ${point.implemented ? '✅' : '❌'}\n`;
+            content += `  Reviewed: ${point.reviewed ? '✅' : '❌'}`;
+            if (point.reviewed && point.reviewedComment) {
+              content += ` - ${point.reviewedComment}`;
             }
             content += `\n`;
-            content += `  Tested: ${point.state.tested ? '✅' : '❌'}`;
-            if (point.state.tested && point.state.testedComment) {
-              content += ` - ${point.state.testedComment}`;
+            content += `  Tested: ${point.tested ? '✅' : '❌'}`;
+            if (point.tested && point.testedComment) {
+              content += ` - ${point.testedComment}`;
             }
             content += `\n`;
-            content += `  Accepted: ${point.state.accepted ? '✅' : '❌'}\n`;
-            content += `  Needs Rework: ${point.state.needRework ? '❌' : '✅'}`;
-            if (point.state.needRework && point.state.reworkReason) {
-              content += ` - ${point.state.reworkReason}`;
+            content += `  Accepted: ${point.accepted ? '✅' : '❌'}\n`;
+            content += `  Needs Rework: ${point.needRework ? '❌' : '✅'}`;
+            if (point.needRework && point.reworkReason) {
+              content += ` - ${point.reworkReason}`;
             }
             content += `\n\n`;
             break;

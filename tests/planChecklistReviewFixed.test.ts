@@ -71,8 +71,10 @@ suite('Plan Checklist Review Tests (Fixed)', () => {
     // Create a test plan with 2 points
     const planId = 'test-checklist-plan';
     planningService.createPlan(planId, 'Test Plan', 'Short desc', 'Long desc');
-    planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Expected outputs', 'Expected inputs');
-    planningService.addPoint(planId, '1', 'Point 2', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Expected outputs', 'Expected inputs');
+    planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Review instructions',
+        'Testing instructions', 'Expected outputs', 'Expected inputs');
+    planningService.addPoint(planId, '1', 'Point 2', 'Short desc', 'Detailed desc', 'Review instructions',
+        'Testing instructions', 'Expected outputs', 'Expected inputs');
     
     // Set dependencies so plan passes structure validation
     planningService.setPointDependencies(planId, '1', ['-1'], []); // Point 1 is independent
@@ -110,7 +112,8 @@ suite('Plan Checklist Review Tests (Fixed)', () => {
     // Create a test plan
     const planId = 'test-checklist-processing';
     planningService.createPlan(planId, 'Test Plan', 'Short desc', 'Long desc');
-    planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Expected outputs', 'Expected inputs');
+    planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Review instructions',
+        'Testing instructions', 'Expected outputs', 'Expected inputs');
 
     // Set dependencies and implementation status
     planningService.setPointDependencies(planId, '1', ['-1'], []);
@@ -153,7 +156,8 @@ suite('Plan Checklist Review Tests (Fixed)', () => {
     // This will create just 4 plan-level checklist items from defaults
     
     // Need to set up at least one implemented point to pass structural validation
-    planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Expected outputs', 'Expected inputs');
+    planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Review instructions',
+        'Testing instructions', 'Expected outputs', 'Expected inputs');
     planningService.setPointDependencies(planId, '1', ['-1'], []);
     planningService.setImplemented(planId, '1');
 
@@ -193,7 +197,8 @@ suite('Plan Checklist Review Tests (Fixed)', () => {
     planningService.createPlan(planId, 'Test Plan', 'Short desc', 'Long desc');
     
     // Add point and set it up properly 
-    planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Acceptance criteria', 'Expected outputs', 'Expected inputs');
+    planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Review instructions',
+        'Testing instructions', 'Expected outputs', 'Expected inputs');
     planningService.setPointDependencies(planId, '1', ['-1'], []);
     planningService.setImplemented(planId, '1');
 

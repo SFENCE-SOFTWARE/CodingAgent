@@ -45,9 +45,13 @@ export class PlanAddPointsTool implements BaseTool {
                     type: 'string',
                     description: 'Detailed description of the point'
                   },
-                  acceptance_criteria: {
+                  review_instructions: {
                     type: 'string',
-                    description: 'Acceptance criteria for the point'
+                    description: 'Instructions for reviewing this point - what should be checked when reviewing the implementation'
+                  },
+                  testing_instructions: {
+                    type: 'string',
+                    description: 'Instructions for testing this point - what tests should be performed to validate the implementation'
                   },
                   expected_outputs: {
                     type: 'string',
@@ -56,9 +60,23 @@ export class PlanAddPointsTool implements BaseTool {
                   expected_inputs: {
                     type: 'string',
                     description: 'Expected inputs and prerequisites for this point. Specify what data, files, or previous work is needed. Example: "User research data from memory key \'survey-2024\'" or "Existing config.json file" or "Requirements from point 1"'
+                  },
+                  depends_on: {
+                    type: 'array',
+                    description: 'Array of point IDs that this point depends on. Use ["-1"] for no dependencies',
+                    items: {
+                      type: 'string'
+                    }
+                  },
+                  care_on: {
+                    type: 'array',
+                    description: 'Array of point IDs that this point cares about (will be notified when those points change)',
+                    items: {
+                      type: 'string'
+                    }
                   }
                 },
-                required: ['short_name', 'short_description', 'detailed_description', 'acceptance_criteria', 'expected_outputs', 'expected_inputs'],
+                required: ['short_name', 'short_description', 'detailed_description', 'review_instructions', 'testing_instructions', 'expected_outputs', 'expected_inputs'],
                 additionalProperties: false
               },
               minItems: 1
@@ -85,11 +103,11 @@ export class PlanAddPointsTool implements BaseTool {
     // Validate each point structure
     for (let i = 0; i < points.length; i++) {
       const point = points[i];
-      if (!point.short_name || !point.short_description || !point.detailed_description || !point.acceptance_criteria || !point.expected_outputs || !point.expected_inputs) {
+      if (!point.short_name || !point.short_description || !point.detailed_description || !point.review_instructions || !point.testing_instructions || !point.expected_outputs || !point.expected_inputs) {
         return {
           success: false,
           content: '',
-          error: `Point at index ${i} is missing required fields: short_name, short_description, detailed_description, acceptance_criteria, expected_outputs, expected_inputs`
+          error: `Point at index ${i} is missing required fields: short_name, short_description, detailed_description, review_instructions, testing_instructions, expected_outputs, expected_inputs`
         };
       }
     }

@@ -145,7 +145,7 @@ export class PlanVisualizationPanel {
     
     let pointsHtml = '';
     if (points.length === 0) {
-      pointsHtml = '<tr><td colspan="11" style="text-align: center; color: var(--vscode-descriptionForeground);">No points defined</td></tr>';
+      pointsHtml = '<tr><td colspan="12" style="text-align: center; color: var(--vscode-descriptionForeground);">No points defined</td></tr>';
     } else {
       pointsHtml = points.map((point: any) => {
         const status = this._getPointStatus(point);
@@ -169,7 +169,8 @@ export class PlanVisualizationPanel {
             <td><strong>${this._escapeHtml(point.shortName)}</strong></td>
             <td>${this._escapeHtml(point.shortDescription)}</td>
             <td>${this._escapeHtml(point.detailedDescription || 'No detailed description')}</td>
-            <td>${this._escapeHtml(point.acceptanceCriteria || 'No criteria')}</td>
+            <td>${this._escapeHtml(point.reviewInstructions || 'No review instructions')}</td>
+            <td>${this._escapeHtml(point.testingInstructions || 'No testing instructions')}</td>
             <td>${this._escapeHtml(point.expectedInputs || 'Not specified')}</td>
             <td>${this._escapeHtml(point.expectedOutputs || 'Not specified')}</td>
             <td>${this._escapeHtml(dependsOn)}</td>
@@ -369,7 +370,8 @@ export class PlanVisualizationPanel {
                 <th>Title</th>
                 <th>Short Description</th>
                 <th>Long Description</th>
-                <th>Acceptance Criteria</th>
+                <th>Review Instructions</th>
+                <th>Testing Instructions</th>
                 <th>Expected Inputs</th>
                 <th>Expected Outputs</th>
                 <th>Depends On</th>

@@ -38,7 +38,8 @@ suite('Plan Procedural Validation Test Suite', () => {
         'Point 1',
         'Short description',
         'Detailed description',
-        'Acceptance criteria',
+        'Review instructions',
+        'Testing instructions',
         'Expected outputs',
         'Expected inputs'
       );
@@ -61,7 +62,8 @@ suite('Plan Procedural Validation Test Suite', () => {
         '', // Empty short name
         'Short description',
         'Detailed description',
-        'Acceptance criteria',
+        'Review instructions',
+        'Testing instructions',
         'Expected outputs',
         'Expected inputs'
       );
@@ -83,7 +85,8 @@ suite('Plan Procedural Validation Test Suite', () => {
         'Point 1',
         'Short description',
         'Detailed description',
-        'Acceptance criteria',
+        'Review instructions',
+        'Testing instructions',
         'Expected outputs',
         '' // Empty expected inputs
       );
@@ -105,7 +108,8 @@ suite('Plan Procedural Validation Test Suite', () => {
         'Point 1',
         'Short description',
         'Detailed description',
-        'Acceptance criteria',
+        'Review instructions',
+        'Testing instructions',
         'Expected outputs',
         'Expected inputs'
       );
@@ -128,7 +132,8 @@ suite('Plan Procedural Validation Test Suite', () => {
         'Point 1',
         'Short description',
         'Detailed description',
-        'Acceptance criteria',
+        'Review instructions',
+        'Testing instructions',
         'Expected outputs',
         'Expected inputs'
       );
@@ -147,7 +152,8 @@ suite('Plan Procedural Validation Test Suite', () => {
         'Point 1',
         'Short description',
         'Detailed description',
-        'Acceptance criteria',
+        'Review instructions',
+        'Testing instructions',
         'Expected outputs',
         'Expected inputs'
       );
@@ -177,7 +183,8 @@ suite('Plan Procedural Validation Test Suite', () => {
         'Point 1',
         'Short description',
         'Detailed description',
-        'Acceptance criteria',
+        'Review instructions',
+        'Testing instructions',
         'Expected outputs',
         'Expected inputs'
       );
@@ -197,11 +204,11 @@ suite('Plan Procedural Validation Test Suite', () => {
       // Add two points
       planningService.addPoint(
         'test-plan', null, 'Point 1', 'Short desc 1', 'Detailed desc 1',
-        'Criteria 1', 'Outputs 1', 'Inputs 1'
+        'Review instructions 1', 'Testing instructions 1', 'Outputs 1', 'Inputs 1'
       );
       planningService.addPoint(
         'test-plan', '1', 'Point 2', 'Short desc 2', 'Detailed desc 2',
-        'Criteria 2', 'Outputs 2', 'Inputs 2'
+        'Review instructions 2', 'Testing instructions 2', 'Outputs 2', 'Inputs 2'
       );
       
       // Set valid dependencies
@@ -222,7 +229,7 @@ suite('Plan Procedural Validation Test Suite', () => {
       // Add incomplete point (missing expected inputs)
       planningService.addPoint(
         'test-plan', null, 'Point 1', 'Short desc', 'Detailed desc',
-        'Criteria', 'Outputs', '' // Missing expected inputs
+        'Review instructions', 'Testing instructions', 'Outputs', '' // Missing expected inputs
       );
 
       const result = planningService.evaluatePlanCompletion('test-plan');

@@ -9,7 +9,8 @@ export interface PlanPoint {
   shortName: string;
   shortDescription: string;
   detailedDescription: string;
-  acceptanceCriteria: string;
+  reviewInstructions: string;  // New: instructions for reviewing this point
+  testingInstructions: string; // New: instructions for testing this point
   expectedOutputs: string;
   expectedInputs: string;  // New: expected inputs for the point
   status: string;
@@ -311,7 +312,8 @@ export class PlanningService {
     shortName: string,
     shortDescription: string,
     detailedDescription: string,
-    acceptanceCriteria: string,
+    reviewInstructions: string,
+    testingInstructions: string,
     expectedOutputs: string = '',
     expectedInputs: string = ''
   ): { success: boolean; pointId?: string; error?: string } {
@@ -331,7 +333,8 @@ export class PlanningService {
       shortName,
       shortDescription,
       detailedDescription,
-      acceptanceCriteria,
+      reviewInstructions,
+      testingInstructions,
       expectedOutputs,
       expectedInputs,
       status: 'pending',
@@ -377,9 +380,12 @@ export class PlanningService {
       short_name: string;
       short_description: string;
       detailed_description: string;
-      acceptance_criteria: string;
+      review_instructions: string;
+      testing_instructions: string;
       expected_outputs: string;
       expected_inputs?: string;
+      depends_on?: string[];
+      care_on?: string[];
     }>
   ): { success: boolean; pointIds?: string[]; error?: string } {
     const plan = this.plans.get(planId);
@@ -407,15 +413,16 @@ export class PlanningService {
         shortName: pointData.short_name,
         shortDescription: pointData.short_description,
         detailedDescription: pointData.detailed_description,
-        acceptanceCriteria: pointData.acceptance_criteria,
+        reviewInstructions: pointData.review_instructions,
+        testingInstructions: pointData.testing_instructions,
         expectedOutputs: pointData.expected_outputs,
         expectedInputs: pointData.expected_inputs || '',
         status: 'pending',
         careOn: false,
         comment: '',
         careOnComment: '',
-        careOnPoints: [],
-        dependsOn: [],
+        careOnPoints: pointData.care_on || [],
+        dependsOn: pointData.depends_on || [],
         implemented: false,
         reviewed: false,
         reviewedComment: '',
@@ -454,7 +461,7 @@ export class PlanningService {
   public changePoint(
     planId: string,
     pointId: string,
-    updates: Partial<Pick<PlanPoint, 'shortName' | 'shortDescription' | 'detailedDescription' | 'acceptanceCriteria' | 'expectedOutputs' | 'expectedInputs'>>
+    updates: Partial<Pick<PlanPoint, 'shortName' | 'shortDescription' | 'detailedDescription' | 'reviewInstructions' | 'testingInstructions' | 'expectedOutputs' | 'expectedInputs' | 'dependsOn' | 'careOnPoints'>>
   ): { success: boolean; error?: string } {
     const plan = this.plans.get(planId);
     if (!plan) {
@@ -472,9 +479,12 @@ export class PlanningService {
     if (updates.shortName !== undefined) {point.shortName = updates.shortName;}
     if (updates.shortDescription !== undefined) {point.shortDescription = updates.shortDescription;}
     if (updates.detailedDescription !== undefined) {point.detailedDescription = updates.detailedDescription;}
-    if (updates.acceptanceCriteria !== undefined) {point.acceptanceCriteria = updates.acceptanceCriteria;}
+    if (updates.reviewInstructions !== undefined) {point.reviewInstructions = updates.reviewInstructions;}
+    if (updates.testingInstructions !== undefined) {point.testingInstructions = updates.testingInstructions;}
     if (updates.expectedOutputs !== undefined) {point.expectedOutputs = updates.expectedOutputs;}
     if (updates.expectedInputs !== undefined) {point.expectedInputs = updates.expectedInputs;}
+    if (updates.dependsOn !== undefined) {point.dependsOn = updates.dependsOn;}
+    if (updates.careOnPoints !== undefined) {point.careOnPoints = updates.careOnPoints;}
 
     point.updatedAt = Date.now();
     plan.updatedAt = Date.now();
@@ -517,7 +527,8 @@ export class PlanningService {
         needRework: point.needRework,
         comment: point.comment,
         ...(includePointDescriptions && { 
-          acceptanceCriteria: point.acceptanceCriteria,
+          reviewInstructions: point.reviewInstructions,
+          testingInstructions: point.testingInstructions,
           expectedOutputs: point.expectedOutputs,
           expectedInputs: point.expectedInputs
         })
@@ -625,7 +636,8 @@ export class PlanningService {
       shortName: point.shortName,
       shortDescription: point.shortDescription,
       detailedDescription: point.detailedDescription,
-      acceptanceCriteria: point.acceptanceCriteria,
+      reviewInstructions: point.reviewInstructions,
+      testingInstructions: point.testingInstructions,
       expectedOutputs: point.expectedOutputs,
       expectedInputs: point.expectedInputs,
       dependsOn: point.dependsOn,
@@ -1045,13 +1057,24 @@ export class PlanningService {
         };
       }
 
-      if (!point.acceptanceCriteria || point.acceptanceCriteria.trim() === '') {
+      if (!point.reviewInstructions || point.reviewInstructions.trim() === '') {
         return {
           success: true,
           issue: {
             type: 'missing_field',
             pointId: point.id,
-            message: `Point ${point.id} is missing acceptance criteria`
+            message: `Point ${point.id} is missing review instructions`
+          }
+        };
+      }
+
+      if (!point.testingInstructions || point.testingInstructions.trim() === '') {
+        return {
+          success: true,
+          issue: {
+            type: 'missing_field',
+            pointId: point.id,
+            message: `Point ${point.id} is missing testing instructions`
           }
         };
       }
