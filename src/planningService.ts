@@ -48,6 +48,7 @@ export interface Plan {
   detectedLanguage?: string;  // Language detected by orchestrator (e.g., "czech", "english")
   originalRequest?: string;   // Original user request before translation
   translatedRequest?: string; // Translated request (only if translation was needed)
+  architecture?: string;     // New: JSON architectural design for the plan
   createdAt: number;
   updatedAt: number;
 }
@@ -511,6 +512,7 @@ export class PlanningService {
       reviewed: plan.reviewed,
       needsWork: plan.needsWork,
       accepted: plan.accepted,
+      architecture: plan.architecture,
       // Language and translation fields
       detectedLanguage: plan.detectedLanguage,
       originalRequest: plan.originalRequest,
@@ -597,6 +599,29 @@ export class PlanningService {
     point.updatedAt = Date.now();
     plan.updatedAt = Date.now();
     this.savePlan(plan);
+
+    return { success: true };
+  }
+
+  public setArchitecture(planId: string, architecture: string): { success: boolean; error?: string } {
+    const plan = this.plans.get(planId);
+    if (!plan) {
+      return { success: false, error: `Plan with ID '${planId}' not found` };
+    }
+
+    // Validate that architecture is valid JSON
+    try {
+      JSON.parse(architecture);
+    } catch (error) {
+      return { success: false, error: `Architecture must be valid JSON: ${error instanceof Error ? error.message : String(error)}` };
+    }
+
+    plan.architecture = architecture;
+    plan.updatedAt = Date.now();
+    this.savePlan(plan);
+
+    // Log the architecture setting
+    this.addLogEntry(plan, 'plan', 'architecture_set', planId, 'Architecture design has been set for the plan');
 
     return { success: true };
   }

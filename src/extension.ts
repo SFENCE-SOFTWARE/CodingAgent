@@ -5,6 +5,7 @@ import { ChatViewProvider } from './chatViewProvider';
 import { OpenAIService } from './openai_html_api';
 import { SettingsPanel } from './settingsPanel';
 import { PlanVisualizationPanel } from './planVisualizationPanel';
+import { MermaidVisualizationPanel } from './mermaidVisualizationPanel';
 import { ToolsService } from './tools';
 import { InlineChangeDecorationService } from './inlineChangeDecorationService';
 import { ChangeCodeLensProvider } from './changeCodeLensProvider';

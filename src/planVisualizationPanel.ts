@@ -2,6 +2,7 @@
 
 import * as vscode from 'vscode';
 import { ToolsService } from './tools';
+import { MermaidVisualizationPanel } from './mermaidVisualizationPanel';
 
 export class PlanVisualizationPanel {
   public static currentPanel: PlanVisualizationPanel | undefined;
@@ -67,6 +68,9 @@ export class PlanVisualizationPanel {
             if (this._toolsService) {
               await this._updateContent(this._currentPlanId, this._toolsService);
             }
+            break;
+          case 'showMermaidArchitecture':
+            await this._showMermaidArchitecture();
             break;
         }
       },
@@ -138,6 +142,151 @@ export class PlanVisualizationPanel {
     <div class="error">${errorMessage}</div>
 </body>
 </html>`;
+  }
+
+  private async _showMermaidArchitecture(): Promise<void> {
+    try {
+      if (!this._toolsService) {
+        vscode.window.showErrorMessage('Planning service not available');
+        return;
+      }
+
+      const planningService = this._toolsService.getPlanningService();
+      if (!planningService) {
+        vscode.window.showErrorMessage('Planning service not available');
+        return;
+      }
+
+      const planResult = planningService.showPlan(this._currentPlanId, false);
+      if (!planResult.success || !planResult.plan) {
+        vscode.window.showErrorMessage('Failed to get plan data');
+        return;
+      }
+
+      const plan = planResult.plan;
+      if (!plan.architecture) {
+        vscode.window.showErrorMessage('No architecture defined for this plan');
+        return;
+      }
+
+      // Parse the JSON architecture
+      let architectureData;
+      try {
+        architectureData = JSON.parse(plan.architecture);
+      } catch (error) {
+        vscode.window.showErrorMessage('Invalid JSON architecture format');
+        return;
+      }
+
+      // Convert JSON architecture to Mermaid format
+      const mermaidCode = this._jsonToMermaid(architectureData);
+      
+      // Create graphical Mermaid visualization panel
+      MermaidVisualizationPanel.createOrShow(this._extensionUri, this._currentPlanId, mermaidCode, architectureData);
+      
+    } catch (error) {
+      console.error('Error showing Mermaid architecture:', error);
+      vscode.window.showErrorMessage(`Error showing Mermaid architecture: ${error}`);
+    }
+  }
+
+  private _jsonToMermaid(architectureData: any): string {
+    let mermaid = 'graph TD\n';
+    
+    try {
+      if (architectureData.nodes && Array.isArray(architectureData.nodes)) {
+        // Add nodes with proper styling
+        architectureData.nodes.forEach((node: any, index: number) => {
+          const nodeId = node.id || `node${index}`;
+          const nodeLabel = node.label || node.name || nodeId;
+          const nodeShape = this._getMermaidShape(node.type || 'default');
+          mermaid += `    ${nodeId}${nodeShape.start}"${nodeLabel}"${nodeShape.end}\n`;
+          
+          // Add styling for different node types
+          const nodeType = (node.type || 'default').toLowerCase();
+          if (nodeType === 'database' || nodeType === 'db') {
+            mermaid += `    ${nodeId}:::database\n`;
+          } else if (nodeType === 'service' || nodeType === 'api') {
+            mermaid += `    ${nodeId}:::service\n`;
+          } else if (nodeType === 'component' || nodeType === 'module') {
+            mermaid += `    ${nodeId}:::component\n`;
+          } else if (nodeType === 'decision') {
+            mermaid += `    ${nodeId}:::decision\n`;
+          }
+        });
+        
+        mermaid += '\n';
+        
+        // Add edges/connections
+        if (architectureData.edges && Array.isArray(architectureData.edges)) {
+          architectureData.edges.forEach((edge: any) => {
+            const fromId = edge.from || edge.source;
+            const toId = edge.to || edge.target;
+            const label = edge.label ? ` -->|"${edge.label}"| ` : ' --> ';
+            if (fromId && toId) {
+              mermaid += `    ${fromId}${label}${toId}\n`;
+            }
+          });
+        }
+        
+        // Add CSS styling classes
+        mermaid += '\n    classDef database fill:#e1f5fe,stroke:#0277bd,stroke-width:2px,color:#000\n';
+        mermaid += '    classDef service fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000\n';
+        mermaid += '    classDef component fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px,color:#000\n';
+        mermaid += '    classDef decision fill:#fff3e0,stroke:#ef6c00,stroke-width:2px,color:#000\n';
+        
+      } else {
+        // If no structured data, try to extract from object keys
+        const keys = Object.keys(architectureData);
+        if (keys.length > 0) {
+          keys.forEach((key, index) => {
+            const value = architectureData[key];
+            let label = key;
+            
+            // If value is a string, use it as description
+            if (typeof value === 'string') {
+              label = `${key}\\n${value}`;
+            }
+            
+            mermaid += `    ${key}["${label}"]\n`;
+            if (index > 0) {
+              mermaid += `    ${keys[index - 1]} --> ${key}\n`;
+            }
+          });
+        } else {
+          // Fallback for empty or invalid data
+          mermaid += '    A["No Architecture Data"]\n';
+          mermaid += '    A:::error\n';
+          mermaid += '    classDef error fill:#ffebee,stroke:#c62828,stroke-width:2px,color:#000\n';
+        }
+      }
+    } catch (error) {
+      mermaid += `    error["Error parsing architecture: ${error}"]\n`;
+      mermaid += '    error:::error\n';
+      mermaid += '    classDef error fill:#ffebee,stroke:#c62828,stroke-width:2px,color:#000\n';
+    }
+    
+    return mermaid;
+  }
+
+  private _getMermaidShape(nodeType: string): { start: string; end: string } {
+    switch (nodeType.toLowerCase()) {
+      case 'database':
+      case 'db':
+        return { start: '[(', end: ')]' };
+      case 'service':
+      case 'api':
+        return { start: '(', end: ')' };
+      case 'component':
+      case 'module':
+        return { start: '[', end: ']' };
+      case 'decision':
+        return { start: '{', end: '}' };
+      case 'process':
+        return { start: '[[', end: ']]' };
+      default:
+        return { start: '[', end: ']' };
+    }
   }
 
   private _getPlanVisualizationHtml(plan: any, logs: any[] = []): string {
@@ -343,6 +492,21 @@ export class PlanVisualizationPanel {
             font-style: italic;
             padding-left: 24px;
         }
+        
+        .architecture-btn {
+            background-color: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-left: 8px;
+        }
+        
+        .architecture-btn:hover {
+            background-color: var(--vscode-button-hoverBackground);
+        }
     </style>
 </head>
 <body>
@@ -360,6 +524,7 @@ export class PlanVisualizationPanel {
         <p><strong>Reviewed:</strong> ${plan.reviewed ? '✅ Yes' : '❌ No'}${plan.reviewedComment ? ` - ${this._escapeHtml(plan.reviewedComment)}` : ''}</p>
         <p><strong>Accepted:</strong> ${plan.accepted ? '✅ Yes' : '❌ No'}${plan.acceptedComment ? ` - ${this._escapeHtml(plan.acceptedComment)}` : ''}</p>
         <p><strong>Needs Work:</strong> ${plan.needsWork ? '⚠️ Yes' : '✅ No'}${plan.needsWorkComments ? ` - ${plan.needsWorkComments.join('; ')}` : ''}</p>
+        ${this._renderArchitectureSection(plan)}
     </div>
     
     <h2>Plan Points</h2>
@@ -397,6 +562,16 @@ export class PlanVisualizationPanel {
                 // Fallback for development/testing
                 console.log('Refresh requested');
                 window.location.reload();
+            }
+        }
+        
+        function showMermaidArchitecture() {
+            // Send message to extension to show Mermaid architecture diagram
+            if (typeof acquireVsCodeApi !== 'undefined') {
+                const vscode = acquireVsCodeApi();
+                vscode.postMessage({ command: 'showMermaidArchitecture' });
+            } else {
+                console.log('Show Mermaid Architecture requested');
             }
         }
     </script>
@@ -517,6 +692,21 @@ export class PlanVisualizationPanel {
     html += `</div>`;
 
     return html;
+  }
+
+  private _renderArchitectureSection(plan: any): string {
+    if (!plan.architecture) {
+      return '';
+    }
+
+    return `
+      <div style="background-color: var(--vscode-textBlockQuote-background); border-left: 4px solid var(--vscode-textBlockQuote-border); padding: 10px; margin: 10px 0;">
+        <p><strong>🏗️ Architecture:</strong> <button class="architecture-btn" onclick="showMermaidArchitecture()">🎨 View Interactive Diagram</button></p>
+        <details>
+          <summary style="cursor: pointer; font-weight: bold;">📋 View JSON Architecture</summary>
+          <pre style="background-color: var(--vscode-editor-background); padding: 10px; overflow-x: auto; margin-top: 5px;"><code>${this._escapeHtml(JSON.stringify(JSON.parse(plan.architecture), null, 2))}</code></pre>
+        </details>
+      </div>`;
   }
 
   private _renderActivityLogs(logs: any[]): string {

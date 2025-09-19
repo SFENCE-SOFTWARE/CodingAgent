@@ -407,7 +407,8 @@
                   "plan_change_point",
                   "plan_change",
                   "plan_point_depends_on",
-                  "plan_point_remove"
+                  "plan_point_remove",
+                  "plan_set_architecture"
                 ],
                 "fallbackMessage": "I'm ready to create and refine implementation plans. What project needs detailed planning?",
                 "temperature": 0.2,
