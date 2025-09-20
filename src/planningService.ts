@@ -1621,6 +1621,29 @@ export class PlanningService {
 
     const request = plan.originalRequest || originalRequest || 'No request specified';
 
+    // HIGHEST PRIORITY: Check if plan needs rework (same as in evaluatePlanCompletion)
+    if (plan.needsWork) {
+      const firstComment = plan.needsWorkComments && plan.needsWorkComments.length > 0 
+        ? plan.needsWorkComments[0] 
+        : 'Plan needs rework';
+      
+      return {
+        success: true,
+        result: {
+          isDone: false,
+          nextStepPrompt: this.generateCorrectionPrompt('plan_rework', [], firstComment, planId),
+          failedStep: 'plan_rework',
+          reason: firstComment,
+          recommendedMode: this.getRecommendedMode('plan_rework'),
+          doneCallback: (success?: boolean, info?: string) => {
+            // Accept optional feedback from orchestrator/LLM when the change was applied.
+            // Currently we ignore feedback content and simply remove the first need-work comment.
+            this.removeFirstNeedWorkComment(planId);
+          }
+        }
+      };
+    }
+
     // Step 1: Check if plan needs description update
     if (!plan.descriptionsUpdated) {
       plan.creationStep = 'description_update';

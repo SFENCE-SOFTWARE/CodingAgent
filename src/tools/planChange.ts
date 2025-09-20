@@ -15,7 +15,7 @@ export class PlanChangeTool implements BaseTool {
     return {
       name: 'plan_change',
       displayName: 'Plan Change',
-      description: 'Update plan name and descriptions',
+      description: 'Update active plan name and descriptions',
       category: 'other'
     };
   }
@@ -25,14 +25,10 @@ export class PlanChangeTool implements BaseTool {
       type: 'function',
       function: {
         name: 'plan_change',
-        description: 'Update plan name, short description, or long description. At least one parameter must be provided.',
+        description: 'Update the active plan name, short description, or long description. At least one parameter must be provided.',
         parameters: {
           type: 'object',
           properties: {
-            plan_id: {
-              type: 'string',
-              description: 'ID of the plan to update (optional if plan is already open in context)'
-            },
             name: {
               type: 'string',
               description: 'New name for the plan (optional)'
@@ -46,7 +42,8 @@ export class PlanChangeTool implements BaseTool {
               description: 'New long description for the plan (optional)'
             }
           },
-          required: []
+          required: [],
+          additionalProperties: false
         }
       }
     };
@@ -54,7 +51,7 @@ export class PlanChangeTool implements BaseTool {
 
   async execute(args: any, workspaceRoot: string): Promise<ToolResult> {
     try {
-      const { plan_id, name, short_description, long_description } = args;
+      const { name, short_description, long_description } = args;
 
       // Validate that at least one field is provided
       if (!name && !short_description && !long_description) {
@@ -65,22 +62,20 @@ export class PlanChangeTool implements BaseTool {
         };
       }
 
-      // Determine plan ID - use provided plan_id or get from context
-      let targetPlanId = plan_id;
-      if (!targetPlanId) {
-        const contextManager = PlanContextManager.getInstance();
-        targetPlanId = contextManager.getCurrentPlanId();
-        if (!targetPlanId) {
-          return {
-            success: false,
-            content: '',
-            error: 'No plan_id provided and no plan is currently open. Please specify plan_id or open a plan first.'
-          };
-        }
+      // Get current active plan from context
+      const planContextManager = PlanContextManager.getInstance();
+      const currentPlanId = planContextManager.getCurrentPlanId();
+      
+      if (!currentPlanId) {
+        return {
+          success: false,
+          content: '',
+          error: 'No active plan. Use plan_open to select a plan or plan_new to create one.'
+        };
       }
 
       const planningService = PlanningService.getInstance(workspaceRoot);
-      const result = planningService.updatePlanDetails(targetPlanId, name, short_description, long_description);
+      const result = planningService.updatePlanDetails(currentPlanId, name, short_description, long_description);
 
       if (!result.success) {
         return { 
@@ -104,7 +99,7 @@ export class PlanChangeTool implements BaseTool {
 
       return {
         success: true,
-        content: `Plan '${targetPlanId}' successfully updated: ${updatedFields.join(', ')}.`
+        content: `Plan '${currentPlanId}' successfully updated: ${updatedFields.join(', ')}.`
       };
     } catch (error) {
       return {

@@ -700,13 +700,13 @@
           },
           "codingagent.plan.creation.promptDescriptionUpdate": {
             "type": "string",
-            "default": "**PLAN CREATION STEP: Update Plan Descriptions**\n\nPlease update both the short and long description of this plan to better reflect the user's request.\n\n**User's Original Request:** {originalRequest}\n\n**Current Short Description:** {shortDescription}\n**Current Long Description:** {longDescription}\n\n**Instructions:**\n1. Create a clear, concise short description that summarizes what the plan will accomplish\n2. Create a comprehensive long description that includes all user requirements and technical details\n3. Ensure both descriptions are consistent and well-structured\n4. Use the plan_change tool to update both descriptions\n\n**Expected Output:** Updated plan with improved short and long descriptions.",
+            "default": "**Update Plan Descriptions**\n\nUse tool plan_change to update both the short and long description of active plan to reflect the user's request. Summarize what you did in two sentences.\n\n**User's Original Request:** <plan_original_request>\n\n**Instructions:**\n1. Create a clear, concise short description that summarizes what the plan will accomplish\n2. Create a comprehensive long description that includes all user requirements and technical details\n3. Ensure both descriptions are consistent and well-structured\n4. Use the plan_change tool to update both descriptions\n\n**Expected Output:** Updated plan with improved short and long descriptions.",
             "description": "Template for plan description update prompt. Placeholders: {originalRequest}, {shortDescription}, {longDescription}",
             "scope": "window"
           },
           "codingagent.plan.creation.checklistDescriptionReview": {
             "type": "string",
-            "default": "* Je kratky popis srozumitelnym schrnutim dlouheho popisu k jehoz pochopeni neni nutne cist dlouhy popis?\n* Obsahuje dlouhy popis vsechny pozadavky uzivatele?",
+            "default": "* Is the short description an understandable summary of the long description, so that it is not necessary to read the long description to understand it?\n* Does the long description include all of the user's requirements?",
             "description": "Checklist for plan description review (one item per line, starting with '* ')",
             "scope": "window"
           },
@@ -718,7 +718,7 @@
           },
           "codingagent.plan.creation.checklistArchitectureReview": {
             "type": "string",
-            "default": "* Obsahuje navrh architektury vsechny pozadovane veci?\n* Je architektonicky navrh technicky spravny a realizovatelny?",
+            "default": "* Does the architecture design include all the required elements?\n* Is the architecture design technically correct and feasible?",
             "description": "Checklist for architecture review (one item per line, starting with '* ')",
             "scope": "window"
           },

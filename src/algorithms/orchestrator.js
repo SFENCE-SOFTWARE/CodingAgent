@@ -201,22 +201,9 @@ async function executePlanCycle(context, workingMessage) {
             break;
         }
         
-        // Evaluate current plan state using planningService directly
-        let evaluationResult;
-        const planInfo = context.planningService.showPlan(currentPlanId, true);
-        
-        if (planInfo.success && planInfo.plan && 
-            (!planInfo.plan.points || planInfo.plan.points.length === 0) && 
-            !planInfo.plan.reviewed && 
-            !planInfo.plan.accepted &&
-            !planInfo.plan.pointsCreated) {
-            
-            context.console.info('New plan detected - using creation workflow');
-            evaluationResult = context.planningService.evaluateNewPlanCreation(currentPlanId, workingMessage);
-        } else {
-            context.console.info('Existing plan detected - using normal workflow');  
-            evaluationResult = context.planningService.evaluatePlanCompletion(currentPlanId);
-        }
+        // Evaluate current plan state using centralized planEvaluate method
+        context.console.info('Evaluating plan using centralized planEvaluate method');
+        const evaluationResult = context.planningService.planEvaluate(currentPlanId, workingMessage);
         
         if (!evaluationResult.success) {
             context.console.error(`Plan evaluation failed: ${evaluationResult.error}`);
@@ -282,30 +269,16 @@ Respond with ONLY the mode name (e.g., "Coder" or "Reviewer"), nothing else.`;
             context.console.info(`LLM selected mode: ${trimmedMode}`);
         }
         
-        // Step 2: Ask LLM to generate specific prompt for the selected mode
-        context.console.info('Step 2: Asking LLM to generate prompt for selected mode...');
+        // Step 2: Use prompt directly from planEvaluate method
+        context.console.info('Step 2: Using prompt directly from planEvaluate method...');
+        const promptFromPlanEvaluate = evaluation.nextStepPrompt;
+        context.console.info(`Using planEvaluate prompt for ${trimmedMode}: ${promptFromPlanEvaluate.substring(0, 100)}...`);
         
-        const promptGenerationPrompt = `You need to create a specific prompt for the ${trimmedMode} mode to handle this plan action.
-
-Current plan ID: ${currentPlanId}
-Action type: ${evaluation.failedStep}
-Points to work on: ${evaluation.failedPoints ? evaluation.failedPoints.join(', ') : 'N/A'}
-Original action description: ${evaluation.nextStepPrompt}
-Reason: ${evaluation.reason}
-
-Create a clear, specific prompt that the ${trimmedMode} mode can use to complete this task. The prompt should include all necessary context and instructions.
-
-Respond with ONLY the prompt text, no additional explanation or formatting.`;
-        
-        const generatedPrompt = await context.sendToLLM(promptGenerationPrompt);
-        const trimmedPrompt = generatedPrompt.trim();
-        context.console.info(`Generated prompt for ${trimmedMode}: ${trimmedPrompt.substring(0, 100)}...`);
-        
-        // Step 3: Send the generated prompt to the selected mode
-        context.console.info(`Step 3: Delegating to ${trimmedMode} mode...`);
+        // Step 3: Send the planEvaluate prompt directly to the selected mode
+        context.console.info(`Step 3: Delegating to ${trimmedMode} mode with planEvaluate prompt...`);
         context.sendNotice(`🎯 **Delegating to ${trimmedMode} mode**: ${evaluation.failedStep}`);
         
-        const delegatedResponse = await context.sendToLLM(trimmedPrompt, trimmedMode);
+        const delegatedResponse = await context.sendToLLM(promptFromPlanEvaluate, trimmedMode);
         context.console.info(`${trimmedMode} mode completed task`);
         context.sendNotice(`✅ **${trimmedMode} mode completed**: ${delegatedResponse.substring(0, 200)}...`);
         

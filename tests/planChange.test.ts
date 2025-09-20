@@ -77,7 +77,7 @@ suite('Plan Change Tool Tests', () => {
       const info = planChangeTool.getToolInfo();
       assert.strictEqual(info.name, 'plan_change');
       assert.strictEqual(info.displayName, 'Plan Change');
-      assert.strictEqual(info.description, 'Update plan name and descriptions');
+      assert.strictEqual(info.description, 'Update active plan name and descriptions');
       assert.strictEqual(info.category, 'other');
     });
 
@@ -85,12 +85,13 @@ suite('Plan Change Tool Tests', () => {
       const definition = planChangeTool.getToolDefinition();
       assert.strictEqual(definition.type, 'function');
       assert.strictEqual(definition.function.name, 'plan_change');
-      assert.ok(definition.function.description.includes('Update plan name'));
-      assert.ok(definition.function.parameters.properties.plan_id);
+      assert.ok(definition.function.description.includes('Update the active plan'));
+      assert.ok(!definition.function.parameters.properties.plan_id); // plan_id should not exist
       assert.ok(definition.function.parameters.properties.name);
       assert.ok(definition.function.parameters.properties.short_description);
       assert.ok(definition.function.parameters.properties.long_description);
       assert.strictEqual(definition.function.parameters.required.length, 0);
+      assert.strictEqual(definition.function.parameters.additionalProperties, false);
     });
   });
 
@@ -105,11 +106,13 @@ suite('Plan Change Tool Tests', () => {
       }, testWorkspaceRoot);
       
       assert.strictEqual(createResult.success, true, 'Plan creation should succeed');
+      
+      // Set the plan as active
+      planContextManager.setCurrentPlanId(testPlanId);
     });
 
-    test('should update plan name with explicit plan_id', async () => {
+    test('should update plan name using active plan', async () => {
       const result = await planChangeTool.execute({
-        plan_id: testPlanId,
         name: 'Updated Plan Name'
       }, testWorkspaceRoot);
 
@@ -117,13 +120,12 @@ suite('Plan Change Tool Tests', () => {
       assert.ok(result.content.includes('Updated Plan Name'), 'Result should mention new name');
       
       // Verify the change was applied
-      const showResult = await planShowTool.execute({ plan_id: testPlanId }, testWorkspaceRoot);
+      const showResult = await planShowTool.execute({}, testWorkspaceRoot);
       assert.ok(showResult.content.includes('Updated Plan Name'), 'Plan should show updated name');
     });
 
     test('should update plan short description', async () => {
       const result = await planChangeTool.execute({
-        plan_id: testPlanId,
         short_description: 'New short description'
       }, testWorkspaceRoot);
 
@@ -131,13 +133,12 @@ suite('Plan Change Tool Tests', () => {
       assert.ok(result.content.includes('New short description'), 'Result should mention new description');
       
       // Verify the change was applied
-      const showResult = await planShowTool.execute({ plan_id: testPlanId }, testWorkspaceRoot);
+      const showResult = await planShowTool.execute({}, testWorkspaceRoot);
       assert.ok(showResult.content.includes('New short description'), 'Plan should show updated description');
     });
 
     test('should update plan long description', async () => {
       const result = await planChangeTool.execute({
-        plan_id: testPlanId,
         long_description: 'New comprehensive long description with detailed information'
       }, testWorkspaceRoot);
 
@@ -145,13 +146,12 @@ suite('Plan Change Tool Tests', () => {
       assert.ok(result.content.includes('long description'), 'Result should mention long description');
       
       // Verify the change was applied
-      const showResult = await planShowTool.execute({ plan_id: testPlanId }, testWorkspaceRoot);
+      const showResult = await planShowTool.execute({}, testWorkspaceRoot);
       assert.ok(showResult.content.includes('comprehensive long description'), 'Plan should show updated long description');
     });
 
     test('should update multiple fields at once', async () => {
       const result = await planChangeTool.execute({
-        plan_id: testPlanId,
         name: 'Multi-Update Plan',
         short_description: 'Updated short desc',
         long_description: 'Updated long description'
@@ -163,65 +163,47 @@ suite('Plan Change Tool Tests', () => {
       assert.ok(result.content.includes('Updated long description'), 'Result should mention new long description');
       
       // Verify all changes were applied
-      const showResult = await planShowTool.execute({ plan_id: testPlanId }, testWorkspaceRoot);
+      const showResult = await planShowTool.execute({}, testWorkspaceRoot);
       assert.ok(showResult.content.includes('Multi-Update Plan'), 'Plan should show updated name');
       assert.ok(showResult.content.includes('Updated short desc'), 'Plan should show updated short description');
       assert.ok(showResult.content.includes('Updated long description'), 'Plan should show updated long description');
     });
 
-    test('should work with plan context (without explicit plan_id)', async () => {
-      // Set the plan as current context
-      planContextManager.setCurrentPlanId(testPlanId);
-      
-      const result = await planChangeTool.execute({
-        name: 'Context-Based Update'
-      }, testWorkspaceRoot);
+    test('should fail when no update fields provided', async () => {
+      const result = await planChangeTool.execute({}, testWorkspaceRoot);
 
-      assert.strictEqual(result.success, true, 'Plan change should succeed');
-      assert.ok(result.content.includes('Context-Based Update'), 'Result should mention new name');
-      
-      // Verify the change was applied
-      const showResult = await planShowTool.execute({ plan_id: testPlanId }, testWorkspaceRoot);
-      assert.ok(showResult.content.includes('Context-Based Update'), 'Plan should show updated name');
-    });
-  });
-
-  suite('Error Handling', () => {
-    test('should fail when no fields are provided', async () => {
-      const result = await planChangeTool.execute({
-        plan_id: testPlanId
-      }, testWorkspaceRoot);
-
-      assert.strictEqual(result.success, false, 'Should fail when no fields provided');
-      assert.ok(result.error?.includes('At least one'), 'Error should mention required fields');
+      assert.strictEqual(result.success, false, 'Plan change should fail with no fields');
+      assert.ok(result.error?.includes('At least one of name, short_description, or long_description must be provided'), 'Should indicate no fields provided');
     });
 
-    test('should fail when no plan_id and no context', async () => {
-      // Clear any existing context
+    test('should fail when no active plan exists', async () => {
+      // Clear the active plan
       planContextManager.setCurrentPlanId(null);
       
       const result = await planChangeTool.execute({
-        name: 'Test Name'
+        name: 'New Name'
       }, testWorkspaceRoot);
 
-      assert.strictEqual(result.success, false, 'Should fail when no plan_id or context');
-      assert.ok(result.error?.includes('No plan_id provided'), 'Error should mention missing plan_id');
+      assert.strictEqual(result.success, false, 'Plan change should fail with no active plan');
+      assert.ok(result.error?.includes('No active plan'), 'Should indicate no active plan');
     });
 
-    test('should fail when plan does not exist', async () => {
+    test('should fail when plan file does not exist', async () => {
+      // Set a non-existent plan as active
+      planContextManager.setCurrentPlanId('non_existent_plan');
+      
       const result = await planChangeTool.execute({
-        plan_id: 'non-existent-plan',
-        name: 'Test Name'
+        name: 'New Name'
       }, testWorkspaceRoot);
 
-      assert.strictEqual(result.success, false, 'Should fail for non-existent plan');
-      assert.ok(result.error?.includes('not found'), 'Error should mention plan not found');
+      assert.strictEqual(result.success, false, 'Plan change should fail with non-existent plan');
+      assert.ok(result.error?.includes('not found'), 'Should indicate plan not found');
     });
   });
 
-  suite('Integration with Other Tools', () => {
+  suite('Error Handling with Active Plan Context', () => {
     setup(async () => {
-      // Create a test plan
+      // Create a test plan and set as active
       const createResult = await planNewTool.execute({
         id: testPlanId,
         name: 'Integration Test Plan',
@@ -230,37 +212,41 @@ suite('Plan Change Tool Tests', () => {
       }, testWorkspaceRoot);
       
       assert.strictEqual(createResult.success, true, 'Plan creation should succeed');
-    });
-
-    test('should work with plan_open context', async () => {
-      // Open the plan (sets context)
+      
+      // Open the plan to set it as active
       const openResult = await planOpenTool.execute({
         plan_id: testPlanId
       }, testWorkspaceRoot);
       
       assert.strictEqual(openResult.success, true, 'Plan open should succeed');
-      
-      // Update using context
+    });
+
+    test('should work with active plan context', async () => {
+      // Update using active plan context (no plan_id needed)
       const changeResult = await planChangeTool.execute({
         name: 'Opened Plan Updated',
         short_description: 'Updated via context'
       }, testWorkspaceRoot);
       
-      assert.strictEqual(changeResult.success, true, 'Plan change should succeed with context');
+      assert.strictEqual(changeResult.success, true, 'Plan change should succeed with active plan');
       assert.ok(changeResult.content.includes('Opened Plan Updated'), 'Should update name');
       assert.ok(changeResult.content.includes('Updated via context'), 'Should update description');
+      
+      // Verify the change was applied
+      const showResult = await planShowTool.execute({}, testWorkspaceRoot);
+      assert.ok(showResult.content.includes('Opened Plan Updated'), 'Should show updated name');
+      assert.ok(showResult.content.includes('Updated via context'), 'Should show updated description');
     });
 
     test('should preserve original request format in long description', async () => {
       const result = await planChangeTool.execute({
-        plan_id: testPlanId,
         long_description: 'Original request: "Modify the system"\nTranslated request: "Modify the system"\nLanguage: English\n\nAdditional details: This is an updated plan with more information.'
       }, testWorkspaceRoot);
 
       assert.strictEqual(result.success, true, 'Plan change should succeed');
       
       // Verify the long description format is preserved
-      const showResult = await planShowTool.execute({ plan_id: testPlanId }, testWorkspaceRoot);
+      const showResult = await planShowTool.execute({}, testWorkspaceRoot);
       assert.ok(showResult.content.includes('Original request: "Modify the system"'), 'Should preserve original request format');
       assert.ok(showResult.content.includes('Additional details'), 'Should include additional content');
     });
