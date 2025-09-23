@@ -1650,10 +1650,10 @@ export class PlanningService {
       plan.updatedAt = Date.now();
       this.savePlan(plan);
 
-      const prompt = this.getConfig('codingagent.plan.creation.promptDescriptionUpdate')
-        .replace('{originalRequest}', request)
-        .replace('{shortDescription}', plan.shortDescription || '')
-        .replace('{longDescription}', plan.longDescription || '');
+      const prompt = this.replacePlaceholders(
+        this.getConfig('codingagent.plan.creation.promptDescriptionUpdate'),
+        planId
+      );
 
       return {
         success: true,
@@ -1726,10 +1726,10 @@ export class PlanningService {
       plan.updatedAt = Date.now();
       this.savePlan(plan);
 
-      const prompt = this.getConfig('codingagent.plan.creation.promptArchitectureCreation')
-        .replace('{shortDescription}', plan.shortDescription || '')
-        .replace('{longDescription}', plan.longDescription || '')
-        .replace('{originalRequest}', request);
+      const prompt = this.replacePlaceholders(
+        this.getConfig('codingagent.plan.creation.promptArchitectureCreation'),
+        planId
+      );
 
       return {
         success: true,
@@ -1826,10 +1826,10 @@ export class PlanningService {
       plan.updatedAt = Date.now();
       this.savePlan(plan);
 
-      const prompt = this.getConfig('codingagent.plan.creation.promptPlanPointsCreation')
-        .replace('{longDescription}', plan.longDescription || '')
-        .replace('{architecture}', plan.architecture || 'No architecture defined')
-        .replace('{originalRequest}', request);
+      const prompt = this.replacePlaceholders(
+        this.getConfig('codingagent.plan.creation.promptPlanPointsCreation'),
+        planId
+      );
 
       return {
         success: true,
@@ -1877,10 +1877,10 @@ export class PlanningService {
     plan.updatedAt = Date.now();
     this.savePlan(plan);
 
-    const completionPrompt = this.getConfig('codingagent.plan.creation.promptCreationComplete')
-      .replace('{planId}', planId)
-      .replace('{pointCount}', plan.points.length.toString())
-      .replace('{originalRequest}', request);
+    const completionPrompt = this.replacePlaceholders(
+      this.getConfig('codingagent.plan.creation.promptCreationComplete'),
+      planId
+    );
 
     return {
       success: true,
@@ -1953,7 +1953,7 @@ export class PlanningService {
 
   /**
    * Replace placeholders in prompt templates with actual values
-   * Supports placeholders like <plan_long_description>, <plan_short_description>, etc.
+   * Supports placeholders using <key> syntax
    */
   public replacePlaceholders(promptTemplate: string, planId?: string, pointId?: string): string {
     let result = promptTemplate;
@@ -1970,6 +1970,12 @@ export class PlanningService {
         result = result.replace(/<plan_original_request>/g, plan.originalRequest || '');
         result = result.replace(/<plan_translated_request>/g, plan.translatedRequest || '');
         result = result.replace(/<plan_detected_language>/g, plan.detectedLanguage || '');
+        result = result.replace(/<original_request>/g, plan.originalRequest || '');
+        result = result.replace(/<short_description>/g, plan.shortDescription || '');
+        result = result.replace(/<long_description>/g, plan.longDescription || '');
+        result = result.replace(/<architecture>/g, plan.architecture || 'No architecture defined');
+        result = result.replace(/<plan_id>/g, plan.id);
+        result = result.replace(/<point_count>/g, plan.points.length.toString());
         
         // Point count information
         result = result.replace(/<plan_points_count>/g, plan.points.length.toString());
