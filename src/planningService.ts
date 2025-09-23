@@ -2015,6 +2015,12 @@ export class PlanningService {
         result = result.replace(/<plan_reviewed_count>/g, plan.points.filter(p => p.reviewed).length.toString());
         result = result.replace(/<plan_tested_count>/g, plan.points.filter(p => p.tested).length.toString());
         
+        // Plan needs work - only the first comment (current one being processed)
+        const needsWorkText = plan.needsWorkComments && plan.needsWorkComments.length > 0 
+          ? plan.needsWorkComments[0]
+          : 'No specific feedback provided';
+        result = result.replace(/<plan_needwork>/g, needsWorkText);
+        
         if (pointId) {
           const point = plan.points.find(p => p.id === pointId);
           if (point) {
