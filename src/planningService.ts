@@ -175,7 +175,9 @@ export class PlanningService {
       const filePath = path.join(this.plansDirectory, `${plan.id}.json`);
       const content = JSON.stringify(plan, null, 2);
       fs.writeFileSync(filePath, content, 'utf8');
+      console.log(`[PlanningService] Plan ${plan.id} saved to disk with descriptionsUpdated=${plan.descriptionsUpdated}, step=${plan.creationStep}`);
     } catch (error) {
+      console.error(`[PlanningService] Error saving plan ${plan.id}:`, error);
       throw new Error(`Failed to save plan ${plan.id}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
@@ -1612,6 +1614,15 @@ export class PlanningService {
       return { success: false, error: `Plan with ID '${planId}' not found` };
     }
 
+    console.log(`[PlanningService] Evaluating plan ${planId}:`);
+    console.log(`[PlanningService] - descriptionsUpdated: ${plan.descriptionsUpdated}`);
+    console.log(`[PlanningService] - descriptionsReviewed: ${plan.descriptionsReviewed}`);
+    console.log(`[PlanningService] - architectureCreated: ${plan.architectureCreated}`);
+    console.log(`[PlanningService] - architectureReviewed: ${plan.architectureReviewed}`);
+    console.log(`[PlanningService] - pointsCreated: ${plan.pointsCreated}`);
+    console.log(`[PlanningService] - creationStep: ${plan.creationStep}`);
+    console.log(`[PlanningService] - needsWork: ${plan.needsWork}`);
+
     // Store original request if provided
     if (originalRequest && !plan.originalRequest) {
       plan.originalRequest = originalRequest;
@@ -1646,6 +1657,7 @@ export class PlanningService {
 
     // Step 1: Check if plan needs description update
     if (!plan.descriptionsUpdated) {
+      console.log(`[PlanningService] Plan ${planId}: descriptionsUpdated = ${plan.descriptionsUpdated}, entering description_update step`);
       plan.creationStep = 'description_update';
       plan.updatedAt = Date.now();
       this.savePlan(plan);
@@ -1664,10 +1676,18 @@ export class PlanningService {
           reason: 'Plan descriptions need to be updated',
           recommendedMode: this.getConfig('codingagent.plan.creation.recommendedModeDescriptionUpdate'),
           doneCallback: (success?: boolean, info?: string) => {
+            console.log(`[PlanningService] DoneCallback called for plan ${planId} - descriptionsUpdated step, success: ${success}, info: ${info}`);
             if (success) {
-              plan.descriptionsUpdated = true;
-              plan.updatedAt = Date.now();
-              this.savePlan(plan);
+              const currentPlan = this.plans.get(planId);
+              if (currentPlan) {
+                console.log(`[PlanningService] Before update - Plan ${planId}: descriptionsUpdated = ${currentPlan.descriptionsUpdated}`);
+                currentPlan.descriptionsUpdated = true;
+                currentPlan.updatedAt = Date.now();
+                this.savePlan(currentPlan);
+                console.log(`[PlanningService] After update - Plan ${planId}: descriptionsUpdated = ${currentPlan.descriptionsUpdated}, saved to disk`);
+              } else {
+                console.error(`[PlanningService] ERROR: Plan ${planId} not found in memory during doneCallback!`);
+              }
             }
           }
         }
@@ -1701,13 +1721,16 @@ export class PlanningService {
             reason: 'Plan descriptions need review',
             recommendedMode: this.getConfig('codingagent.plan.creation.recommendedModeDescriptionReview'),
             doneCallback: (success?: boolean, info?: string) => {
-              if (success && plan.creationChecklist) {
-                plan.creationChecklist.shift(); // Remove first item
-                if (plan.creationChecklist.length === 0) {
-                  plan.descriptionsReviewed = true;
+              if (success) {
+                const currentPlan = this.plans.get(planId);
+                if (currentPlan && currentPlan.creationChecklist) {
+                  currentPlan.creationChecklist.shift(); // Remove first item
+                  if (currentPlan.creationChecklist.length === 0) {
+                    currentPlan.descriptionsReviewed = true;
+                  }
+                  currentPlan.updatedAt = Date.now();
+                  this.savePlan(currentPlan);
                 }
-                plan.updatedAt = Date.now();
-                this.savePlan(plan);
               }
             }
           }
@@ -1741,9 +1764,12 @@ export class PlanningService {
           recommendedMode: this.getConfig('codingagent.plan.creation.recommendedModeArchitectureCreation'),
           doneCallback: (success?: boolean, info?: string) => {
             if (success) {
-              plan.architectureCreated = true;
-              plan.updatedAt = Date.now();
-              this.savePlan(plan);
+              const currentPlan = this.plans.get(planId);
+              if (currentPlan) {
+                currentPlan.architectureCreated = true;
+                currentPlan.updatedAt = Date.now();
+                this.savePlan(currentPlan);
+              }
             }
           }
         }
@@ -1801,13 +1827,16 @@ export class PlanningService {
             reason: 'Plan architecture needs review',
             recommendedMode: this.getConfig('codingagent.plan.creation.recommendedModeArchitectureReview'),
             doneCallback: (success?: boolean, info?: string) => {
-              if (success && plan.creationChecklist) {
-                plan.creationChecklist.shift(); // Remove first item
-                if (plan.creationChecklist.length === 0) {
-                  plan.architectureReviewed = true;
+              if (success) {
+                const currentPlan = this.plans.get(planId);
+                if (currentPlan && currentPlan.creationChecklist) {
+                  currentPlan.creationChecklist.shift(); // Remove first item
+                  if (currentPlan.creationChecklist.length === 0) {
+                    currentPlan.architectureReviewed = true;
+                  }
+                  currentPlan.updatedAt = Date.now();
+                  this.savePlan(currentPlan);
                 }
-                plan.updatedAt = Date.now();
-                this.savePlan(plan);
               }
             }
           }
@@ -1841,9 +1870,12 @@ export class PlanningService {
           recommendedMode: this.getConfig('codingagent.plan.creation.recommendedModePlanPointsCreation'),
           doneCallback: (success?: boolean, info?: string) => {
             if (success) {
-              plan.pointsCreated = true;
-              plan.updatedAt = Date.now();
-              this.savePlan(plan);
+              const currentPlan = this.plans.get(planId);
+              if (currentPlan) {
+                currentPlan.pointsCreated = true;
+                currentPlan.updatedAt = Date.now();
+                this.savePlan(currentPlan);
+              }
             }
           }
         }
@@ -2022,15 +2054,22 @@ export class PlanningService {
       return { success: false, error: `Plan with ID '${planId}' not found` };
     }
 
+    console.log(`[PlanningService] planEvaluate called for plan ${planId}`);
+    
     // Determine if this is a new plan creation or existing plan completion
     const isNewPlan = (!plan.points || plan.points.length === 0) && 
                      !plan.reviewed && 
                      !plan.accepted &&
                      !plan.pointsCreated;
 
+    console.log(`[PlanningService] Plan ${planId} classification: ${isNewPlan ? 'NEW PLAN' : 'EXISTING PLAN'}`);
+    console.log(`[PlanningService] Plan details: points=${plan.points?.length || 0}, reviewed=${plan.reviewed}, accepted=${plan.accepted}, pointsCreated=${plan.pointsCreated}`);
+
     if (isNewPlan) {
+      console.log(`[PlanningService] Calling evaluateNewPlanCreation for plan ${planId}`);
       return this.evaluateNewPlanCreation(planId, plan.originalRequest);
     } else {
+      console.log(`[PlanningService] Calling evaluatePlanCompletion for plan ${planId}`);
       return this.evaluatePlanCompletion(planId);
     }
   }

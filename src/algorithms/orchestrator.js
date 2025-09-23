@@ -210,19 +210,18 @@ async function executePlanCycle(context, workingMessage) {
             context.sendNotice(`❌ **Plan evaluation failed: ${evaluationResult.error}**`);
             break;
         }
-        
+
         const evaluation = evaluationResult.result;
         
         context.console.info(`Plan evaluation - isDone: ${evaluation.isDone}, failedStep: ${evaluation.failedStep || 'none'}`);
+        context.console.info(`Evaluation details - reason: ${evaluation.reason}, nextStepPrompt: ${evaluation.nextStepPrompt?.substring(0, 100)}...`);
         
         if (evaluation.isDone) {
             context.console.info('Plan is complete!');
             context.sendNotice('✅ **Plan execution completed successfully!**');
             context.sendResponse(`Plan execution completed. All tasks have been finished and the plan is ready.`);
             break;
-        }
-        
-        // Plan is not done, we have a next action to take
+        }        // Plan is not done, we have a next action to take
         context.console.info(`Next action needed: ${evaluation.failedStep}`);
         context.console.info(`Action description: ${evaluation.nextStepPrompt}`);
         context.console.info(`Reason: ${evaluation.reason}`);
@@ -287,22 +286,30 @@ Respond with ONLY the mode name (e.g., "Coder" or "Reviewer"), nothing else.`;
             context.console.info('Step 4: Checking if change was successful for callback execution...');
             
             const successCheckPrompt = `Based on the response from ${trimmedMode} mode, was the requested change successful? 
-            
+
 Original task: ${evaluation.failedStep}
 Task description: ${evaluation.nextStepPrompt}
 Reason: ${evaluation.reason}
 Mode response: ${delegatedResponse}
+
+**Evaluation Criteria:**
+- For plan_description_update: Response MUST contain evidence of plan_change tool execution
+- Look for tool calls or confirmation that the tool was executed
+- Pure text responses without tool calls should be considered FAILED
 
 Respond with ONLY "YES" if the change was successful and complete, or "NO" if it failed or was not completed.`;
             
             const successResponse = await context.sendToLLM(successCheckPrompt);
             const wasSuccessful = successResponse.trim().toUpperCase() === 'YES';
             
+            context.console.info(`LLM evaluation result: ${wasSuccessful ? 'SUCCESS' : 'FAILURE'} for step: ${evaluation.failedStep}`);
+            
             if (wasSuccessful) {
                 context.console.info('LLM confirmed change was successful, executing done callback...');
                 // Provide feedback to the callback: success flag and the mode response for context
                 try {
                     evaluation.doneCallback(true, delegatedResponse);
+                    context.console.info(`Done callback executed successfully for step: ${evaluation.failedStep}`);
                     context.sendNotice(`✅ **Change confirmed successful, callback executed**`);
                 } catch (cbError) {
                     context.console.error('Error executing doneCallback:', cbError && cbError.message ? cbError.message : cbError);
@@ -318,6 +325,14 @@ Respond with ONLY "YES" if the change was successful and complete, or "NO" if it
                 }
                 context.sendNotice(`⚠️ **Change not confirmed successful, callback not executed**`);
             }
+        } else {
+            context.console.info('No doneCallback available for this evaluation step');
+        }
+        
+        // Add a small delay after callback execution to allow for persistence
+        if (evaluation.doneCallback && typeof evaluation.doneCallback === 'function') {
+            context.console.info('Adding short delay after callback execution to ensure persistence...');
+            await new Promise(resolve => setTimeout(resolve, 500));
         }
         
         // Add a delay before next iteration
