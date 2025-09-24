@@ -43,7 +43,7 @@ suite('New Plan Creation Workflow Tests', () => {
     assert.ok(createResult.success, 'Plan creation should succeed');
 
     // Evaluate new plan creation workflow
-    const evaluationResult = planningService.evaluateNewPlanCreation('test-workflow-plan', 'Create a web server with REST API');
+    const evaluationResult = planningService.evaluatePlanCreation('test-workflow-plan', 'Create a web server with REST API');
     
     assert.ok(evaluationResult.success, 'Evaluation should succeed');
     assert.ok(evaluationResult.result, 'Should return result');
@@ -58,7 +58,7 @@ suite('New Plan Creation Workflow Tests', () => {
     planningService.createPlan('test-review-plan', 'Test Plan', 'Test description', 'Detailed description');
     
     // First evaluation - should be description update
-    const eval1 = planningService.evaluateNewPlanCreation('test-review-plan', 'Create a web server');
+    const eval1 = planningService.evaluatePlanCreation('test-review-plan', 'Create a web server');
     assert.ok(eval1.success);
     assert.ok(eval1.result);
     assert.strictEqual(eval1.result.failedStep, 'plan_description_update');
@@ -68,7 +68,7 @@ suite('New Plan Creation Workflow Tests', () => {
     eval1.result.doneCallback!(true, 'Descriptions updated');
     
     // Second evaluation - should move to description review
-    const eval2 = planningService.evaluateNewPlanCreation('test-review-plan', 'Create a web server');
+    const eval2 = planningService.evaluatePlanCreation('test-review-plan', 'Create a web server');
     assert.ok(eval2.success);
     assert.ok(eval2.result);
     assert.strictEqual(eval2.result.failedStep, 'plan_description_review', 'Should move to description review');
@@ -81,12 +81,12 @@ suite('New Plan Creation Workflow Tests', () => {
     planningService.createPlan('test-checklist-plan', 'Test Plan', 'Test description', 'Detailed description');
     
     // Complete description update step first
-    const eval1 = planningService.evaluateNewPlanCreation('test-checklist-plan', 'Create a web server');
+    const eval1 = planningService.evaluatePlanCreation('test-checklist-plan', 'Create a web server');
     assert.ok(eval1.success && eval1.result?.doneCallback);
     eval1.result.doneCallback(true, 'Description updated');
     
     // Now should be in description review - get first checklist item
-    const eval2 = planningService.evaluateNewPlanCreation('test-checklist-plan', 'Create a web server');
+    const eval2 = planningService.evaluatePlanCreation('test-checklist-plan', 'Create a web server');
     assert.ok(eval2.success);
     assert.ok(eval2.result?.doneCallback);
     
@@ -94,7 +94,7 @@ suite('New Plan Creation Workflow Tests', () => {
     eval2.result.doneCallback!(true, 'First item completed');
     
     // Third evaluation - should get second checklist item or proceed to next step
-    const eval3 = planningService.evaluateNewPlanCreation('test-checklist-plan', 'Create a web server');
+    const eval3 = planningService.evaluatePlanCreation('test-checklist-plan', 'Create a web server');
     assert.ok(eval3.success);
     
     // The result should either have another checklist item or move to architecture creation
@@ -109,16 +109,16 @@ suite('New Plan Creation Workflow Tests', () => {
     planningService.createPlan('test-arch-plan', 'Test Plan', 'Test description', 'Detailed description');
     
     // Complete description update step
-    const eval1 = planningService.evaluateNewPlanCreation('test-arch-plan', 'Create a web server');
+    const eval1 = planningService.evaluatePlanCreation('test-arch-plan', 'Create a web server');
     assert.ok(eval1.success && eval1.result?.doneCallback);
     eval1.result.doneCallback(true, 'Description updated');
     
     // Complete all description review checklist items
-    let currentEval = planningService.evaluateNewPlanCreation('test-arch-plan', 'Create a web server');
+    let currentEval = planningService.evaluatePlanCreation('test-arch-plan', 'Create a web server');
     while (currentEval.success && currentEval.result?.failedStep === 'plan_description_review') {
       assert.ok(currentEval.result.doneCallback);
       currentEval.result.doneCallback(true, 'Checklist item completed');
-      currentEval = planningService.evaluateNewPlanCreation('test-arch-plan', 'Create a web server');
+      currentEval = planningService.evaluatePlanCreation('test-arch-plan', 'Create a web server');
     }
     
     // Should now be in architecture creation
@@ -134,11 +134,11 @@ suite('New Plan Creation Workflow Tests', () => {
     planningService.createPlan('test-validation-plan', 'Test Plan', 'Test', 'Detailed');
     
     // Complete description steps
-    let currentEval = planningService.evaluateNewPlanCreation('test-validation-plan', 'Create a web server');
+    let currentEval = planningService.evaluatePlanCreation('test-validation-plan', 'Create a web server');
     while (currentEval.success && currentEval.result?.failedStep?.startsWith('plan_description_')) {
       assert.ok(currentEval.result.doneCallback);
       currentEval.result.doneCallback(true, 'Step completed');
-      currentEval = planningService.evaluateNewPlanCreation('test-validation-plan', 'Create a web server');
+      currentEval = planningService.evaluatePlanCreation('test-validation-plan', 'Create a web server');
     }
     
     // Should be in architecture creation - set invalid architecture
@@ -148,7 +148,7 @@ suite('New Plan Creation Workflow Tests', () => {
     currentEval.result.doneCallback(true, 'Architecture created');
     
     // Next evaluation should detect validation issues
-    const evaluationResult = planningService.evaluateNewPlanCreation('test-validation-plan', 'Create a web server');
+    const evaluationResult = planningService.evaluatePlanCreation('test-validation-plan', 'Create a web server');
     
     assert.ok(evaluationResult.success);
     assert.ok(evaluationResult.result);
@@ -161,11 +161,11 @@ suite('New Plan Creation Workflow Tests', () => {
     planningService.createPlan('test-arch-review-plan', 'Test Plan', 'Test', 'Detailed');
     
     // Complete description steps
-    let currentEval = planningService.evaluateNewPlanCreation('test-arch-review-plan', 'Create a web server');
+    let currentEval = planningService.evaluatePlanCreation('test-arch-review-plan', 'Create a web server');
     while (currentEval.success && currentEval.result?.failedStep?.startsWith('plan_description_')) {
       assert.ok(currentEval.result?.doneCallback);
       currentEval.result.doneCallback(true, 'Step completed');
-      currentEval = planningService.evaluateNewPlanCreation('test-arch-review-plan', 'Create a web server');
+      currentEval = planningService.evaluatePlanCreation('test-arch-review-plan', 'Create a web server');
     }
     
     // Should be in architecture creation - create valid architecture
@@ -181,7 +181,7 @@ suite('New Plan Creation Workflow Tests', () => {
     currentEval.result.doneCallback(true, 'Architecture created');
     
     // Next evaluation should move to architecture review
-    const evaluationResult = planningService.evaluateNewPlanCreation('test-arch-review-plan', 'Create a web server');
+    const evaluationResult = planningService.evaluatePlanCreation('test-arch-review-plan', 'Create a web server');
     
     assert.ok(evaluationResult.success);
     assert.ok(evaluationResult.result);
@@ -195,11 +195,11 @@ suite('New Plan Creation Workflow Tests', () => {
     planningService.createPlan('test-points-plan', 'Test Plan', 'Test', 'Detailed');
     
     // Complete description steps
-    let currentEval = planningService.evaluateNewPlanCreation('test-points-plan', 'Create a web server');
+    let currentEval = planningService.evaluatePlanCreation('test-points-plan', 'Create a web server');
     while (currentEval.success && currentEval.result?.failedStep?.startsWith('plan_description_')) {
       assert.ok(currentEval.result?.doneCallback);
       currentEval.result.doneCallback(true, 'Step completed');
-      currentEval = planningService.evaluateNewPlanCreation('test-points-plan', 'Create a web server');
+      currentEval = planningService.evaluatePlanCreation('test-points-plan', 'Create a web server');
     }
     
     // Complete architecture creation
@@ -209,11 +209,11 @@ suite('New Plan Creation Workflow Tests', () => {
     currentEval.result.doneCallback(true, 'Architecture created');
     
     // Complete architecture review
-    currentEval = planningService.evaluateNewPlanCreation('test-points-plan', 'Create a web server');
+    currentEval = planningService.evaluatePlanCreation('test-points-plan', 'Create a web server');
     while (currentEval.success && currentEval.result?.failedStep === 'plan_architecture_review') {
       assert.ok(currentEval.result.doneCallback);
       currentEval.result.doneCallback(true, 'Review item completed');
-      currentEval = planningService.evaluateNewPlanCreation('test-points-plan', 'Create a web server');
+      currentEval = planningService.evaluatePlanCreation('test-points-plan', 'Create a web server');
     }
     
     // Should now be in points creation
@@ -229,7 +229,7 @@ suite('New Plan Creation Workflow Tests', () => {
     planningService.createPlan('test-points-validation', 'Test Plan', 'Test', 'Detailed');
     
     // Complete all steps until points creation
-    let currentEval = planningService.evaluateNewPlanCreation('test-points-validation', 'Create a web server');
+    let currentEval = planningService.evaluatePlanCreation('test-points-validation', 'Create a web server');
     while (currentEval.success && currentEval.result && !currentEval.result.isDone) {
       if (currentEval.result.failedStep === 'plan_points_creation') {
         break;
@@ -240,7 +240,7 @@ suite('New Plan Creation Workflow Tests', () => {
       }
       assert.ok(currentEval.result.doneCallback);
       currentEval.result.doneCallback(true, 'Step completed');
-      currentEval = planningService.evaluateNewPlanCreation('test-points-validation', 'Create a web server');
+      currentEval = planningService.evaluatePlanCreation('test-points-validation', 'Create a web server');
     }
     
     // Add invalid point (missing expected_inputs)
@@ -260,7 +260,7 @@ suite('New Plan Creation Workflow Tests', () => {
     currentEval.result.doneCallback(true, 'Points created');
     
     // Should detect procedural validation issues
-    const evaluationResult = planningService.evaluateNewPlanCreation('test-points-validation', 'Create a web server');
+    const evaluationResult = planningService.evaluatePlanCreation('test-points-validation', 'Create a web server');
     
     assert.ok(evaluationResult.success);
     assert.ok(evaluationResult.result);
@@ -273,7 +273,7 @@ suite('New Plan Creation Workflow Tests', () => {
     planningService.createPlan('test-complete-plan', 'Complete Plan', 'Complete test', 'Detailed complete test');
     
     // Complete all steps until points creation
-    let currentEval = planningService.evaluateNewPlanCreation('test-complete-plan', 'Create a web server');
+    let currentEval = planningService.evaluatePlanCreation('test-complete-plan', 'Create a web server');
     while (currentEval.success && currentEval.result && !currentEval.result.isDone) {
       if (currentEval.result.failedStep === 'plan_points_creation') {
         break;
@@ -284,7 +284,7 @@ suite('New Plan Creation Workflow Tests', () => {
       }
       assert.ok(currentEval.result.doneCallback);
       currentEval.result.doneCallback(true, 'Step completed');
-      currentEval = planningService.evaluateNewPlanCreation('test-complete-plan', 'Create a web server');
+      currentEval = planningService.evaluatePlanCreation('test-complete-plan', 'Create a web server');
     }
     
     // Add valid point
@@ -304,7 +304,7 @@ suite('New Plan Creation Workflow Tests', () => {
     currentEval.result.doneCallback(true, 'Points created');
     
     // Final evaluation - should be complete
-    const evaluationResult = planningService.evaluateNewPlanCreation('test-complete-plan', 'Create a web server');
+    const evaluationResult = planningService.evaluatePlanCreation('test-complete-plan', 'Create a web server');
     
     assert.ok(evaluationResult.success);
     assert.ok(evaluationResult.result);
@@ -323,7 +323,7 @@ suite('New Plan Creation Workflow Tests', () => {
     
     // Evaluate with original request
     const originalRequest = 'Create a comprehensive web application with authentication';
-    const evaluationResult = planningService.evaluateNewPlanCreation('test-request-plan', originalRequest);
+    const evaluationResult = planningService.evaluatePlanCreation('test-request-plan', originalRequest);
     
     assert.ok(evaluationResult.success);
     

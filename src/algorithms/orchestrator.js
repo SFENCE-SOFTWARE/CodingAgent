@@ -221,7 +221,42 @@ async function executePlanCycle(context, workingMessage) {
             context.sendNotice('✅ **Plan execution completed successfully!**');
             context.sendResponse(`Plan execution completed. All tasks have been finished and the plan is ready.`);
             break;
-        }        // Plan is not done, we have a next action to take
+        }
+        
+        // Plan is not done, check if we can evaluate completion via callback
+        if (evaluation.completionCallback && typeof evaluation.completionCallback === 'function') {
+            context.console.info('Checking completion callback before LLM delegation...');
+            try {
+                const isCompleteViaCallback = evaluation.completionCallback();
+                if (isCompleteViaCallback) {
+                    context.console.info('Completion callback indicates step is complete, executing done callback...');
+                    context.sendNotice(`✅ **Step completed via callback**: ${evaluation.failedStep}`);
+                    
+                    // Execute done callback if available
+                    if (evaluation.doneCallback && typeof evaluation.doneCallback === 'function') {
+                        try {
+                            evaluation.doneCallback(true, 'Completed via completion callback');
+                            context.console.info(`Done callback executed successfully for step: ${evaluation.failedStep}`);
+                            context.sendNotice(`✅ **Done callback executed after completion callback**`);
+                        } catch (cbError) {
+                            context.console.error('Error executing doneCallback:', cbError && cbError.message ? cbError.message : cbError);
+                            context.sendNotice(`⚠️ **Callback execution failed: ${cbError && cbError.message ? cbError.message : String(cbError)}**`);
+                        }
+                    }
+                    
+                    // Add delay and continue to next iteration
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    continue;
+                }
+                context.console.info('Completion callback indicates step is not complete, proceeding with LLM delegation...');
+            } catch (error) {
+                context.console.error('Error executing completion callback:', error.message);
+                context.sendNotice(`⚠️ **Completion callback error: ${error.message}**`);
+                // Continue with normal LLM delegation
+            }
+        }
+        
+        // Plan is not done, we have a next action to take
         context.console.info(`Next action needed: ${evaluation.failedStep}`);
         context.console.info(`Action description: ${evaluation.nextStepPrompt}`);
         context.console.info(`Reason: ${evaluation.reason}`);

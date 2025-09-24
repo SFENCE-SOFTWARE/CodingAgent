@@ -94,6 +94,9 @@ export interface PlanEvaluationResult {
   // New: callback to call when task is completed. Receives optional feedback:
   // (success?: boolean, info?: string) => void
   doneCallback?: (success?: boolean, info?: string) => void;
+  // New: callback to evaluate if step is done without asking LLM:
+  // () => boolean
+  completionCallback?: () => boolean;
 }
 
 export class PlanningService {
@@ -1727,6 +1730,9 @@ export class PlanningService {
       plan.updatedAt = Date.now();
       this.savePlan(plan);
 
+      // Get completion callback configuration
+      const callbackConfig = this.getConfig('codingagent.plan.creation.callbackDescriptionReview');
+      
       // If we have checklist items, return the first one
       if (plan.creationChecklist && plan.creationChecklist.length > 0) {
         const firstItem = plan.creationChecklist[0];
@@ -1758,7 +1764,8 @@ export class PlanningService {
                   this.savePlan(currentPlan);
                 }
               }
-            }
+            },
+            completionCallback: callbackConfig ? () => this.evaluateCompletionCallback(callbackConfig, planId) : undefined
           }
         };
       } else {
@@ -2016,6 +2023,42 @@ export class PlanningService {
   }
 
   /**
+   * Evaluates completion callback to determine if step is done
+   */
+  private evaluateCompletionCallback(callbackConfig: string, planId: string): boolean {
+    if (!callbackConfig) {
+      return false;
+    }
+
+    const plan = this.plans.get(planId);
+    if (!plan) {
+      return false;
+    }
+
+    // Parse callback configuration
+    const callback = callbackConfig.trim();
+    
+    // Handle different callback types
+    switch (callback) {
+      case 'plan.reviewed':
+        return plan.reviewed === true;
+      case 'plan.descriptionsReviewed':  
+        return plan.descriptionsReviewed === true;
+      case 'plan.architectureReviewed':
+        return plan.architectureReviewed === true;
+      case 'plan.pointsCreated':
+        return plan.pointsCreated === true;
+      case '!plan.needsWork':
+        return !plan.needsWork;
+      default:
+        // For more complex callbacks, could add support for JavaScript evaluation
+        // For now, return false for unknown callbacks
+        console.warn(`[PlanningService] Unknown callback configuration: ${callback}`);
+        return false;
+    }
+  }
+
+  /**
    * Replace placeholders in prompt templates with actual values
    * Supports placeholders using <key> syntax
    */
@@ -2099,7 +2142,8 @@ export class PlanningService {
       return this.evaluatePlanCreation(planId, plan.originalRequest);
     } else {
       console.log(`[PlanningService] Calling evaluatePlanCompletion for plan ${planId}`);
-      return this.evaluatePlanCompletion(planId);
+      //return this.evaluatePlanCompletion(planId);
+      return { success: false, error: `Plan completion disabled for testing purposes.` };
     }
   }
 

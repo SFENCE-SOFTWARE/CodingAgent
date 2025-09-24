@@ -626,6 +626,12 @@
             "description": "Checklist for plan description review (one item per line, starting with '* ')",
             "scope": "window"
           },
+          "codingagent.plan.creation.callbackDescriptionReview": {
+            "type": "string",
+            "default": "plan.reviewed",
+            "description": "Callback function to check if description review step is completed. Available checks: plan.reviewed, plan.descriptionsReviewed, plan.needsWork (negated)",
+            "scope": "window"
+          },
           "codingagent.plan.creation.promptDescriptionReview": {
             "type": "string",
             "default": "<checklist>\n\nIf you find any problem or problems, use plan_need_works tool to specify found problems. If everything looks fine and no aditional work is needed, use tool plan_reviewed to set it.",
@@ -633,7 +639,7 @@
             "scope": "window"
           },
           "codingagent.plan.creation.recommendedModeDescriptionReview": {
-            "type": "string", 
+            "type": "string",
             "default": "Plan Reviewer",
             "description": "Recommended mode for plan description review step",
             "scope": "window"
@@ -646,7 +652,7 @@
           },
           "codingagent.plan.creation.recommendedModeArchitectureCreation": {
             "type": "string",
-            "default": "Architect", 
+            "default": "Architect",
             "description": "Recommended mode for architecture creation step",
             "scope": "window"
           },
@@ -665,7 +671,7 @@
           "codingagent.plan.creation.recommendedModeArchitectureReview": {
             "type": "string",
             "default": "Plan Reviewer",
-            "description": "Recommended mode for architecture review step", 
+            "description": "Recommended mode for architecture review step",
             "scope": "window"
           },
           "codingagent.plan.creation.promptPlanPointsCreation": {
@@ -693,7 +699,7 @@
             "scope": "window"
           },
           "codingagent.plan.recommendedModePlanReview": {
-            "type": "string", 
+            "type": "string",
             "default": "Plan Reviewer",
             "description": "Recommended mode for plan review tasks",
             "scope": "window"
@@ -718,7 +724,7 @@
           },
           "codingagent.plan.recommendedModeRework": {
             "type": "string",
-            "default": "", 
+            "default": "",
             "description": "Recommended mode for point rework tasks",
             "scope": "window"
           },
@@ -731,7 +737,7 @@
           "codingagent.plan.recommendedModeCodeReview": {
             "type": "string",
             "default": "Reviewer",
-            "description": "Recommended mode for code review tasks", 
+            "description": "Recommended mode for code review tasks",
             "scope": "window"
           },
           "codingagent.plan.promptPointsTesting": {
@@ -830,6 +836,7 @@
     "test": "vscode-test"
   },
   "devDependencies": {
+    "@types/chai": "^5.2.2",
     "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
     "@types/vscode": "^1.102.0",
@@ -837,6 +844,7 @@
     "@typescript-eslint/parser": "^8.39.0",
     "@vscode/test-cli": "^0.0.11",
     "@vscode/test-electron": "^2.5.2",
+    "chai": "^6.0.1",
     "eslint": "^9.32.0",
     "typescript": "^5.9.2"
   },

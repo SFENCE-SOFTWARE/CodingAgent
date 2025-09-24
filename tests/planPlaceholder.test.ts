@@ -70,7 +70,7 @@ suite('Plan Placeholder Tool Tests', () => {
     assert.ok(createResult.success, `Plan creation failed: ${createResult.error}`);
 
     // Set original request for the plan 
-    planningService.evaluateNewPlanCreation(planId, 'Create a test plan');
+    planningService.evaluatePlanCreation(planId, 'Create a test plan');
 
     // Test placeholder replacement
     const template = 'Plan <plan_name> (<plan_id>) has description: <plan_long_description>. Original request: <plan_original_request>.';
@@ -100,7 +100,7 @@ suite('Plan Placeholder Tool Tests', () => {
     assert.ok(createResult.success, `Plan creation failed: ${createResult.error}`);
 
     // Set original request for the plan 
-    planningService.evaluateNewPlanCreation(planId, 'Create a test plan with points');
+    planningService.evaluatePlanCreation(planId, 'Create a test plan with points');
 
     // Add a point to the plan
     const pointResult = await planningService.addPoint(
