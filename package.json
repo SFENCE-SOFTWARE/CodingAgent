@@ -598,50 +598,8 @@
         "properties": {
           "codingagent.plan.promptPlanRework": {
             "type": "string",
-            "default": "**Plan Rework Required**\n\nPlan '<plan_name>' (ID: <plan_id>) needs rework based on review feedback.\n\n**Review Feedback:**\n<plan_needwork>\n\n**Instructions:**\n1. Analyze the feedback carefully and identify specific issues\n2. Use appropriate plan tools (plan_change, plan_add_points, plan_change_point, etc.) to address each issue\n3. Ensure all feedback points are resolved systematically\n4. Verify that changes align with the original request\n5. Test that the reworked plan is logically consistent\n\n**Original Request:** <plan_original_request>\n\n**Expected Outcome:** A revised plan that addresses all feedback and meets quality standards.",
-            "description": "Template instructing to rework the plan when plan.needsWork is true. Supports placeholders: <plan_id>, <plan_name>, <plan_needwork>, <plan_original_request>, etc.",
-            "scope": "window"
-          },
-          "codingagent.plan.promptPlanReview": {
-            "type": "string",
-            "default": "Please review plan '<plan_name>' (ID: <plan_id>). Description: <plan_long_description>. Use plan tools to review and mark as reviewed or needs work.",
-            "description": "Template used when plan lacks a review. Supports placeholders: <plan_id>, <plan_name>, <plan_short_description>, <plan_long_description>, etc.",
-            "scope": "window"
-          },
-          "codingagent.plan.promptPointsRework": {
-            "type": "string",
-            "default": "Plan points <failed_point_ids> in plan '<plan_name>' need rework. Please address the rework reasons and re-implement the points. Use plan_point_show to see details and plan_point_implemented when done.",
-            "description": "Template for rework prompt. Supports placeholders: <failed_point_ids>, <plan_id>, <plan_name>, <point_*> for individual point details.",
-            "scope": "window"
-          },
-          "codingagent.plan.promptPointsReview": {
-            "type": "string",
-            "default": "Plan points <failed_point_ids> in plan '<plan_name>' need code review. Please review point details using plan_point_show and mark as reviewed or needs rework. Point: <point_short_name>",
-            "description": "Template for code review prompt. Supports placeholders: <failed_point_ids>, <plan_id>, <plan_name>, <point_*> for point details.",
-            "scope": "window"
-          },
-          "codingagent.plan.promptPointsTesting": {
-            "type": "string",
-            "default": "Plan points <failed_point_ids> in plan '<plan_name>' need testing. Please test the implementation and mark as tested or needs rework. Testing instructions: <point_testing_instructions>",
-            "description": "Template for testing prompt. Supports placeholders: <failed_point_ids>, <plan_id>, <plan_name>, <point_*> for point details.",
-            "scope": "window"
-          },
-          "codingagent.plan.promptPointsImplementation": {
-            "type": "string",
-            "default": "Please implement plan points <failed_point_ids> in plan '<plan_name>'. Point details: <point_detailed_description>. Expected outputs: <point_expected_outputs>. Use plan_point_implemented when complete.",
-            "description": "Template for implementation prompt. Supports placeholders: <failed_point_ids>, <plan_id>, <plan_name>, <point_*> for point details.",
-            "scope": "window"
-          },
-          "codingagent.plan.promptPlanAcceptance": {
-            "type": "string",
-            "default": "Plan needs to be accepted. Ask Approver via call_under_mode to perform final acceptance check for the plan and mark plan as accepted via plan_accepted or use plan_point_need_rework on specific points if acceptance criteria are not met.",
-            "description": "Template for acceptance prompt. Delegates to Approver mode via call_under_mode.",
-            "scope": "window"
-          },
-          "codingagent.plan.promptPlanDone": {
-            "type": "string",
-            "default": "Plan is done. Nothing has to be done.",
-            "description": "Template for done prompt.",
+            "default": "Current plan needs rework based on review feedback.\n\n**Review Feedback:**\n<plan_needwork>\n\n**Instructions:**\n1. Analyze the feedback carefully and identify specific issues\n2. Use appropriate plan tools (plan_change, plan_add_points, plan_change_point, etc.) to address each issue\n3. Ensure all feedback points are resolved systematically\n",
+            "description": "Template instructing to rework the plan when plan.needsWork is true. Supports placeholders: <plan_id>, <plan_name>, <plan_needwork>, <plan_translated_request>, etc.",
             "scope": "window"
           },
           "codingagent.plan.recommendedModePlanRework": {
@@ -650,16 +608,88 @@
             "description": "Recommended mode for plan rework tasks",
             "scope": "window"
           },
+          "codingagent.plan.creation.promptDescriptionUpdate": {
+            "type": "string",
+            "default": "Use the plan_change tool to update both descriptions. Do not provide only text responses.\n\n**User's Original Request:** <plan_translated_request>\n\n**Required Steps:**\n1. Create a clear, concise short description that summarizes what the plan will accomplish\n2. Create a comprehensive long description that includes all user requirements and technical details\n3. **IMMEDIATELY call plan_change tool** with both new descriptions\n4. After tool execution, provide a two-sentence summary of what you did\n\n**Important:** Your response will be considered FAILED if you do not call the plan_change tool. Only text responses without tool calls will be rejected.\n\n**Expected Output:** plan_change tool execution followed by a brief summary.",
+            "description": "Template for plan description update prompt. Placeholders: <plan_translated_request>, <plan_short_description>, <plan_long_description>",
+            "scope": "window"
+          },
+          "codingagent.plan.creation.recommendedModeDescriptionUpdate": {
+            "type": "string",
+            "default": "Architect",
+            "description": "Recommended mode for plan description update step",
+            "scope": "window"
+          },
+          "codingagent.plan.creation.checklistDescriptionReview": {
+            "type": "string",
+            "default": "* Is the short description an understandable summary of the long description, so that it is not necessary to read the long description to understand it?\n* Does the long description include all of the user's requirements?",
+            "description": "Checklist for plan description review (one item per line, starting with '* ')",
+            "scope": "window"
+          },
+          "codingagent.plan.creation.recommendedModeDescriptionReview": {
+            "type": "string", 
+            "default": "Plan Reviewer",
+            "description": "Recommended mode for plan description review step",
+            "scope": "window"
+          },
+          "codingagent.plan.creation.promptArchitectureCreation": {
+            "type": "string",
+            "default": "Please create a comprehensive architectural design for this plan in JSON format.\n\n**Plan Information:**\n- Short Description: <plan_short_description>\n- Long Description: <plan_long_description>\n- User Request: <plan_translated_request>\n\n**JSON Format Requirements:**\n```json\n{\n  \"components\": [\n    {\n      \"id\": \"unique-component-id\",\n      \"name\": \"Component Name\",\n      \"type\": \"service|database|api|frontend|backend|etc\",\n      \"description\": \"Component description\"\n    }\n  ],\n  \"connections\": [\n    {\n      \"from\": \"source-component-id\",\n      \"to\": \"target-component-id\",\n      \"type\": \"api|data|event|etc\",\n      \"description\": \"Connection description\"\n    }\n  ]\n}\n```\n\n**Instructions:**\n1. Design components that support all requirements from the long description\n2. Create logical connections between components\n3. Use descriptive IDs and names\n4. Include all necessary architectural elements\n5. Store the architecture using plan_set_architecture tool\n\n**Expected Output:** Complete JSON architecture stored in the plan.",
+            "description": "Template for architecture creation prompt. Placeholders: <plan_short_description>, <plan_long_description>, <plan_translated_request>",
+            "scope": "window"
+          },
+          "codingagent.plan.creation.recommendedModeArchitectureCreation": {
+            "type": "string",
+            "default": "Architect", 
+            "description": "Recommended mode for architecture creation step",
+            "scope": "window"
+          },
+          "codingagent.plan.creation.checklistArchitectureReview": {
+            "type": "string",
+            "default": "* Does the architecture design include all the required elements?\n* Is the architecture design technically correct and feasible?",
+            "description": "Checklist for architecture review (one item per line, starting with '* ')",
+            "scope": "window"
+          },
+          "codingagent.plan.creation.recommendedModeArchitectureReview": {
+            "type": "string",
+            "default": "Plan Reviewer",
+            "description": "Recommended mode for architecture review step", 
+            "scope": "window"
+          },
+          "codingagent.plan.creation.promptPlanPointsCreation": {
+            "type": "string",
+            "default": "Create Implementation Points**\n\nPlease create detailed implementation points for this plan based on the architecture and requirements.\n\n**Plan Information:**\n- Long Description: <plan_long_description>\n- Architecture: <plan_architecture>\n- User Request: <plan_translated_request>\n\n**Instructions:**\n1. Break down the implementation into logical, manageable points\n2. Each point should focus on a specific deliverable or component\n3. Include all necessary details for each point:\n   - Clear short name and description\n   - Detailed implementation instructions\n   - Review and testing instructions\n   - Expected inputs and outputs\n   - Dependencies on other points\n4. Order points based on logical dependencies\n5. Use plan_add_points tool to add all points\n\n**Quality Guidelines:**\n- Each point should be implementable by one specialist\n- Dependencies should be minimal and realistic\n- Instructions should be clear and testable\n- Points should align with the architecture\n\n**Expected Output:** Complete set of implementation points covering all requirements.",
+            "description": "Template for plan points creation prompt. Placeholders: <plan_long_description>, <plan_architecture>, <plan_translated_request>",
+            "scope": "window"
+          },
+          "codingagent.plan.creation.recommendedModePlanPointsCreation": {
+            "type": "string",
+            "default": "Architect",
+            "description": "Recommended mode for plan points creation step",
+            "scope": "window"
+          },
+          "codingagent.plan.creation.promptCreationComplete": {
+            "type": "string",
+            "default": "**PLAN CREATION COMPLETED SUCCESSFULLY** ✅\n\nThe multi-step plan creation process has been completed successfully.\n\n**Plan Status:**\n- Plan ID: <plan_id>\n- Descriptions: ✅ Updated and reviewed\n- Architecture: ✅ Created and reviewed\n- Implementation Points: ✅ Created and validated\n- Total Points: <point_count>\n\n**Next Steps:**\nThe plan is now ready for implementation. The orchestrator will begin the normal execution cycle to work through the implementation points systematically.\n\n**Original Request:** <plan_translated_request>",
+            "description": "Template for plan creation completion message. Placeholders: <plan_id>, <point_count>, <plan_translated_request>",
+            "scope": "window"
+          },
+          "codingagent.plan.promptPlanReview": {
+            "type": "string",
+            "default": "Please review current plan. Description: <plan_long_description>. Use plan tools to review and mark as reviewed or needs work.",
+            "description": "Template used when plan lacks a review. Supports placeholders: <plan_id>, <plan_name>, <plan_short_description>, <plan_long_description>, etc.",
+            "scope": "window"
+          },
           "codingagent.plan.recommendedModePlanReview": {
             "type": "string", 
             "default": "Plan Reviewer",
             "description": "Recommended mode for plan review tasks",
             "scope": "window"
           },
-          "codingagent.plan.recommendedModeRework": {
+          "codingagent.plan.promptPointsImplementation": {
             "type": "string",
-            "default": "", 
-            "description": "Recommended mode for point rework tasks",
+            "default": "Please implement plan points <failed_point_ids> in plan '<plan_name>'. Point details: <point_detailed_description>. Expected outputs: <point_expected_outputs>. Use plan_point_implemented when complete.",
+            "description": "Template for implementation prompt. Supports placeholders: <failed_point_ids>, <plan_id>, <plan_name>, <point_*> for point details.",
             "scope": "window"
           },
           "codingagent.plan.recommendedModeImplementation": {
@@ -668,10 +698,34 @@
             "description": "Recommended mode for implementation tasks",
             "scope": "window"
           },
+          "codingagent.plan.promptPointsRework": {
+            "type": "string",
+            "default": "Plan points <failed_point_ids> in plan '<plan_name>' need rework. Please address the rework reasons and re-implement the points. Use plan_point_show to see details and plan_point_implemented when done.",
+            "description": "Template for rework prompt. Supports placeholders: <failed_point_ids>, <plan_id>, <plan_name>, <point_*> for individual point details.",
+            "scope": "window"
+          },
+          "codingagent.plan.recommendedModeRework": {
+            "type": "string",
+            "default": "", 
+            "description": "Recommended mode for point rework tasks",
+            "scope": "window"
+          },
+          "codingagent.plan.promptPointsReview": {
+            "type": "string",
+            "default": "Plan points <failed_point_ids> in plan '<plan_name>' need code review. Please review point details using plan_point_show and mark as reviewed or needs rework. Point: <point_short_name>",
+            "description": "Template for code review prompt. Supports placeholders: <failed_point_ids>, <plan_id>, <plan_name>, <point_*> for point details.",
+            "scope": "window"
+          },
           "codingagent.plan.recommendedModeCodeReview": {
             "type": "string",
             "default": "Reviewer",
             "description": "Recommended mode for code review tasks", 
+            "scope": "window"
+          },
+          "codingagent.plan.promptPointsTesting": {
+            "type": "string",
+            "default": "Plan points <failed_point_ids> in plan '<plan_name>' need testing. Please test the implementation and mark as tested or needs rework. Testing instructions: <point_testing_instructions>",
+            "description": "Template for testing prompt. Supports placeholders: <failed_point_ids>, <plan_id>, <plan_name>, <point_*> for point details.",
             "scope": "window"
           },
           "codingagent.plan.recommendedModeTesting": {
@@ -680,10 +734,22 @@
             "description": "Recommended mode for testing tasks",
             "scope": "window"
           },
+          "codingagent.plan.promptPlanAcceptance": {
+            "type": "string",
+            "default": "Plan needs to be accepted. Ask Approver via call_under_mode to perform final acceptance check for the plan and mark plan as accepted via plan_accepted or use plan_point_need_rework on specific points if acceptance criteria are not met.",
+            "description": "Template for acceptance prompt. Delegates to Approver mode via call_under_mode.",
+            "scope": "window"
+          },
           "codingagent.plan.recommendedModeAcceptance": {
             "type": "string",
             "default": "Approver",
             "description": "Recommended mode for plan acceptance tasks",
+            "scope": "window"
+          },
+          "codingagent.plan.promptPlanDone": {
+            "type": "string",
+            "default": "Plan is done. Nothing has to be done.",
+            "description": "Template for done prompt.",
             "scope": "window"
           },
           "codingagent.plan.reviewChecklistForPoints": {
@@ -696,72 +762,6 @@
             "type": "string",
             "default": "* Verify all points are logically ordered.\n* Check that plan has clear overall structure.\n* Confirm plan description matches the points.\n* Ensure plan is feasible and well-defined.",
             "description": "Checklist items applied to the plan as a whole during review (one item per line, starting with '* ')",
-            "scope": "window"
-          },
-          "codingagent.plan.creation.promptDescriptionUpdate": {
-            "type": "string",
-            "default": "Use the plan_change tool to update both descriptions. Do not provide only text responses.\n\n**User's Original Request:** <plan_original_request>\n\n**Required Steps:**\n1. Create a clear, concise short description that summarizes what the plan will accomplish\n2. Create a comprehensive long description that includes all user requirements and technical details\n3. **IMMEDIATELY call plan_change tool** with both new descriptions\n4. After tool execution, provide a two-sentence summary of what you did\n\n**Important:** Your response will be considered FAILED if you do not call the plan_change tool. Only text responses without tool calls will be rejected.\n\n**Expected Output:** plan_change tool execution followed by a brief summary.",
-            "description": "Template for plan description update prompt. Placeholders: <original_request>, <short_description>, <long_description>",
-            "scope": "window"
-          },
-          "codingagent.plan.creation.checklistDescriptionReview": {
-            "type": "string",
-            "default": "* Is the short description an understandable summary of the long description, so that it is not necessary to read the long description to understand it?\n* Does the long description include all of the user's requirements?",
-            "description": "Checklist for plan description review (one item per line, starting with '* ')",
-            "scope": "window"
-          },
-          "codingagent.plan.creation.promptArchitectureCreation": {
-            "type": "string",
-            "default": "Please create a comprehensive architectural design for this plan in JSON format.\n\n**Plan Information:**\n- Short Description: <short_description>\n- Long Description: <long_description>\n- User Request: <original_request>\n\n**JSON Format Requirements:**\n```json\n{\n  \"components\": [\n    {\n      \"id\": \"unique-component-id\",\n      \"name\": \"Component Name\",\n      \"type\": \"service|database|api|frontend|backend|etc\",\n      \"description\": \"Component description\"\n    }\n  ],\n  \"connections\": [\n    {\n      \"from\": \"source-component-id\",\n      \"to\": \"target-component-id\",\n      \"type\": \"api|data|event|etc\",\n      \"description\": \"Connection description\"\n    }\n  ]\n}\n```\n\n**Instructions:**\n1. Design components that support all requirements from the long description\n2. Create logical connections between components\n3. Use descriptive IDs and names\n4. Include all necessary architectural elements\n5. Store the architecture using plan_set_architecture tool\n\n**Expected Output:** Complete JSON architecture stored in the plan.",
-            "description": "Template for architecture creation prompt. Placeholders: <short_description>, <long_description>, <original_request>",
-            "scope": "window"
-          },
-          "codingagent.plan.creation.checklistArchitectureReview": {
-            "type": "string",
-            "default": "* Does the architecture design include all the required elements?\n* Is the architecture design technically correct and feasible?",
-            "description": "Checklist for architecture review (one item per line, starting with '* ')",
-            "scope": "window"
-          },
-          "codingagent.plan.creation.promptPlanPointsCreation": {
-            "type": "string",
-            "default": "**PLAN CREATION STEP: Create Implementation Points**\n\nPlease create detailed implementation points for this plan based on the architecture and requirements.\n\n**Plan Information:**\n- Long Description: <long_description>\n- Architecture: <architecture>\n- User Request: <original_request>\n\n**Instructions:**\n1. Break down the implementation into logical, manageable points\n2. Each point should focus on a specific deliverable or component\n3. Include all necessary details for each point:\n   - Clear short name and description\n   - Detailed implementation instructions\n   - Review and testing instructions\n   - Expected inputs and outputs\n   - Dependencies on other points\n4. Order points based on logical dependencies\n5. Use plan_add_points tool to add all points\n\n**Quality Guidelines:**\n- Each point should be implementable by one specialist\n- Dependencies should be minimal and realistic\n- Instructions should be clear and testable\n- Points should align with the architecture\n\n**Expected Output:** Complete set of implementation points covering all requirements.",
-            "description": "Template for plan points creation prompt. Placeholders: <long_description>, <architecture>, <original_request>",
-            "scope": "window"
-          },
-          "codingagent.plan.creation.promptCreationComplete": {
-            "type": "string",
-            "default": "**PLAN CREATION COMPLETED SUCCESSFULLY** ✅\n\nThe multi-step plan creation process has been completed successfully.\n\n**Plan Status:**\n- Plan ID: <plan_id>\n- Descriptions: ✅ Updated and reviewed\n- Architecture: ✅ Created and reviewed\n- Implementation Points: ✅ Created and validated\n- Total Points: <point_count>\n\n**Next Steps:**\nThe plan is now ready for implementation. The orchestrator will begin the normal execution cycle to work through the implementation points systematically.\n\n**Original Request:** <original_request>",
-            "description": "Template for plan creation completion message. Placeholders: <plan_id>, <point_count>, <original_request>",
-            "scope": "window"
-          },
-          "codingagent.plan.creation.recommendedModeDescriptionUpdate": {
-            "type": "string",
-            "default": "Architect",
-            "description": "Recommended mode for plan description update step",
-            "scope": "window"
-          },
-          "codingagent.plan.creation.recommendedModeDescriptionReview": {
-            "type": "string", 
-            "default": "Plan Reviewer",
-            "description": "Recommended mode for plan description review step",
-            "scope": "window"
-          },
-          "codingagent.plan.creation.recommendedModeArchitectureCreation": {
-            "type": "string",
-            "default": "Architect", 
-            "description": "Recommended mode for architecture creation step",
-            "scope": "window"
-          },
-          "codingagent.plan.creation.recommendedModeArchitectureReview": {
-            "type": "string",
-            "default": "Plan Reviewer",
-            "description": "Recommended mode for architecture review step", 
-            "scope": "window"
-          },
-          "codingagent.plan.creation.recommendedModePlanPointsCreation": {
-            "type": "string",
-            "default": "Architect",
-            "description": "Recommended mode for plan points creation step",
             "scope": "window"
           }
         }

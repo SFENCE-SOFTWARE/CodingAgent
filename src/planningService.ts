@@ -1998,16 +1998,10 @@ export class PlanningService {
         result = result.replace(/<plan_name>/g, plan.name || '');
         result = result.replace(/<plan_short_description>/g, plan.shortDescription || '');
         result = result.replace(/<plan_long_description>/g, plan.longDescription || '');
-        result = result.replace(/<plan_architecture>/g, plan.architecture || '');
+        result = result.replace(/<plan_architecture>/g, plan.architecture || 'No architecture defined');
         result = result.replace(/<plan_original_request>/g, plan.originalRequest || '');
         result = result.replace(/<plan_translated_request>/g, plan.translatedRequest || '');
         result = result.replace(/<plan_detected_language>/g, plan.detectedLanguage || '');
-        result = result.replace(/<original_request>/g, plan.originalRequest || '');
-        result = result.replace(/<short_description>/g, plan.shortDescription || '');
-        result = result.replace(/<long_description>/g, plan.longDescription || '');
-        result = result.replace(/<architecture>/g, plan.architecture || 'No architecture defined');
-        result = result.replace(/<plan_id>/g, plan.id);
-        result = result.replace(/<point_count>/g, plan.points.length.toString());
         
         // Point count information
         result = result.replace(/<plan_points_count>/g, plan.points.length.toString());
