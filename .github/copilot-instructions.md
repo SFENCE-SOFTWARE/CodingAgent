@@ -1,454 +1,497 @@
 # CodingAgent Extension - AI Coding Guide
 
-This is a comprehensive VS Code extension that provides GitHub Copilot Chat-like functionality using any OpenAI-compatible LLM backend. The extension features advanced t### Version History & Updates
+This is a comprehensive VS Code extension that provides GitHub Copilot Chat-like functionality using any OpenAI-compatible LLM backend. The extension features an advanced multi-agent system, sophisticated planning/orchestrator capabilities, intelligent change tracking, automated testing infrastructure, and robust tool-based interactions.
 
-### Current Version: 0.0.3 (2025-08-23)
-**Key Changes:**
-- **API Key Support**: Added optional API key configuration for authenticated OpenAI-compatible servers
-- **Tool Consolidation**: Merged `insert_lines`, `delete_lines`, and `replace_lines` into unified `modify_lines` tool
-- **Memory System**: Added comprehensive memory system with 7 memory tools and metadata support
-- **Terminal Security**: Implemented user approval system for all terminal commands with auto-approve whitelist
-- **Change Tracking**: Enhanced with intelligent merging and real-time visual feedback
-- **Settings Panel**: Added comprehensive tabbed settings interface AI interactions, sophisticated memory system, intelligent change tracking, and robust security controls.
+## Current Version: 0.1.0 (2025-01-XX)
+
+**Architecture Evolution:**
+- **Multi-Agent System**: Coder, Ask, and Architect modes with specialized tools and capabilities
+- **Planning & Orchestration**: Advanced project planning with step-by-step execution, dependency management, and automated orchestration
+- **Algorithm Engine**: Extensible JavaScript-based algorithm execution framework with context isolation
+- **Testing Infrastructure**: Comprehensive testing system including orchestrator test runners and mock services
+- **Change Management**: Visual change tracking with accept/reject, intelligent merging, and backup restoration
+- **Enhanced Tools**: 15+ specialized tools for file operations, terminal commands, web content, and project management
 
 ## Architecture Overview
-This VS Code extension provides GitHub Copilot Chat-like functionality using any OpenAI-compatible LLM backend (Ollama, OpenAI, Azure OpenAI, llama.cpp, vLLM, LocalAI, etc.). The extension follows a multi-service architecture with streaming support, tool-based AI interactions, intelligent change tracking, memory system, and advanced security controls.
+
+The extension follows a modular service architecture with multiple agents, each specialized for different types of tasks:
 
 **Core Services:**
-- `ChatService` - Main orchestrator for AI conversations and tool execution loops
-- `OpenAIService` - HTTP client for OpenAI-compatible APIs with streaming support
-- `ToolsService` - Comprehensive tool registry with 20+ tools for file system, terminal, web, and memory operations
-- `MemoryService` - Persistent and temporary memory system for context retention
-- `ChatViewProvider` - WebView container following VS Code's patterns
-- `ChangeTrackingService` - Advanced file change tracking with intelligent merging and accept/reject functionality
-- `LoggingService` - Singleton with raw JSON communication logging
-- `SettingsPanel` - Comprehensive settings management with tabbed interface
+- `ChatService` - Main conversation orchestrator with tool execution loops
+- `OpenAIService` - OpenAI-compatible API client with streaming support  
+- `ToolsService` - Tool registry and execution engine
+- `PlanningService` - Advanced project planning and task management
+- `AlgorithmEngine` - Sandboxed algorithm execution framework
+- `ChangeTrackingService` - File modification tracking and management
+- `PlanContextManager` - Multi-plan context and state management
+- `SettingsPanel` - Comprehensive configuration interface
 
-## Terminal Security System (NEW)
-**CRITICAL**: All terminal commands now require explicit user approval before execution:
+## Agent Mode System
 
-### Terminal Execution Security
-- **User approval required** for all terminal commands
-- **Auto-approval whitelist** - Commands in user's whitelist execute immediately
-- **Complex command parsing** - Handles &&, ||, |, ;, & operators correctly
-- **All-or-nothing approval** - For complex commands, ALL sub-commands must be whitelisted
-- **Modal dialog** shows command details before execution (for non-whitelisted commands)
-- **Workspace root only** - Commands always execute in workspace root directory
-- **No directory changes** - Prevents LLM from changing terminal's working directory
-- **Timeout mechanism** for approval requests (5 minutes)
-- **Detailed logging** for debugging and security audit
+The extension operates in three specialized modes, each with distinct capabilities:
 
-### Security Considerations
-- **Always validate** tool parameters
-- **Sanitize** user input before display
-- **Require approval** for destructive operations (or add to auto-approve whitelist for safe commands)
-- **Parse complex commands** correctly (handle &&, ||, |, ;, & operators)
-- **Log security-relevant** actions
-- **Use timeouts** for user interactions
+### 🛠️ Coder Mode
+**Purpose**: Expert programming assistant for development tasks
+**System Message**: "You are an expert programming assistant..."
+**Temperature**: 0.1 (focused, deterministic responses)
 
-### Auto-Approval System
-Configure safe commands for automatic execution without user confirmation:
+**Available Tools:**
+- `read_file` - Read file content with line range support
+- `write_file` - Write or append to files with change tracking
+- `modify_lines` - Universal line modification (insert, delete, replace)
+- `patch_file` - Apply text diffs without full file rewrites
+- `list_files` - Directory listing with recursive options
+- `get_file_size` - File size information
+- `execute_terminal` - Terminal command execution
+- `create_folder` - Directory creation
+- `rename_file` - File and folder renaming/moving
+- `search_in_project` - Project-wide content search
+- `search_in_path` - Path-specific content search
 
-```json
-{
-  "codingagent.tools.autoApproveCommands": "ls,pwd,git status,npm --version"
+**Use Cases**: Code generation, debugging, refactoring, file manipulation, project exploration
+
+### ❓ Ask Mode  
+**Purpose**: General Q&A and research assistant
+**System Message**: "You are a helpful assistant..."
+**Temperature**: 0.3 (balanced creativity/accuracy)
+
+**Available Tools:**
+- `read_file` - File reading for context
+- `read_webpage_as_html` - Web content fetching (raw HTML)
+- `read_webpage_as_markdown` - Web content as markdown
+- `read_pdf` - PDF text extraction
+- `search_in_project` - Project content search
+
+**Use Cases**: Documentation lookup, general questions, web research, content analysis
+
+### 🏗️ Architect Mode
+**Purpose**: Software architecture and system design consultant  
+**System Message**: "You are a software architecture consultant..."
+**Temperature**: 0.2 (structured, analytical responses)
+
+**Available Tools:**
+- `read_file` - Architecture document analysis
+- `list_files` - Project structure exploration  
+- `read_webpage_as_html` - External documentation
+- `read_webpage_as_markdown` - Design pattern research
+- `read_pdf` - Technical specification analysis
+- `search_in_project` - Architecture pattern discovery
+
+**Use Cases**: System design, architecture review, technical documentation, pattern analysis
+
+## Planning & Orchestration System
+
+### Advanced Planning Service
+
+The extension includes a sophisticated planning system for complex, multi-step projects:
+
+**Plan Structure:**
+- **Plan Points**: Individual tasks with dependencies, status tracking, and validation
+- **Dependency Management**: Points can depend on completion of other points
+- **Status Tracking**: Implementation, review, and testing status for each point
+- **Language Detection**: Automatic language detection and translation support
+- **Activity Logging**: Comprehensive audit trail of plan modifications
+
+**Key Features:**
+```typescript
+interface Plan {
+  id: string;
+  name: string; 
+  shortDescription: string;
+  longDescription: string;
+  points: PlanPoint[];
+  reviewChecklist: string[];
+  logs: PlanLogEntry[];
+  detectedLanguage?: string;
+  originalRequest?: string;
+  architecture?: string;
+}
+
+interface PlanPoint {
+  id: string;
+  shortName: string;
+  detailedDescription: string;
+  reviewInstructions: string;
+  testingInstructions: string;
+  status: string;
+  dependsOn: string[];
+  implemented: boolean;
+  reviewed: boolean;
+  tested: boolean;
+  needRework: boolean;
 }
 ```
 
-**Supported command parsing:**
-- `ls && pwd` - Both `ls` and `pwd` must be in whitelist
-- `git status | grep modified` - Both `git` and `grep` must be whitelisted  
-- `npm install; npm start` - Both `npm` commands execute if `npm` is whitelisted
-- Complex commands are parsed to extract individual command names
-- **Promise-based approval flow** between frontend and backend
+### Orchestrator Algorithm System
 
-### Code Pattern for Terminal Approval
+**Algorithm Engine**: JavaScript-based algorithm execution with sandboxed context:
+
 ```typescript
-// Backend: ExecuteTerminalTool waits for approval
-const approvalPromise = new Promise<boolean>((resolve, reject) => {
-  // Store pending command with timeout
-  setTimeout(() => reject(new Error('Approval timeout')), 5 * 60 * 1000);
-});
-
-// Frontend: User approval triggers resolution
-function approveTerminalCommand(commandId) {
-  vscode.postMessage({ type: 'approveTerminalCommand', commandId });
+interface AlgorithmContext {
+  mode: string;
+  userMessage: string;
+  sendResponse: (message: string) => void;
+  sendToLLM: (message: string) => Promise<string>;
+  tools: {
+    execute: (toolName: string, args: any) => Promise<ToolResult>;
+  };
+  planningService: {
+    showPlan: (planId: string) => PlanResult;
+    createPlan: (...) => CreateResult;
+    evaluatePlanCompletion: (planId: string) => EvaluationResult;
+  };
 }
 ```
 
-## Key Architectural Patterns
+**Available Algorithms:**
+- `orchestrator.js` - Main orchestration logic for plan execution
+- `categorization.js` - Request categorization and routing
+- Custom algorithms can be added to `src/algorithms/` directory
 
-### Agent Mode System
-The extension uses a **mode-based architecture** where each mode has specific tools and system prompts:
+## Tool System Architecture
+
+### Tool Execution Pattern
+
+All tools follow a consistent interface pattern:
+
 ```typescript
-// Configuration in package.json defines agent capabilities
-"Coder": {
-  "allowedTools": ["read_file", "write_file", "modify_lines", "list_files", "get_file_size", 
-                   "execute_terminal", "create_folder", "patch_file", "rename_file", 
-                   "search_in_project", "search_in_path", "memory_store", "memory_retrieve_by_lines",
-                   "memory_retrieve_data", "memory_delete", "memory_search", "memory_list", "memory_export"],
-  "systemMessage": "You are an expert programming assistant...",
-  "temperature": 0.1
+interface ToolDefinition {
+  type: 'function';
+  function: {
+    name: string;
+    description: string;
+    parameters: {
+      type: 'object';
+      properties: Record<string, any>;
+      required: string[];
+    };
+  };
+}
+
+interface ToolResult {
+  success: boolean;
+  content?: string;
+  error?: string;
 }
 ```
 
-**Available Tools (20+ tools):**
-**File Operations:**
-- `read_file` - Read file content with line range support and character limits
-- `write_file` - Write or append to files (integrates with change tracking)
-- `modify_lines` - Universal line modification: insert, delete, or replace lines with multiple targeting options
-- `patch_file` - Apply text diffs without full file rewrites (integrates with change tracking)
-- `list_files` - Directory listing with recursive option and filtering
-- `get_file_size` - Get file size in lines and bytes
-- `create_folder` - Create directories with recursive option (Coder mode)
-- `rename_file` - Rename/move files and folders (Coder mode)
+### Change-Aware Tool System
 
-**Search & Discovery:**
-- `search_in_project` - Search across VS Code project files (available in all modes)
-- `search_in_path` - Search within specific paths and directories
-
-**Terminal Operations:**
-- `execute_terminal` - Run terminal commands with user approval system and timeout
-
-**Web & Content:**
-- `read_webpage_as_html` - Fetch raw HTML content from webpages (Ask/Architect modes)
-- `read_webpage_as_markdown` - Fetch and convert webpage content to markdown (Ask/Architect modes)
-- `read_pdf` - Extract text from PDF files (Ask/Architect modes)
-
-**Memory System (7 tools):**
-- `memory_store` - Store data with metadata (categories, tags, priority, etc.)
-- `memory_retrieve_by_lines` - Retrieve content by line ranges with character limits
-- `memory_retrieve_data` - Retrieve content by character offset and length
-- `memory_delete` - Delete memory entries by key
-- `memory_search` - Advanced search with pattern matching, filters, and sorting
-- `memory_list` - List memory entries with enhanced metadata overview including line counts, sizes, and content statistics
-- `memory_export` - Export memory entries to files
-
-### Change Tracking System
-**Critical:** All file modification tools integrate with advanced change tracking:
-- **ChangeTrackingService** - Tracks all file modifications with before/after content
-- **ChangeAwareBaseTool** - Base class that all file tools inherit from
-- **Smart Merging** - Adjacent/overlapping changes merge automatically, distant changes remain separate
-- **Accept/Reject** - Users can selectively accept or reject individual changes
-- **Visual Indicators** - Inline decorations and code lens show pending changes only
-- **Backup System** - Automatic backups enable safe rollback of rejected changes
-- **Persistence** - Changes survive VS Code restarts
-- **Real-time Updates** - Changes appear immediately in editor with visual feedback
+File modification tools integrate with advanced change tracking:
 
 ```typescript
-// File tools automatically track changes via ChangeAwareBaseTool
-export class MyFileTool extends ChangeAwareBaseTool {
-  protected async executeOperation(args: any, workspaceRoot: string): Promise<ToolResult> {
-    // Tool implementation - tracking happens automatically
-    const filePath = this.getFilePath(args, workspaceRoot);
-    // Modify file content
-    return { success: true, content: 'Modified successfully' };
+// Base class for all file modification tools
+abstract class ChangeAwareBaseTool {
+  abstract executeOperation(args: any, workspaceRoot: string): Promise<ToolResult>;
+  
+  // Automatic change tracking integration
+  async execute(args: any, workspaceRoot: string): Promise<ToolResult> {
+    // Pre-execution state capture
+    const result = await this.executeOperation(args, workspaceRoot);
+    // Post-execution change tracking
+    return result;
   }
 }
 ```
 
-### Memory System (NEW)
-**Critical:** Advanced persistent memory system with metadata and search capabilities:
-- **Two Memory Types**: Temporary (RAM-only) and Project (file-based persistence)
-- **Metadata Support**: Categories, tags, priority, descriptions, access tracking
-- **Search Capabilities**: Pattern matching, filters, pagination, sorting
-- **Safety Limits**: Configurable character/line limits with auto-safety for large values
-- **Export/Import**: Memory entries can be exported to files for backup and sharing
+**Change Tracking Features:**
+- **Visual Indicators**: Inline decorations show added, modified, deleted lines
+- **Accept/Reject**: Individual change management with code lens actions
+- **Smart Merging**: Adjacent changes merge automatically, distant changes remain separate  
+- **Backup System**: Automatic backups enable safe rollback
+- **Persistence**: Changes survive VS Code restarts
 
-**Memory Tools:**
-- `memory_store` - Store values with rich metadata (categories, tags, priority, etc.)
-- `memory_retrieve_by_lines` - Retrieve by line ranges for large content
-- `memory_retrieve_data` - Retrieve by character offset/length for precision
-- `memory_search` - Advanced search with filters, patterns, and metadata
-- `memory_list` - List entries with metadata overview and pagination
-- `memory_delete` - Delete entries by key
-- `memory_export` - Export entries to files
+### Core Tools Reference
 
-**Configuration:**
+**File Operations:**
+- `read_file(path, start_line?, end_line?, max_bytes?)` - Read file content with optional range
+- `write_file(path, content, append?)` - Write or append to files
+- `modify_lines(path, operation, content?, line_number?, ...)` - Universal line modification
+- `patch_file(path, old_text, new_text)` - Apply text patches
+- `list_files(path, recursive?)` - Directory listing
+- `get_file_size(path)` - File size in lines and bytes
+- `create_folder(path)` - Create directories
+- `rename_file(old_path, new_path)` - Rename/move files
+
+**Search & Discovery:**
+- `search_in_project(query, file_pattern?, max_results?)` - Project-wide search
+- `search_in_path(path, query, file_pattern?, max_results?)` - Path-specific search
+
+**Terminal:**
+- `execute_terminal(command, cwd?, newTerminal?)` - Run terminal commands
+
+**Web & Content:**
+- `read_webpage_as_html(url, max_length?)` - Fetch raw HTML content
+- `read_webpage_as_markdown(url, max_length?)` - Fetch as markdown
+- `read_pdf(path, max_pages?)` - Extract PDF text
+
+## Testing Infrastructure
+
+### Orchestrator Testing System
+
+The extension includes comprehensive testing infrastructure for validating orchestrator algorithms:
+
+**Components:**
+- `MockLLMService` - Simulates LLM responses for testing
+- `OrchestratorTestRunner` - Executes orchestrator tests with mock context
+- `test-orchestrator.js` - CLI script for running orchestrator tests
+- Test configurations in `test-configs/` directory
+
+**Usage Pattern:**
+```bash
+# Run orchestrator test with specific configuration
+node scripts/test-orchestrator.js test-configs/basic-plan.json
+
+# Output: Workflow trace and execution report
+```
+
+**Test Configuration Format:**
 ```json
 {
-  "codingagent.memory.enableProjectMemory": false,  // Must be enabled for persistent storage
-  "codingagent.memory.maxLines": 100,               // Max lines per retrieve operation
-  "codingagent.memory.maxChars": 10000,             // Max characters per retrieve operation
-  "codingagent.memory.autoSafetyLimit": 5000,       // Auto-applied safety limit
-  "codingagent.memory.largeValueThreshold": 10000   // Threshold for "large" values
+  "testName": "Basic Plan Creation",
+  "description": "Test plan creation workflow",
+  "maxIterations": 10,
+  "planName": "TestPlan",
+  "planDescription": "Test plan for validation",
+  "mockLLM": {
+    "responses": [
+      {
+        "trigger": "create.*plan",
+        "response": "I'll create the plan...",
+        "toolCalls": [...] 
+      }
+    ]
+  }
 }
 ```
 
-### Tool Execution Loop
-**Important:** Tool calls are handled recursively - AI can make multiple tool calls in sequence:
+### Testing Best Practices
+
+**Mock LLM Responses**: Create realistic LLM simulation for orchestrator testing:
 ```typescript
-// In chatService.ts - this pattern is essential for multi-step operations
-while (normalizedToolCalls.length > 0 && iterationCount < maxIterations) {
-  // Execute tools and get results
-  const followUpResponse = await this.openai.sendChat(followUpRequest);
-  // Check if more tool calls are needed and continue loop
-}
+const mockConfig: MockLLMConfig = {
+  responses: [
+    {
+      trigger: "categorization request",
+      response: "Request categorized as plan creation",
+      toolCalls: [{ toolName: "createPlan", args: {...} }]
+    }
+  ]
+};
 ```
 
-### Streaming Architecture
-**Critical:** The extension implements streaming responses with tool call interleaving:
-- `processStreamingMessage()` handles incremental content updates
-- Tool calls can interrupt streaming but responses continue seamlessly
-- Frontend tracks streaming state via `streamingMessages Map`
-- Use `StreamingUpdate` interface for all streaming communications
-
-### Iteration Control System (NEW)
-**Critical:** Advanced iteration control with user confirmation dialogs:
-- **Configurable threshold** - Users can set iteration limit (1-100) in Settings GUI
-- **Interactive dialogs** - Replace hard limits with user-choice dialogs
-- **Batch-based approval** - Ask once per threshold batch, not every iteration
-- **System notices** - Notify when corrections are applied or iterations continue
-- **Correction overlay** - Modal correction dialog overlays chat input area
-
-```typescript
-// Configuration setting
-"codingagent.iterationThreshold": {
-  "type": "number",
-  "default": 10,
-  "minimum": 1,
-  "maximum": 100,
-  "description": "Number of tool iterations before asking user for continuation"
-}
-```
-
-**Key Features:**
-- `allowedIterations` tracks current threshold dynamically
-- `getIterationThreshold()` reads user setting from VS Code configuration
-- `continueIterations()` adds another batch of iterations based on current threshold
-- Interactive dialog shows iteration count and offers Continue/Stop options
-- System notices inform user when corrections are applied or iterations continue
-
-## Version History & Updates
-
-### Current Version: 0.0.3 (2025-08-17)
-**Key Changes:**
-- **Tool Consolidation**: Merged `insert_lines`, `delete_lines`, and `replace_lines` into unified `modify_lines` tool
-- **Memory System**: Added comprehensive memory system with 7 memory tools and metadata support
-- **Terminal Security**: Implemented user approval system for all terminal commands with auto-approve whitelist
-- **Change Tracking**: Enhanced with intelligent merging and real-time visual feedback
-- **Settings Panel**: Added comprehensive tabbed settings interface
-
-### Previous Versions:
-- **0.0.2**: Advanced change tracking system, new file manipulation tools
-- **0.0.1**: Initial release with basic AI chat functionality and core tools
-
-### Package Status:
-- Current VSIX: `codding-agent-0.0.1.vsix` (117.67 KB)
-- Repository: `https://github.com/SFENCE-SOFTWARE/VSCode/CodingAgent.git`
-- Extension ID: `codding-agent`
-- Display Name: `CodingAgent`
-
-### Tool Execution Loop
-**Important:** Tool calls are handled recursively - AI can make multiple tool calls in sequence:
-```typescript
-// In chatService.ts - this pattern is essential for multi-step operations
-while (normalizedToolCalls.length > 0 && iterationCount < maxIterations) {
-  // Execute tools and get results
-  const followUpResponse = await this.openai.sendChat(followUpRequest);
-  // Check if more tool calls are needed and continue loop
-}
-```
-**Critical:** The extension implements streaming responses with tool call interleaving:
-- `processStreamingMessage()` handles incremental content updates
-- Tool calls can interrupt streaming but responses continue seamlessly
-- Frontend tracks streaming state via `streamingMessages Map`
-- Use `StreamingUpdate` interface for all streaming communications
-
-### Iteration Control System (NEW)
-**Critical:** Advanced iteration control with user confirmation dialogs:
-- **Configurable threshold** - Users can set iteration limit (1-100) in Settings GUI
-- **Interactive dialogs** - Replace hard limits with user-choice dialogs
-- **Batch-based approval** - Ask once per threshold batch, not every iteration
-- **System notices** - Notify when corrections are applied or iterations continue
-- **Correction overlay** - Modal correction dialog overlays chat input area
-
-```typescript
-// Configuration setting
-"codingagent.iterationThreshold": {
-  "type": "number",
-  "default": 10,
-  "minimum": 1,
-  "maximum": 100,
-  "description": "Number of tool iterations before asking user for continuation"
-}
-```
-
-**Key Features:**
-- `allowedIterations` tracks current threshold dynamically
-- `getIterationThreshold()` reads user setting from VS Code configuration
-- `continueIterations()` adds another batch of iterations based on current threshold
-- Interactive dialog shows iteration count and offers Continue/Stop options
-- System notices inform user when corrections are applied or iterations continue
+**Workflow Validation**: Test complex multi-step workflows:
+- Plan creation and validation
+- Step-by-step execution with dependencies
+- Error handling and recovery
+- LLM interaction simulation
 
 ## Development Workflows
 
-### Build & Watch
+### Build & Development
 ```bash
 npm run compile    # One-time TypeScript compilation
-npm run watch      # Watch mode for development (use task: "npm: 0")
+npm run watch      # Watch mode for development
+npm test          # Run test suite
 ```
 
-### Testing Extension
+### Testing Extensions
 - Press F5 in VS Code to launch Extension Development Host
-- Use Command Palette: "CodingAgent: Open Chat" or click activity bar icon
-- Status bar shows current mode/model: `$(comment-discussion) Coder (llama3:8b)`
+- Use Command Palette: "CodingAgent: Open Chat"
+- Status bar shows current mode/model
+
+### Algorithm Development
+1. Create algorithm file in `src/algorithms/`
+2. Implement algorithm logic with AlgorithmContext
+3. Add to algorithm registry
+4. Create test configuration
+5. Run orchestrator tests
 
 ### Debugging Patterns
-**Log Mode:** Enable raw JSON logging for LLM communication debugging:
-```json
-"codingagent.logging.logMode": true
-```
-Files written to `.codingagent/logs/openai-raw-json.log` with full request/response cycles.
 
-**WebView Communication:** Debug frontend-backend communication via:
+**Orchestrator Testing**: Use test runner for algorithm validation:
+```bash
+node scripts/test-orchestrator.js test-configs/your-test.json
+```
+
+**Change Tracking**: Monitor file modifications:
+```typescript
+changeTracker.setChangeUpdateCallback(async (filePath, changeType) => {
+  console.log(`Change ${changeType} for ${filePath}`);
+});
+```
+
+**WebView Communication**: Debug frontend-backend communication:
 ```javascript
-// In media/chat.js - all vscode.postMessage calls
+// In media/chat.js
 vscode.postMessage({ type: 'sendMessage', message: content });
-```
-
-## Advanced Features (NEW)
-
-### Tool Call Correction System
-**Interactive Correction Workflow:**
-- **Correction Dialog** - Modal overlay that appears over chat input during corrections
-- **Last Tool Call Correction** - Users can correct the most recent AI tool call
-- **System Notices** - Automatic notifications when corrections are applied
-- **Seamless Integration** - Corrections integrate with streaming and iteration systems
-
-```typescript
-// Backend correction state management
-private pendingCorrection: string | null = null;
-private isWaitingForCorrection: boolean = false;
-
-// Frontend correction dialog
-function showCorrectionDialog() {
-  // Modal overlay replaces input area
-  // User provides correction text
-  // Sends correction to backend
-}
-```
-
-### Progressive Tool Iteration
-**Smart Iteration Management:**
-- **Dynamic Thresholds** - User-configurable iteration limits via Settings GUI
-- **Batch Processing** - Ask for continuation once per batch, not per iteration
-- **Visual Progress** - Clear indication of iteration count and progress
-- **User Control** - Continue/Stop options with clear consequences
-
-**Implementation Pattern:**
-```typescript
-// Dynamic threshold reading
-private getIterationThreshold(): number {
-  const config = vscode.workspace.getConfiguration('codingagent');
-  return config.get('iterationThreshold', 10);
-}
-
-// Batch-based continuation
-continueIterations(): void {
-  const threshold = this.getIterationThreshold();
-  this.allowedIterations += threshold; // Add another batch
-}
 ```
 
 ## Critical Code Patterns
 
-### WebView State Management
-The chat UI uses **retained context** (`retainContextWhenHidden: true`) and state restoration:
+### Agent Mode Configuration
 ```typescript
-// ChatViewProvider pattern for persistent chat
-const state = vscode.getState() || { messages: [], currentMode: 'Coder' };
-```
-
-### Configuration Reactivity
-**Important:** All services listen for config changes and update dynamically:
-```typescript
-vscode.workspace.onDidChangeConfiguration(event => {
-  if (event.affectsConfiguration('codingagent')) {
-    this.updateConfiguration();
-  }
-});
-```
-
-### Tool Safety Patterns
-File operations are **workspace-relative** with safety checks:
-```typescript
-// In tools.ts - always resolve paths relative to workspace
-const fullPath = path.isAbsolute(filePath) ? filePath : path.join(this.workspaceRoot, filePath);
-```
-
-### Tool Implementation Pattern
-All tools follow a consistent interface pattern from `BaseTool`:
-```typescript
-// Each tool in src/tools/ implements this pattern
-export class ReadFileTool implements BaseTool {
-  getToolInfo(): ToolInfo { /* metadata */ }
-  getToolDefinition(): ToolDefinition { /* OpenAI function schema */ }
-  async execute(args: any, workspaceRoot: string): Promise<ToolResult> { /* implementation */ }
+// In package.json - defines agent capabilities per mode
+"Coder": {
+  "systemMessage": "You are an expert programming assistant...",
+  "allowedTools": ["read_file", "write_file", "modify_lines", ...],
+  "temperature": 0.1
 }
 ```
 
-## Extension-Specific Conventions
-
-### Message Flow Architecture
-1. **Frontend** (`media/chat.js`) → `vscode.postMessage()`
-2. **ChatViewProvider** → message routing to `ChatService`
-3. **ChatService** → orchestrates OpenAI API + Tools
-4. **Streaming callbacks** → real-time UI updates
-5. **WebView** → DOM updates with message history
-
-**UI Order for Assistant Messages:**
-- Header (avatar, model name, timestamp)
-- Thinking block (if reasoning present, expanded by default)
-- Message content
-- Tool calls (collapsed by default, expandable)
-- Debug info (if available)
-
-### Chat UI Enhancements (NEW)
-**Modern Chat Interface:**
-- **Icon-only buttons** - Clean interface with tooltips for accessibility
-- **Always-visible controls** - Buttons positioned below input, never hidden
-- **Correction overlay** - Modal dialog overlays input area during corrections
-- **System notices** - Integrated notices for corrections and iteration events
-- **Interactive dialogs** - Modal dialogs for iteration control and user choices
-
-**Button Layout:**
-```html
-<!-- Icon-only buttons with specific order -->
-<button id="sendBtn" title="Send Message">📤</button>
-<button id="interruptBtn" title="Interrupt">⏹️</button>
-<button id="correctBtn" title="Correct Last Tool Call">✏️</button>
-<button id="clearBtn" title="Clear Chat">🗑️</button>
+### Tool Execution Loop
+```typescript
+// In chatService.ts - handles recursive tool calls
+while (toolCalls.length > 0 && iterationCount < maxIterations) {
+  const results = await this.toolsService.executeTools(toolCalls);
+  const followUpResponse = await this.openai.sendChat(followUpRequest);
+  // Continue loop if more tool calls needed
+}
 ```
 
-**CSS Architecture:**
-- Responsive design with flexbox layouts
-- Icon-only buttons with hover states
-- Modal overlays with backdrop blur
-- Consistent spacing and typography
-
-### File Structure Logic
-- `src/` - TypeScript source following VS Code patterns
-- `src/tools/` - Individual tool implementations following ChangeAwareBaseTool interface
-- `src/changeTrackingService.ts` - Core change tracking and merging logic
-- `src/changeCodeLensProvider.ts` - Code lens integration for Accept/Reject
-- `src/inlineChangeDecorationService.ts` - Visual change indicators
-- `src/backupManager.ts` - File backup and restoration system
-- `src/settingsPanel.ts` - Comprehensive settings management with tabbed interface
-- `src/chatService.ts` - Enhanced with iteration control and correction systems
-- `tests/` - Comprehensive test suite (56+ tests) including change tracking scenarios
-- `media/` - WebView assets (HTML/CSS/JS, not bundled)
-  - `media/chat.js` - Enhanced chat UI with correction dialogs and iteration control
-  - `media/chat.css` - Modern responsive design with modal overlays
-  - `media/settings.js` - Settings panel frontend logic with live validation
-  - `media/settings.css` - Settings panel styling with tabbed navigation
-- `out/` - Compiled JavaScript (gitignored)
-- Configuration in `package.json` contributes section defines UI elements
-
-### Error Handling Pattern
-All services use **graceful degradation**:
+### Algorithm Context Pattern
 ```typescript
-// Standard pattern across services
+// Algorithm implementation pattern
+async function algorithmLogic(context: AlgorithmContext) {
+  context.console.log('Starting algorithm execution');
+  
+  const response = await context.sendToLLM('Analyze this request');
+  
+  const toolResult = await context.tools.execute('read_file', { 
+    path: 'src/example.ts' 
+  });
+  
+  context.sendResponse('Algorithm completed successfully');
+}
+```
+
+### Change Tracking Integration
+```typescript
+// File tools automatically track changes
+export class WriteFileTool extends ChangeAwareBaseTool {
+  protected async executeOperation(args: any, workspaceRoot: string) {
+    // Tool implementation - tracking happens automatically
+    const filePath = this.getFilePath(args, workspaceRoot);
+    await fs.promises.writeFile(filePath, args.content);
+    return { success: true, content: 'File written successfully' };
+  }
+}
+```
+
+## Configuration Management
+
+### Settings Schema
+```json
+{
+  "codingagent.host": "localhost",
+  "codingagent.port": 11434,
+  "codingagent.apiKey": "", // Optional for authenticated servers
+  "codingagent.currentMode": "Coder",
+  "codingagent.currentModel": "llama3:8b",
+  "codingagent.showThinking": true,
+  "codingagent.enableChangeTracking": true
+}
+```
+
+### Mode Customization
+```json
+{
+  "codingagent.modes": {
+    "CustomMode": {
+      "systemMessage": "Your custom system prompt",
+      "allowedTools": ["read_file", "write_file"],
+      "temperature": 0.2,
+      "fallbackMessage": "Custom mode activated"
+    }
+  }
+}
+```
+
+## File Structure Logic
+
+```
+src/
+├── extension.ts              # Main extension entry point
+├── chatService.ts            # Core chat orchestration  
+├── openai_html_api.ts        # OpenAI-compatible API client
+├── tools.ts                  # Tool registry and service
+├── planningService.ts        # Advanced planning system
+├── algorithmEngine.ts        # Algorithm execution framework
+├── changeTrackingService.ts  # File modification tracking
+├── settingsPanel.ts          # Configuration management
+├── planContextManager.ts     # Plan context management
+├── mockLLMService.ts         # Testing mock service
+├── orchestratorTestRunner.ts # Test execution framework
+├── types.ts                  # TypeScript interfaces
+├── algorithms/               # JavaScript algorithm files
+├── tools/                    # Individual tool implementations
+└── tests/                    # Comprehensive test suite
+
+media/                        # WebView frontend assets
+├── chat.js                   # Chat interface logic
+├── chat.css                  # Chat styling
+├── settings.js               # Settings panel frontend
+└── settings.css              # Settings styling
+
+scripts/                      # CLI and utility scripts
+├── test-orchestrator.js      # Orchestrator test runner
+└── ...
+
+test-configs/                 # Test configuration files
+├── basic-plan.json          # Basic planning test
+├── complex-workflow.json    # Multi-step workflow test
+└── ...
+```
+
+## Quick Start for AI Agents
+
+1. **Understand the mode system** - each mode (Coder/Ask/Architect) has different tool access and specialization
+2. **Follow the streaming pattern** - use proper message handling for real-time responses  
+3. **Respect tool execution loops** - AI can make multiple sequential tool calls
+4. **Use workspace-relative paths** - all file operations are workspace-scoped
+5. **Leverage the planning system** - for complex multi-step tasks, create plans with dependencies
+6. **Test with orchestrator** - use the test runner to validate complex workflows
+7. **Integrate change tracking** - all file modifications are tracked and manageable
+
+**Key files to understand first:**
+- `chatService.ts` (conversation orchestration)
+- `planningService.ts` (project planning)
+- `algorithmEngine.ts` (algorithm execution)
+- `types.ts` (core interfaces)
+- `package.json` (configuration schema)
+
+## Integration Points
+
+### OpenAI API Compatibility
+- Uses standard `/v1/chat/completions` endpoint format
+- Supports streaming via Server-Sent Events
+- Tool calls follow OpenAI function calling specification  
+- Compatible with Ollama, llama.cpp, vLLM, LocalAI, OpenAI, Azure OpenAI
+
+### VS Code Extension API
+- **WebView Views** for activity bar integration
+- **Configuration API** for reactive settings
+- **Command registration** with categories
+- **Status bar integration** for quick access
+- **CodeLens provider** for change management
+
+### External Dependencies
+- **Node.js built-ins** - `fs`, `path`, `child_process`
+- **TypeScript strict mode** with Node16 module resolution
+- **No external bundling** - pure Node.js/VS Code API usage
+
+## Best Practices for AI Agents
+
+### Tool Usage
+- **Read before writing** - always understand existing code structure
+- **Use appropriate modes** - match agent mode to task type
+- **Leverage planning** - break complex tasks into managed plans
+- **Test workflows** - use orchestrator testing for validation
+- **Manage changes** - utilize change tracking for safe modifications
+
+### Error Handling
+```typescript
+// Standard error handling pattern across services
 try {
   const result = await operation();
   return { success: true, content: result };
@@ -458,111 +501,9 @@ try {
 }
 ```
 
-## Integration Points
+### Context Management
+- **Plan Context**: Use `PlanContextManager` for multi-plan workflows
+- **Algorithm Context**: Leverage sandboxed context for algorithm execution
+- **Change Context**: Track all file modifications with restore capabilities
 
-### OpenAI API Contract
-Uses **OpenAI-compatible API** (`/v1/chat/completions`) format for maximum compatibility:
-- Supports streaming via Server-Sent Events
-- Tool calls follow OpenAI function calling spec
-- Works with Ollama (`/api/tags` endpoint for model names), OpenAI, Azure OpenAI, and other compatible providers
-
-### VS Code Extension API Usage
-- **WebView Views** for activity bar integration
-- **Configuration API** for reactive settings
-- **Command registration** with categories for Command Palette
-- **Status bar items** for quick access to current state
-
-### Settings Panel (NEW)
-**Comprehensive Settings Management:**
-- **Tabbed interface** - Connection, Modes, Behavior, Tools, Logging, Advanced sections
-- **Live validation** - Real-time configuration validation and feedback
-- **Modal editors** - Rich modal dialogs for complex configuration editing
-- **Export/Import** - Configuration backup and restore functionality
-
-**Key Settings:**
-- `codingagent.iterationThreshold` - Configurable tool iteration limit (1-100)
-- `codingagent.tools.autoApproveCommands` - Terminal command whitelist
-- `codingagent.logging.logMode` - Raw JSON communication logging
-- `codingagent.enableStreaming` - Streaming response control
-- `codingagent.showThinking` - Model reasoning display
-
-**Settings Panel Architecture:**
-```typescript
-// Settings panel with tabbed navigation
-class SettingsPanel {
-  private _sendConfiguration() {
-    // Sends all current configuration to frontend
-    const config = vscode.workspace.getConfiguration('codingagent');
-    // Include all new settings like iterationThreshold
-  }
-  
-  private _updateConfiguration(configUpdate: any) {
-    // Updates VS Code configuration with user changes
-    // Validates and applies configuration updates
-  }
-}
-```
-
-### External Dependencies
-- **No bundling** - uses Node.js built-ins (`fs`, `path`, `child_process`)
-- **TypeScript strict mode** with Node16 module resolution
-- **ESLint** configuration for VS Code extension patterns
-
-## Quick Start for AI Agents
-
-1. **Understand the mode system** - each mode (Coder/Ask/Architect) has different tool access
-2. **Follow the streaming pattern** - use `StreamingUpdate` for real-time responses
-3. **Respect tool execution loops** - AI can make multiple sequential tool calls
-4. **Use workspace-relative paths** - all file operations are workspace-scoped
-5. **Test with watch mode** - `npm run watch` + F5 for rapid iteration
-
-**Key files to understand first:** `chatService.ts` (orchestration), `types.ts` (interfaces), `package.json` (configuration schema).
-
-## Latest Features Summary (2025-08-23)
-
-### 🔐 API Key Support
-- **Optional API key configuration** for authenticated OpenAI-compatible servers
-- **Backward compatibility** - local models continue to work without API keys
-- **Secure password field** in Settings GUI for API key input
-- **Automatic header management** - uses API key when provided, dummy auth for local models
-
-### 🔐 Security Enhancement: Terminal Approval System
-- **All terminal commands require explicit user approval** before execution
-- **Auto-approval whitelist** for safe commands like `ls`, `pwd`, `git status`
-- **Complex command parsing** handles &&, ||, |, ;, & operators correctly
-- **5-minute timeout** for approval requests with graceful error handling
-- **Modal approval dialog** shows command details and working directory
-
-### 🧠 Memory System Integration
-- **7 comprehensive memory tools** with metadata support (categories, tags, priority)
-- **Two storage types**: Temporary (RAM) and Project (persistent file-based)
-- **Advanced search capabilities** with pattern matching and filtering
-- **Export functionality** to save memory content to files
-- **Configurable safety limits** for large content handling
-
-### 📝 Enhanced Change Tracking
-- **Real-time visual feedback** for all file modifications
-- **Smart change merging**: Adjacent changes combine, distant changes stay separate
-- **Accept/Reject individual changes** with clean UI (no clutter after resolution)
-- **Automatic backup system** enables safe rollback of rejected changes
-- **Persistence across sessions** - changes survive VS Code restarts
-
-### 🔧 Unified Tool System
-- **`modify_lines` tool** consolidates insert/delete/replace line operations
-- **20+ tools available** across file, search, terminal, web, and memory operations
-- **Change-aware tools** automatically integrate with tracking system
-- **Mode-based tool access** - different agent modes have different tool permissions
-
-### ⚙️ Advanced Settings Management
-- **Tabbed settings interface** with Connection, Modes, Behavior, Tools, Logging sections
-- **Live validation** and real-time configuration updates
-- **Iteration threshold control** (1-100) for managing AI tool execution loops
-- **Auto-approve command whitelist** for terminal security
-- **Memory system configuration** with safety limits
-
-### 🎨 Modern UI Enhancements
-- **Icon-only buttons** with tooltips for clean interface
-- **Modal correction dialogs** for interactive AI guidance adjustment
-- **Iteration control dialogs** for managing long AI tool execution sequences
-- **System notices** for user feedback on corrections and iterations
-- **Responsive design** with consistent VS Code styling
+This guide provides comprehensive coverage of the CodingAgent extension architecture, enabling AI coding agents to work effectively within the system's sophisticated multi-agent, planning-oriented framework.
