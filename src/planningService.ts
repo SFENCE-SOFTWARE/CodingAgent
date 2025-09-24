@@ -2026,30 +2026,46 @@ export class PlanningService {
    * Evaluates completion callback to determine if step is done
    */
   private evaluateCompletionCallback(callbackConfig: string, planId: string): boolean {
+    console.log(`[PlanningService] evaluateCompletionCallback called with config: ${callbackConfig}, planId: ${planId}`);
+    
     if (!callbackConfig) {
+      console.log(`[PlanningService] evaluateCompletionCallback: No callback config provided`);
       return false;
     }
 
     const plan = this.plans.get(planId);
     if (!plan) {
+      console.log(`[PlanningService] evaluateCompletionCallback: Plan ${planId} not found`);
       return false;
     }
 
     // Parse callback configuration
     const callback = callbackConfig.trim();
+    console.log(`[PlanningService] evaluateCompletionCallback: Evaluating callback '${callback}' for plan ${planId}`);
+    console.log(`[PlanningService] evaluateCompletionCallback: Plan state - reviewed: ${plan.reviewed}, descriptionsReviewed: ${plan.descriptionsReviewed}, architectureReviewed: ${plan.architectureReviewed}, pointsCreated: ${plan.pointsCreated}, needsWork: ${plan.needsWork}`);
     
     // Handle different callback types
     switch (callback) {
       case 'plan.reviewed':
-        return plan.reviewed === true;
+        const reviewedResult = plan.reviewed === true;
+        console.log(`[PlanningService] evaluateCompletionCallback: plan.reviewed check result: ${reviewedResult}`);
+        return reviewedResult;
       case 'plan.descriptionsReviewed':  
-        return plan.descriptionsReviewed === true;
+        const descriptionsResult = plan.descriptionsReviewed === true;
+        console.log(`[PlanningService] evaluateCompletionCallback: plan.descriptionsReviewed check result: ${descriptionsResult}`);
+        return descriptionsResult;
       case 'plan.architectureReviewed':
-        return plan.architectureReviewed === true;
+        const architectureResult = plan.architectureReviewed === true;
+        console.log(`[PlanningService] evaluateCompletionCallback: plan.architectureReviewed check result: ${architectureResult}`);
+        return architectureResult;
       case 'plan.pointsCreated':
-        return plan.pointsCreated === true;
+        const pointsResult = plan.pointsCreated === true;
+        console.log(`[PlanningService] evaluateCompletionCallback: plan.pointsCreated check result: ${pointsResult}`);
+        return pointsResult;
       case '!plan.needsWork':
-        return !plan.needsWork;
+        const needsWorkResult = !plan.needsWork;
+        console.log(`[PlanningService] evaluateCompletionCallback: !plan.needsWork check result: ${needsWorkResult}`);
+        return needsWorkResult;
       default:
         // For more complex callbacks, could add support for JavaScript evaluation
         // For now, return false for unknown callbacks

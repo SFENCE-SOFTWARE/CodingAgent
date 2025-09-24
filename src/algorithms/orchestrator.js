@@ -228,6 +228,7 @@ async function executePlanCycle(context, workingMessage) {
             context.console.info('Checking completion callback before LLM delegation...');
             try {
                 const isCompleteViaCallback = evaluation.completionCallback();
+                context.console.info(`Completion callback result BEFORE delegation: ${isCompleteViaCallback} for step: ${evaluation.failedStep}`);
                 if (isCompleteViaCallback) {
                     context.console.info('Completion callback indicates step is complete, executing done callback...');
                     context.sendNotice(`✅ **Step completed via callback**: ${evaluation.failedStep}`);
@@ -254,6 +255,8 @@ async function executePlanCycle(context, workingMessage) {
                 context.sendNotice(`⚠️ **Completion callback error: ${error.message}**`);
                 // Continue with normal LLM delegation
             }
+        } else {
+            context.console.info('No completion callback available, proceeding with LLM delegation...');
         }
         
         // Plan is not done, we have a next action to take
@@ -316,8 +319,43 @@ Respond with ONLY the mode name (e.g., "Coder" or "Reviewer"), nothing else.`;
         context.console.info(`${trimmedMode} mode completed task`);
         context.sendNotice(`✅ **${trimmedMode} mode completed**: ${delegatedResponse.substring(0, 200)}...`);
         
-        // Step 4: If there's a done callback, check with LLM if the change was successful
-        if (evaluation.doneCallback && typeof evaluation.doneCallback === 'function') {
+        // Step 4: If there's a completion callback, use it to check success; otherwise use LLM evaluation
+        if (evaluation.completionCallback && typeof evaluation.completionCallback === 'function') {
+            context.console.info('Step 4: Checking completion callback after LLM delegation...');
+            try {
+                const isCompleteAfterDelegation = evaluation.completionCallback();
+                context.console.info(`Completion callback result AFTER delegation: ${isCompleteAfterDelegation} for step: ${evaluation.failedStep}`);
+                context.sendNotice(`🔍 **Callback check after LLM**: ${isCompleteAfterDelegation ? 'COMPLETE' : 'NOT COMPLETE'}`);
+                
+                if (isCompleteAfterDelegation && evaluation.doneCallback && typeof evaluation.doneCallback === 'function') {
+                    context.console.info('Completion callback indicates success, executing done callback...');
+                    try {
+                        evaluation.doneCallback(true, delegatedResponse);
+                        context.console.info(`Done callback executed successfully for step: ${evaluation.failedStep}`);
+                        context.sendNotice(`✅ **Change confirmed successful via callback, callback executed**`);
+                    } catch (cbError) {
+                        context.console.error('Error executing doneCallback:', cbError && cbError.message ? cbError.message : cbError);
+                        context.sendNotice(`⚠️ **Callback execution failed: ${cbError && cbError.message ? cbError.message : String(cbError)}**`);
+                    }
+                } else if (!isCompleteAfterDelegation && evaluation.doneCallback && typeof evaluation.doneCallback === 'function') {
+                    context.console.info('Completion callback indicates task not complete, informing done callback...');
+                    try {
+                        evaluation.doneCallback(false, delegatedResponse);
+                    } catch (cbError) {
+                        context.console.error('Error executing doneCallback (failure path):', cbError && cbError.message ? cbError.message : cbError);
+                    }
+                    context.sendNotice(`⚠️ **Change not completed according to callback**`);
+                }
+            } catch (error) {
+                context.console.error('Error executing completion callback after delegation:', error.message);
+                context.sendNotice(`⚠️ **Completion callback error: ${error.message}**`);
+                // Fall back to LLM evaluation
+                context.console.info('Falling back to LLM evaluation due to callback error...');
+                context.sendNotice(`🔄 **Falling back to LLM evaluation due to callback error**`);
+            }
+        } else if (evaluation.doneCallback && typeof evaluation.doneCallback === 'function') {
+            context.console.info('Step 4: No completion callback available, using LLM evaluation...');
+            context.sendNotice(`🤖 **Using LLM evaluation (no callback available)**`);
             context.console.info('Step 4: Checking if change was successful for callback execution...');
             
             const successCheckPrompt = `Based on the response from ${trimmedMode} mode, was the requested change successful? 
