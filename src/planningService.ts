@@ -1427,12 +1427,32 @@ export class PlanningService {
       return [];
     }
     
-    return text
-      .split('\n')
-      .map(line => line.trim())
-      .filter(line => line.startsWith('* '))
-      .map(line => line.substring(2).trim())
-      .filter(line => line.length > 0);
+    const lines = text.split('\n');
+    const items: string[] = [];
+    let currentItem = '';
+    
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      
+      if (trimmedLine.startsWith('* ')) {
+        // If we have a current item, save it
+        if (currentItem) {
+          items.push(currentItem.trim());
+        }
+        // Start new item (remove the '* ' prefix)
+        currentItem = trimmedLine.substring(2).trim();
+      } else if (currentItem && trimmedLine) {
+        // Continue current item if we have one and the line is not empty
+        currentItem += '\n' + trimmedLine;
+      }
+    }
+    
+    // Don't forget the last item
+    if (currentItem) {
+      items.push(currentItem.trim());
+    }
+    
+    return items.filter(item => item.length > 0);
   }
 
   /**
@@ -1608,7 +1628,7 @@ export class PlanningService {
   /**
    * Evaluates new plan creation workflow and returns the next step
    */
-  public evaluateNewPlanCreation(planId: string, originalRequest?: string): { success: boolean; result?: PlanEvaluationResult; error?: string } {
+  public evaluatePlanCreation(planId: string, originalRequest?: string): { success: boolean; result?: PlanEvaluationResult; error?: string } {
     const plan = this.plans.get(planId);
     if (!plan) {
       return { success: false, error: `Plan with ID '${planId}' not found` };
@@ -1710,7 +1730,13 @@ export class PlanningService {
       // If we have checklist items, return the first one
       if (plan.creationChecklist && plan.creationChecklist.length > 0) {
         const firstItem = plan.creationChecklist[0];
-        const checklistPrompt = `**PLAN CREATION STEP: Review Plan Descriptions**\n\n${firstItem}\n\n**Long Description:**\n${plan.longDescription}\n\n**User Requirements:**\n${request}`;
+        
+        // Get the prompt template and replace <checklist> placeholder
+        const promptTemplate = this.getConfig('codingagent.plan.creation.promptDescriptionReview');
+        const checklistPrompt = this.replacePlaceholders(
+          promptTemplate.replace('<checklist>', firstItem),
+          planId
+        );
         
         return {
           success: true,
@@ -1816,7 +1842,13 @@ export class PlanningService {
       // If we have checklist items, return the first one
       if (plan.creationChecklist && plan.creationChecklist.length > 0) {
         const firstItem = plan.creationChecklist[0];
-        const checklistPrompt = `**PLAN CREATION STEP: Review Architecture Design**\n\n${firstItem}\n\n**Plan Architecture:**\n${plan.architecture}\n\n**Plan Long Description:**\n${plan.longDescription}`;
+        
+        // Get the prompt template and replace <checklist> placeholder
+        const promptTemplate = this.getConfig('codingagent.plan.creation.promptArchitectureReview');
+        const checklistPrompt = this.replacePlaceholders(
+          promptTemplate.replace('<checklist>', firstItem),
+          planId
+        );
         
         return {
           success: true,
@@ -2056,22 +2088,56 @@ export class PlanningService {
 
     console.log(`[PlanningService] planEvaluate called for plan ${planId}`);
     
-    // Determine if this is a new plan creation or existing plan completion
-    const isNewPlan = (!plan.points || plan.points.length === 0) && 
-                     !plan.reviewed && 
-                     !plan.accepted &&
-                     !plan.pointsCreated;
+    // Determine if this is plan creation workflow or plan implementation workflow
+    const isInCreationPhase = this.isPlanInCreationPhase(plan);
+    
+    console.log(`[PlanningService] Plan ${planId} classification: ${isInCreationPhase ? 'CREATION PHASE' : 'IMPLEMENTATION PHASE'}`);
+    console.log(`[PlanningService] Plan state: descriptionsUpdated=${plan.descriptionsUpdated}, descriptionsReviewed=${plan.descriptionsReviewed}, architectureCreated=${plan.architectureCreated}, architectureReviewed=${plan.architectureReviewed}, pointsCreated=${plan.pointsCreated}, points=${plan.points?.length || 0}`);
 
-    console.log(`[PlanningService] Plan ${planId} classification: ${isNewPlan ? 'NEW PLAN' : 'EXISTING PLAN'}`);
-    console.log(`[PlanningService] Plan details: points=${plan.points?.length || 0}, reviewed=${plan.reviewed}, accepted=${plan.accepted}, pointsCreated=${plan.pointsCreated}`);
-
-    if (isNewPlan) {
-      console.log(`[PlanningService] Calling evaluateNewPlanCreation for plan ${planId}`);
-      return this.evaluateNewPlanCreation(planId, plan.originalRequest);
+    if (isInCreationPhase) {
+      console.log(`[PlanningService] Calling evaluatePlanCreation for plan ${planId}`);
+      return this.evaluatePlanCreation(planId, plan.originalRequest);
     } else {
       console.log(`[PlanningService] Calling evaluatePlanCompletion for plan ${planId}`);
       return this.evaluatePlanCompletion(planId);
     }
+  }
+
+  /**
+   * Determines if a plan is in the creation phase or implementation phase
+   */
+  private isPlanInCreationPhase(plan: Plan): boolean {
+    // Plan is in creation phase if any of the creation steps are not completed
+    // OR if plan needs work during creation (which resets us back to creation workflow)
+    
+    // If plan needs work, we stay in whichever phase we were in
+    // But if we haven't completed basic creation steps, we're definitely in creation phase
+    if (!plan.descriptionsUpdated || 
+        !plan.descriptionsReviewed || 
+        !plan.architectureCreated || 
+        !plan.architectureReviewed || 
+        !plan.pointsCreated) {
+      return true;
+    }
+    
+    // If all creation steps are done but we have no points, we're still in creation
+    if (plan.pointsCreated && (!plan.points || plan.points.length === 0)) {
+      return true;
+    }
+    
+    // If we have points but they fail procedural validation, we might be in creation rework
+    // However, we need to distinguish between creation rework and implementation rework
+    // If the plan has been through the full creation cycle before, it's implementation phase
+    if (plan.points && plan.points.length > 0 && 
+        plan.descriptionsUpdated && plan.descriptionsReviewed && 
+        plan.architectureCreated && plan.architectureReviewed && 
+        plan.pointsCreated) {
+      // All creation steps completed and we have points = implementation phase
+      return false;
+    }
+    
+    // Default to creation phase if unclear
+    return true;
   }
 
 }

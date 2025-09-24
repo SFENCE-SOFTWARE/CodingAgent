@@ -622,8 +622,14 @@
           },
           "codingagent.plan.creation.checklistDescriptionReview": {
             "type": "string",
-            "default": "* Is the short description an understandable summary of the long description, so that it is not necessary to read the long description to understand it?\n* Does the long description include all of the user's requirements?",
+            "default": "* Is the short description an understandable summary of the long description, so that it is not necessary to read the long description to understand it?\n**Short description:**\n<plan_short_description>\n**Long description:**\n<plan_long_description>\n* Does the long description include all of the user's requirements?\n**Long description:**\n<plan_long_description>\n**User's original request:**\n<plan_translated_request>",
             "description": "Checklist for plan description review (one item per line, starting with '* ')",
+            "scope": "window"
+          },
+          "codingagent.plan.creation.promptDescriptionReview": {
+            "type": "string",
+            "default": "<checklist>\n\nIf you find any problem or problems, use plan_need_works tool to specify found problems. If everything looks fine and no aditional work is needed, use tool plan_reviewed to set it.",
+            "description": "Template for plan description review prompt. Placeholder <checklist> is replaced with current checklist item. Supports placeholders: <checklist>, <plan_long_description>, <plan_translated_request>, etc.",
             "scope": "window"
           },
           "codingagent.plan.creation.recommendedModeDescriptionReview": {
@@ -650,6 +656,12 @@
             "description": "Checklist for architecture review (one item per line, starting with '* ')",
             "scope": "window"
           },
+          "codingagent.plan.creation.promptArchitectureReview": {
+            "type": "string",
+            "default": "<checklist>\n\n**Plan Architecture:**\n<plan_architecture>\n\n**Plan Long Description:**\n<plan_long_description>",
+            "description": "Template for plan architecture review prompt. Placeholder <checklist> is replaced with current checklist item. Supports placeholders: <checklist>, <plan_architecture>, <plan_long_description>, etc.",
+            "scope": "window"
+          },
           "codingagent.plan.creation.recommendedModeArchitectureReview": {
             "type": "string",
             "default": "Plan Reviewer",
@@ -670,8 +682,8 @@
           },
           "codingagent.plan.creation.promptCreationComplete": {
             "type": "string",
-            "default": "**PLAN CREATION COMPLETED SUCCESSFULLY** ✅\n\nThe multi-step plan creation process has been completed successfully.\n\n**Plan Status:**\n- Plan ID: <plan_id>\n- Descriptions: ✅ Updated and reviewed\n- Architecture: ✅ Created and reviewed\n- Implementation Points: ✅ Created and validated\n- Total Points: <point_count>\n\n**Next Steps:**\nThe plan is now ready for implementation. The orchestrator will begin the normal execution cycle to work through the implementation points systematically.\n\n**Original Request:** <plan_translated_request>",
-            "description": "Template for plan creation completion message. Placeholders: <plan_id>, <point_count>, <plan_translated_request>",
+            "default": "**PLAN CREATION COMPLETED SUCCESSFULLY** ✅\n\nThe multi-step plan creation process has been completed successfully.\n\n**Plan Status:**\n- Plan ID: <plan_id>\n- Descriptions: ✅ Updated and reviewed\n- Architecture: ✅ Created and reviewed\n- Implementation Points: ✅ Created and validated\n- Total Points: <plan_point_count>\n\n**Next Steps:**\nThe plan is now ready for implementation. The orchestrator will begin the normal execution cycle to work through the implementation points systematically.\n\n**Original Request:** <plan_translated_request>",
+            "description": "Template for plan creation completion message. Placeholders: <plan_id>, <plan_point_count>, <plan_translated_request>",
             "scope": "window"
           },
           "codingagent.plan.promptPlanReview": {

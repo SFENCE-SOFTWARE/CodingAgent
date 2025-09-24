@@ -36,7 +36,7 @@ export interface AlgorithmContext {
     createPlan: (id: string, name: string, shortDescription: string, longDescription: string) => { success: boolean; error?: string };
     createPlanWithLanguageInfo: (id: string, name: string, shortDescription: string, longDescription: string, detectedLanguage: string, originalRequest: string, translatedRequest?: string) => { success: boolean; error?: string };
     evaluatePlanCompletion: (planId: string) => { success: boolean; result?: any; error?: string };
-    evaluateNewPlanCreation: (planId: string, originalRequest?: string) => { success: boolean; result?: any; error?: string };
+    evaluatePlanCreation: (planId: string, originalRequest?: string) => { success: boolean; result?: any; error?: string };
     planEvaluate: (planId: string, originalRequest?: string) => { success: boolean; result?: any; error?: string };
   };
   planContextManager?: {
@@ -348,7 +348,7 @@ export class AlgorithmEngine {
           }
           return this.planningService.evaluatePlanCompletion(planId);
         },
-        evaluateNewPlanCreation: (planId: string, originalRequest?: string) => {
+        evaluatePlanCreation: (planId: string, originalRequest?: string) => {
           // Check for interruption before planning operation
           if (this.chatService && this.chatService.getIsInterrupted()) {
             throw new Error('Algorithm execution was interrupted');
@@ -357,7 +357,7 @@ export class AlgorithmEngine {
           if (!this.planningService) {
             return { success: false, error: 'Planning service not available' };
           }
-          return this.planningService.evaluateNewPlanCreation(planId, originalRequest);
+          return this.planningService.evaluatePlanCreation(planId, originalRequest);
         },
         planEvaluate: (planId: string, originalRequest?: string) => {
           // Check for interruption before planning operation
