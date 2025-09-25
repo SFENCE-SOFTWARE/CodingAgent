@@ -1,0 +1,38 @@
+{
+  "planName": "test-basic-workflow",
+  "planDescription": "A simple test plan to validate the basic orchestrator workflow",
+  "maxIterations": 20,
+  "workspaceRoot": "/tmp/orchestrator-test",
+  "mockLLM": {
+    "scenarios": [
+      {
+        "stepType": "plan_description_update",
+        "action": "CUSTOM",
+        "customResponse": "I have updated the plan description with more details.",
+        "toolCalls": ["plan_change"]
+      },
+      {
+        "stepType": "plan_description_review",
+        "action": "REVIEWED",
+        "toolCalls": ["plan_reviewed"]
+      },
+      {
+        "stepType": "plan_architecture_creation",
+        "action": "ARCHITECTURE_SET",
+        "toolCalls": ["plan_architecture"]
+      },
+      {
+        "stepType": "plan_architecture_review",
+        "action": "REVIEWED",
+        "toolCalls": ["plan_reviewed"]
+      },
+      {
+        "stepType": "plan_points_creation",
+        "action": "POINTS_CREATED",
+        "toolCalls": ["plan_point_create"]
+      }
+    ],
+    "defaultAction": "REVIEWED",
+    "verbose": true
+  }
+}

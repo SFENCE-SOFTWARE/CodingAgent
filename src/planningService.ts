@@ -1186,7 +1186,7 @@ export class PlanningService {
 
   /**
    * Evaluates plan completion status and generates corrective prompts if needed
-   * New priority order: plan not reviewed -> points need rework -> points not reviewed -> points not tested -> points not implemented -> plan accepted
+   * Focuses only on implementation workflow: points need rework -> points not reviewed -> points not tested -> points not implemented -> plan accepted
    * Rule: Points which are not implemented cannot be marked as not reviewed or not tested
    */
   public evaluatePlanCompletion(planId: string): { success: boolean; result?: PlanEvaluationResult; error?: string } {
@@ -1195,93 +1195,7 @@ export class PlanningService {
       return { success: false, error: `Plan with ID '${planId}' not found` };
     }
 
-    // Step 0: Procedural validation (highest priority) - only run if plan is waiting for review
-    if (!plan.reviewed && !plan.needsWork) {
-      const validationResult = this.validatePlanProcedurally(planId);
-      if (!validationResult.success) {
-        return { success: false, error: validationResult.error };
-      }
-      
-      if (validationResult.issue) {
-        return {
-          success: true,
-          result: {
-            isDone: false,
-            nextStepPrompt: `Please fix this issue in the plan: ${validationResult.issue.message}`,
-            failedStep: 'plan_review',
-            failedPoints: validationResult.issue.pointId ? [validationResult.issue.pointId] : undefined,
-            reason: validationResult.issue.message,
-            recommendedMode: this.getRecommendedMode('plan_review')
-          }
-        };
-      }
-    }
-
-    // Step 1: Check if plan needs rework (highest priority)
-    if (plan.needsWork) {
-      const firstComment = plan.needsWorkComments && plan.needsWorkComments.length > 0 
-        ? plan.needsWorkComments[0] 
-        : 'Plan needs rework';
-      
-      return {
-        success: true,
-        result: {
-          isDone: false,
-          nextStepPrompt: this.generateCorrectionPrompt('plan_rework', [], firstComment, planId),
-          failedStep: 'plan_rework',
-          reason: firstComment,
-          recommendedMode: this.getRecommendedMode('plan_rework'),
-              doneCallback: (success?: boolean, info?: string) => {
-                // Accept optional feedback from orchestrator/LLM when the change was applied.
-                // Currently we ignore feedback content and simply remove the first need-work comment.
-                this.removeFirstNeedWorkComment(planId);
-              }
-        }
-      };
-    }
-
-    // Step 2: Check if plan is reviewed (second priority)
-    if (!plan.reviewed) {
-      // Initialize checklist if not done already
-      const initResult = this.initializeReviewChecklist(planId);
-      if (!initResult.success) {
-        return { success: false, error: initResult.error };
-      }
-      
-      // Check if we have checklist items to process
-      if (plan.reviewChecklist && plan.reviewChecklist.length > 0) {
-        // Return the first checklist item as the next step
-        const firstItem = plan.reviewChecklist[0];
-        return {
-          success: true,
-          result: {
-            isDone: false,
-            nextStepPrompt: firstItem,
-            failedStep: 'plan_review',
-            reason: 'Plan review checklist in progress',
-            recommendedMode: this.getRecommendedMode('plan_review'),
-            doneCallback: (success?: boolean, info?: string) => {
-              // Remove the first checklist item and mark as reviewed if checklist is empty
-              this.removeFirstChecklistItem(planId);
-            }
-          }
-        };
-      } else {
-        // Fallback to default behavior when checklist is empty
-        return {
-          success: true,
-          result: {
-            isDone: false,
-            nextStepPrompt: this.generateCorrectionPrompt('plan_review', [], 'Plan has not been reviewed yet', planId),
-            failedStep: 'plan_review',
-            reason: 'Plan has not been reviewed yet',
-            recommendedMode: this.getRecommendedMode('plan_review')
-          }
-        };
-      }
-    }
-
-    // Step 3: Check if any points need rework (third priority)
+    // Step 1: Check if any points need rework (highest priority)
     const reworkPoints = plan.points.filter(p => p.needRework);
     if (reworkPoints.length > 0) {
       // Return only the first point that needs rework
@@ -1299,7 +1213,7 @@ export class PlanningService {
       };
     }
 
-    // Step 4: Check if all implemented points are reviewed (fourth priority)
+    // Step 2: Check if all implemented points are reviewed (second priority)
     // Note: Only implemented points can be reviewed
     const unreviewedPoints = plan.points.filter(p => p.implemented && !p.reviewed);
     if (unreviewedPoints.length > 0) {
@@ -1318,7 +1232,7 @@ export class PlanningService {
       };
     }
 
-    // Step 5: Check if any implemented point needs testing (fifth priority)
+    // Step 3: Check if any implemented point needs testing (third priority)
     // Note: Only implemented points can be tested, return just the first untested point
     const firstUntestedPoint = plan.points.find(p => p.implemented && !p.tested);
     if (firstUntestedPoint) {
@@ -1335,7 +1249,7 @@ export class PlanningService {
       };
     }
 
-    // Step 6: Check if any point needs implementation (sixth priority)
+    // Step 4: Check if any point needs implementation (fourth priority)
     // Return just the first unimplemented point
     const firstUnimplementedPoint = plan.points.find(p => !p.implemented);
     if (firstUnimplementedPoint) {
@@ -1352,7 +1266,7 @@ export class PlanningService {
       };
     }
 
-    // Step 7: Check if plan is accepted (lowest priority)
+    // Step 5: Check if plan is accepted (lowest priority)
     if (!plan.accepted) {
       return {
         success: true,

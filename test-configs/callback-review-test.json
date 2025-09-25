@@ -1,0 +1,23 @@
+{
+  "planName": "test-callback-review",
+  "planDescription": "Test plan to specifically validate completion callback for description review",
+  "maxIterations": 10,
+  "workspaceRoot": "/tmp/orchestrator-test",
+  "mockLLM": {
+    "scenarios": [
+      {
+        "stepType": "plan_description_update",
+        "action": "CUSTOM",
+        "customResponse": "I have updated the plan description. Using plan_change tool to apply changes.",
+        "toolCalls": ["plan_change"]
+      },
+      {
+        "stepType": "plan_description_review",
+        "action": "REVIEWED",
+        "toolCalls": ["plan_reviewed"]
+      }
+    ],
+    "defaultAction": "REVIEWED",
+    "verbose": true
+  }
+}

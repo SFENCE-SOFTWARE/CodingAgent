@@ -20,7 +20,7 @@ export const vscode = {
         
         const fullKey = section ? `${section}.${key}` : key;
         return mockConfig[fullKey] !== undefined ? mockConfig[fullKey] : defaultValue;
-      }),
+      },
       has: (key: string) => true,
       inspect: (key: string) => ({ defaultValue: undefined }),
       update: (key: string, value: any) => Promise.resolve()

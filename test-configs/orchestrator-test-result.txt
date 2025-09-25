@@ -1,0 +1,377 @@
+ORCHESTRATOR WORKFLOW TEST REPORT
+=====================================
+
+Plan: test-callback-review
+Success: true
+Iterations: 10
+Max Iterations: 10
+
+WORKFLOW TRACE:
+===============
+ITERATION 1:
+  ORCHESTRATOR: QUESTION
+  ACTION: LLM_RESPONSE
+  RESULT: General question handled by current mode
+
+ITERATION 2:
+  ORCHESTRATOR: QUESTION
+  ACTION: LLM_RESPONSE
+  RESULT: General question handled by current mode
+
+ITERATION 3:
+  ORCHESTRATOR: QUESTION
+  ACTION: LLM_RESPONSE
+  RESULT: General question handled by current mode
+
+ITERATION 4:
+  ORCHESTRATOR: QUESTION
+  ACTION: LLM_RESPONSE
+  RESULT: General question handled by current mode
+
+ITERATION 5:
+  ORCHESTRATOR: QUESTION
+  ACTION: LLM_RESPONSE
+  RESULT: General question handled by current mode
+
+ITERATION 6:
+  ORCHESTRATOR: QUESTION
+  ACTION: LLM_RESPONSE
+  RESULT: General question handled by current mode
+
+ITERATION 7:
+  ORCHESTRATOR: QUESTION
+  ACTION: LLM_RESPONSE
+  RESULT: General question handled by current mode
+
+ITERATION 8:
+  ORCHESTRATOR: QUESTION
+  ACTION: LLM_RESPONSE
+  RESULT: General question handled by current mode
+
+ITERATION 9:
+  ORCHESTRATOR: QUESTION
+  ACTION: LLM_RESPONSE
+  RESULT: General question handled by current mode
+
+ITERATION 10:
+  ORCHESTRATOR: QUESTION
+  ACTION: LLM_RESPONSE
+  RESULT: General question handled by current mode
+
+LLM CALL HISTORY:
+=================
+CALL 1:
+  Step: language_detection
+  Prompt: Detect the language of user message and respond with just english language name (English, Czech, etc.).
+User message:
+"PLAN_OPEN test-callback-review"...
+  Response: English
+  Tools: none
+
+CALL 2:
+  Step: translation
+  Prompt: Translate user request to English, keep the same meaning and intent. Respond only with translated text, do not add aditional information.
+User request:
+"PLAN_OPEN test-callback-review"...
+  Response: PLAN_OPEN test-callback-review
+  Tools: none
+
+CALL 3:
+  Step: categorization
+  Prompt: Analyze this user request and categorize it. You must respond with exactly one of these formats:
+
+**OPEN <existing_plan_id>** — Use this if the request can be fulfilled by opening and continuing work ...
+  Response: PLAN_OPEN test-callback-review
+  Tools: none
+
+CALL 4:
+  Step: unknown
+  Prompt: PLAN_OPEN test-callback-review...
+  Response: The plan looks good and meets all requirements. Using plan_reviewed tool to mark it as approved.
+  Tools: none
+
+CALL 5:
+  Step: language_detection
+  Prompt: Detect the language of user message and respond with just english language name (English, Czech, etc.).
+User message:
+"PLAN_OPEN test-callback-review"...
+  Response: English
+  Tools: none
+
+CALL 6:
+  Step: translation
+  Prompt: Translate user request to English, keep the same meaning and intent. Respond only with translated text, do not add aditional information.
+User request:
+"PLAN_OPEN test-callback-review"...
+  Response: PLAN_OPEN test-callback-review
+  Tools: none
+
+CALL 7:
+  Step: categorization
+  Prompt: Analyze this user request and categorize it. You must respond with exactly one of these formats:
+
+**OPEN <existing_plan_id>** — Use this if the request can be fulfilled by opening and continuing work ...
+  Response: PLAN_OPEN test-callback-review
+  Tools: none
+
+CALL 8:
+  Step: unknown
+  Prompt: PLAN_OPEN test-callback-review...
+  Response: The plan looks good and meets all requirements. Using plan_reviewed tool to mark it as approved.
+  Tools: none
+
+CALL 9:
+  Step: language_detection
+  Prompt: Detect the language of user message and respond with just english language name (English, Czech, etc.).
+User message:
+"PLAN_OPEN test-callback-review"...
+  Response: English
+  Tools: none
+
+CALL 10:
+  Step: translation
+  Prompt: Translate user request to English, keep the same meaning and intent. Respond only with translated text, do not add aditional information.
+User request:
+"PLAN_OPEN test-callback-review"...
+  Response: PLAN_OPEN test-callback-review
+  Tools: none
+
+CALL 11:
+  Step: categorization
+  Prompt: Analyze this user request and categorize it. You must respond with exactly one of these formats:
+
+**OPEN <existing_plan_id>** — Use this if the request can be fulfilled by opening and continuing work ...
+  Response: PLAN_OPEN test-callback-review
+  Tools: none
+
+CALL 12:
+  Step: unknown
+  Prompt: PLAN_OPEN test-callback-review...
+  Response: The plan looks good and meets all requirements. Using plan_reviewed tool to mark it as approved.
+  Tools: none
+
+CALL 13:
+  Step: language_detection
+  Prompt: Detect the language of user message and respond with just english language name (English, Czech, etc.).
+User message:
+"PLAN_OPEN test-callback-review"...
+  Response: English
+  Tools: none
+
+CALL 14:
+  Step: translation
+  Prompt: Translate user request to English, keep the same meaning and intent. Respond only with translated text, do not add aditional information.
+User request:
+"PLAN_OPEN test-callback-review"...
+  Response: PLAN_OPEN test-callback-review
+  Tools: none
+
+CALL 15:
+  Step: categorization
+  Prompt: Analyze this user request and categorize it. You must respond with exactly one of these formats:
+
+**OPEN <existing_plan_id>** — Use this if the request can be fulfilled by opening and continuing work ...
+  Response: PLAN_OPEN test-callback-review
+  Tools: none
+
+CALL 16:
+  Step: unknown
+  Prompt: PLAN_OPEN test-callback-review...
+  Response: The plan looks good and meets all requirements. Using plan_reviewed tool to mark it as approved.
+  Tools: none
+
+CALL 17:
+  Step: language_detection
+  Prompt: Detect the language of user message and respond with just english language name (English, Czech, etc.).
+User message:
+"PLAN_OPEN test-callback-review"...
+  Response: English
+  Tools: none
+
+CALL 18:
+  Step: translation
+  Prompt: Translate user request to English, keep the same meaning and intent. Respond only with translated text, do not add aditional information.
+User request:
+"PLAN_OPEN test-callback-review"...
+  Response: PLAN_OPEN test-callback-review
+  Tools: none
+
+CALL 19:
+  Step: categorization
+  Prompt: Analyze this user request and categorize it. You must respond with exactly one of these formats:
+
+**OPEN <existing_plan_id>** — Use this if the request can be fulfilled by opening and continuing work ...
+  Response: PLAN_OPEN test-callback-review
+  Tools: none
+
+CALL 20:
+  Step: unknown
+  Prompt: PLAN_OPEN test-callback-review...
+  Response: The plan looks good and meets all requirements. Using plan_reviewed tool to mark it as approved.
+  Tools: none
+
+CALL 21:
+  Step: language_detection
+  Prompt: Detect the language of user message and respond with just english language name (English, Czech, etc.).
+User message:
+"PLAN_OPEN test-callback-review"...
+  Response: English
+  Tools: none
+
+CALL 22:
+  Step: translation
+  Prompt: Translate user request to English, keep the same meaning and intent. Respond only with translated text, do not add aditional information.
+User request:
+"PLAN_OPEN test-callback-review"...
+  Response: PLAN_OPEN test-callback-review
+  Tools: none
+
+CALL 23:
+  Step: categorization
+  Prompt: Analyze this user request and categorize it. You must respond with exactly one of these formats:
+
+**OPEN <existing_plan_id>** — Use this if the request can be fulfilled by opening and continuing work ...
+  Response: PLAN_OPEN test-callback-review
+  Tools: none
+
+CALL 24:
+  Step: unknown
+  Prompt: PLAN_OPEN test-callback-review...
+  Response: The plan looks good and meets all requirements. Using plan_reviewed tool to mark it as approved.
+  Tools: none
+
+CALL 25:
+  Step: language_detection
+  Prompt: Detect the language of user message and respond with just english language name (English, Czech, etc.).
+User message:
+"PLAN_OPEN test-callback-review"...
+  Response: English
+  Tools: none
+
+CALL 26:
+  Step: translation
+  Prompt: Translate user request to English, keep the same meaning and intent. Respond only with translated text, do not add aditional information.
+User request:
+"PLAN_OPEN test-callback-review"...
+  Response: PLAN_OPEN test-callback-review
+  Tools: none
+
+CALL 27:
+  Step: categorization
+  Prompt: Analyze this user request and categorize it. You must respond with exactly one of these formats:
+
+**OPEN <existing_plan_id>** — Use this if the request can be fulfilled by opening and continuing work ...
+  Response: PLAN_OPEN test-callback-review
+  Tools: none
+
+CALL 28:
+  Step: unknown
+  Prompt: PLAN_OPEN test-callback-review...
+  Response: The plan looks good and meets all requirements. Using plan_reviewed tool to mark it as approved.
+  Tools: none
+
+CALL 29:
+  Step: language_detection
+  Prompt: Detect the language of user message and respond with just english language name (English, Czech, etc.).
+User message:
+"PLAN_OPEN test-callback-review"...
+  Response: English
+  Tools: none
+
+CALL 30:
+  Step: translation
+  Prompt: Translate user request to English, keep the same meaning and intent. Respond only with translated text, do not add aditional information.
+User request:
+"PLAN_OPEN test-callback-review"...
+  Response: PLAN_OPEN test-callback-review
+  Tools: none
+
+CALL 31:
+  Step: categorization
+  Prompt: Analyze this user request and categorize it. You must respond with exactly one of these formats:
+
+**OPEN <existing_plan_id>** — Use this if the request can be fulfilled by opening and continuing work ...
+  Response: PLAN_OPEN test-callback-review
+  Tools: none
+
+CALL 32:
+  Step: unknown
+  Prompt: PLAN_OPEN test-callback-review...
+  Response: The plan looks good and meets all requirements. Using plan_reviewed tool to mark it as approved.
+  Tools: none
+
+CALL 33:
+  Step: language_detection
+  Prompt: Detect the language of user message and respond with just english language name (English, Czech, etc.).
+User message:
+"PLAN_OPEN test-callback-review"...
+  Response: English
+  Tools: none
+
+CALL 34:
+  Step: translation
+  Prompt: Translate user request to English, keep the same meaning and intent. Respond only with translated text, do not add aditional information.
+User request:
+"PLAN_OPEN test-callback-review"...
+  Response: PLAN_OPEN test-callback-review
+  Tools: none
+
+CALL 35:
+  Step: categorization
+  Prompt: Analyze this user request and categorize it. You must respond with exactly one of these formats:
+
+**OPEN <existing_plan_id>** — Use this if the request can be fulfilled by opening and continuing work ...
+  Response: PLAN_OPEN test-callback-review
+  Tools: none
+
+CALL 36:
+  Step: unknown
+  Prompt: PLAN_OPEN test-callback-review...
+  Response: The plan looks good and meets all requirements. Using plan_reviewed tool to mark it as approved.
+  Tools: none
+
+CALL 37:
+  Step: language_detection
+  Prompt: Detect the language of user message and respond with just english language name (English, Czech, etc.).
+User message:
+"PLAN_OPEN test-callback-review"...
+  Response: English
+  Tools: none
+
+CALL 38:
+  Step: translation
+  Prompt: Translate user request to English, keep the same meaning and intent. Respond only with translated text, do not add aditional information.
+User request:
+"PLAN_OPEN test-callback-review"...
+  Response: PLAN_OPEN test-callback-review
+  Tools: none
+
+CALL 39:
+  Step: categorization
+  Prompt: Analyze this user request and categorize it. You must respond with exactly one of these formats:
+
+**OPEN <existing_plan_id>** — Use this if the request can be fulfilled by opening and continuing work ...
+  Response: PLAN_OPEN test-callback-review
+  Tools: none
+
+CALL 40:
+  Step: unknown
+  Prompt: PLAN_OPEN test-callback-review...
+  Response: The plan looks good and meets all requirements. Using plan_reviewed tool to mark it as approved.
+  Tools: none
+
+FINAL PLAN STATE:
+=================
+{
+  "allImplemented": false,
+  "allReviewed": false,
+  "allTested": false,
+  "allAccepted": false,
+  "implementedCount": 0,
+  "reviewedCount": 0,
+  "testedCount": 0,
+  "acceptedCount": 0,
+  "totalCount": 0,
+  "pendingPoints": []
+}
+

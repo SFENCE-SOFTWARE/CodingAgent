@@ -1,0 +1,33 @@
+{
+  "planName": "test-need-rework-cycle",
+  "planDescription": "Test plan to validate rework cycles with NEED_WORK responses",
+  "maxIterations": 15,
+  "workspaceRoot": "/tmp/orchestrator-test",
+  "mockLLM": {
+    "scenarios": [
+      {
+        "stepType": "plan_description_update",
+        "action": "CUSTOM",
+        "customResponse": "Updated the plan description with improvements.",
+        "toolCalls": ["plan_change"]
+      },
+      {
+        "stepType": "plan_description_review",
+        "action": "NEED_WORK",
+        "toolCalls": ["plan_need_works"]
+      },
+      {
+        "stepType": "plan_architecture_creation",
+        "action": "NEED_WORK",
+        "toolCalls": ["plan_need_works"]
+      },
+      {
+        "stepType": "plan_architecture_review",
+        "action": "REVIEWED",
+        "toolCalls": ["plan_reviewed"]
+      }
+    ],
+    "defaultAction": "NEED_WORK",
+    "verbose": true
+  }
+}
