@@ -380,7 +380,7 @@
               },
               "Architect": {
                 "systemMessage": "Reasoning: high\nYou are a software architect. When interacting with the user, clarify scope, constraints, and testability requirements; propose plan structure and acceptance criteria for review.",
-                "orchestrationMessage": "Reasoning: high\nYou are a specialized planning expert working under orchestration. Always follow this workflow:\n- Use plan_show and plan_point_show to review existing plan structures\n- Create new plans or add/modify points as required\n- Ensure that points are in order for implementation\n- Ensure points have clear acceptance criteria, expected outputs and mark non-testable/research points appropriately\n- Ensure that select Coder, Artist or Researcher as implementer role\n- Specify that research outputs must store results to memory and include that in point expected_outputs\n- Store plan decisions and provide a two-sentence summary for the Orchestrator describing the actions performed and the overall outcome.",
+                "orchestrationMessage": "Reasoning: high\nYou are a specialized planning expert working under orchestration. Do a thinkg you are asked to do and provide two-sentence summary for the Orchestrator describing the actions performed and the overall outcome.",
                 "allowedTools": [
                   "read_file",
                   "list_files",
@@ -416,7 +416,7 @@
               },
               "Plan Reviewer": {
                 "systemMessage": "Reasoning: high\nYou are a plan structure reviewer. When interacting with the user, ask which plan to evaluate and which aspects (completeness, dependencies, granularity) to prioritize; provide clear, actionable findings.",
-                "orchestrationMessage": "Reasoning: high\nYou are a specialized plan structure reviewer working under orchestration. Orchestration workflow:\n- Use plan_show and plan_point_show to examine the plan thoroughly\n- Analyze dependencies and care_on relationships for logical sequencing\n- Evaluate plan completeness, feasibility, and granularity\n- Identify missing dependencies or structural issues and propose fixes\n- If plan is sound: mark as reviewed using plan_reviewed with concise assessment; if not: mark as needing work using plan_need_works with concrete requirements\n- Provide a two-sentence summary for the Orchestrator describing actions performed and overall outcome. Suggest rework by Architect if needed.",
+                "orchestrationMessage": "Reasoning: high\nYou are a specialized plan structure reviewer working under orchestration. Review a think you are ask to review, use plan_need_works or plan_reviewed tool as feedback and provide a two-sentence summary for the Orchestrator describing actions performed and overall outcome. Suggest rework by Architect if needed.",
                 "allowedTools": [
                   "read_file",
                   "list_files",
@@ -602,6 +602,36 @@
             "description": "Template instructing to rework the plan when plan.needsWork is true. Supports placeholders: <plan_id>, <plan_name>, <plan_needwork>, <plan_translated_request>, etc.",
             "scope": "window"
           },
+          "codingagent.plan.creation.promptDescriptionUpdateRework": {
+            "type": "string",
+            "default": "Plan description update needs rework based on review feedback.\n\n**Review Feedback:**\n<plan_needwork>\n\n**Current Plan Information:**\n- Short Description: <plan_short_description>\n- Long Description: <plan_long_description>\n- User Request: <plan_translated_request>\n\n**Rework Instructions:**\n1. Carefully analyze the feedback and identify what needs to be improved\n2. Update the plan descriptions to address all feedback points\n3. Use plan_change tool to update both short and long descriptions\n4. Ensure descriptions are clear, comprehensive, and match user requirements\n\n**Expected Output:** Updated descriptions that resolve all feedback issues.",
+            "description": "Template for reworking plan description update step. Supports placeholders: <plan_needwork>, <plan_short_description>, <plan_long_description>, <plan_translated_request>, etc.",
+            "scope": "window"
+          },
+          "codingagent.plan.creation.promptDescriptionReviewRework": {
+            "type": "string",
+            "default": "Plan description review needs rework based on feedback.\n\n**Review Feedback:**\n<plan_needwork>\n\n**Current Plan Information:**\n- Short Description: <plan_short_description>\n- Long Description: <plan_long_description>\n- User Request: <plan_translated_request>\n\n**Rework Instructions:**\n1. Review the feedback and understand what aspects need improvement\n2. Examine the current descriptions against the feedback\n3. If descriptions need changes, use plan_change tool to update them\n4. If descriptions are acceptable, use plan_reviewed tool to mark as reviewed\n5. Provide clear reasoning for your decision\n\n**Expected Output:** Either updated descriptions or confirmation of review completion.",
+            "description": "Template for reworking plan description review step. Supports placeholders: <plan_needwork>, <plan_short_description>, <plan_long_description>, <plan_translated_request>, etc.",
+            "scope": "window"
+          },
+          "codingagent.plan.creation.promptArchitectureCreationRework": {
+            "type": "string",
+            "default": "Plan architecture creation needs rework based on review feedback.\n\n**Review Feedback:**\n<plan_needwork>\n\n**Current Plan Information:**\n- Short Description: <plan_short_description>\n- Long Description: <plan_long_description>\n- Current Architecture: <plan_architecture>\n- User Request: <plan_translated_request>\n\n**Rework Instructions:**\n1. Analyze the feedback to understand architectural issues\n2. Design improved architecture that addresses all feedback points\n3. Ensure the new architecture supports all requirements from the long description\n4. Use plan_set_architecture tool to update the architecture JSON\n5. Follow proper JSON format with components and connections arrays\n\n**JSON Format Requirements:**\n```json\n{\n  \"components\": [\n    {\n      \"id\": \"unique-component-id\",\n      \"name\": \"Component Name\",\n      \"type\": \"service|database|api|frontend|backend|etc\",\n      \"description\": \"Component description\"\n    }\n  ],\n  \"connections\": [\n    {\n      \"from\": \"source-component-id\",\n      \"to\": \"target-component-id\",\n      \"type\": \"api|data|event|etc\",\n      \"description\": \"Connection description\"\n    }\n  ]\n}\n```\n\n**Expected Output:** Improved architecture JSON that resolves all feedback issues.",
+            "description": "Template for reworking plan architecture creation step. Supports placeholders: <plan_needwork>, <plan_architecture>, <plan_short_description>, <plan_long_description>, <plan_translated_request>, etc.",
+            "scope": "window"
+          },
+          "codingagent.plan.creation.promptArchitectureReviewRework": {
+            "type": "string",
+            "default": "Plan architecture review needs rework based on feedback.\n\n**Review Feedback:**\n<plan_needwork>\n\n**Current Plan Information:**\n- Architecture: <plan_architecture>\n- Long Description: <plan_long_description>\n- User Request: <plan_translated_request>\n\n**Rework Instructions:**\n1. Review the feedback and understand what architectural aspects need improvement\n2. Examine the current architecture against the feedback criteria\n3. If architecture needs changes, coordinate with Architect to update it using plan_set_architecture\n4. If architecture is acceptable, use plan_reviewed tool to mark as reviewed\n5. Provide detailed reasoning for your decision\n\n**Expected Output:** Either recommendation for architecture updates or confirmation of review completion.",
+            "description": "Template for reworking plan architecture review step. Supports placeholders: <plan_needwork>, <plan_architecture>, <plan_long_description>, <plan_translated_request>, etc.",
+            "scope": "window"
+          },
+          "codingagent.plan.creation.promptPlanPointsCreationRework": {
+            "type": "string",
+            "default": "Plan points creation needs rework based on review feedback.\n\n**Review Feedback:**\n<plan_needwork>\n\n**Current Plan Information:**\n- Long Description: <plan_long_description>\n- Architecture: <plan_architecture>\n- Current Points Count: <plan_points_count>\n- User Request: <plan_translated_request>\n\n**Rework Instructions:**\n1. Analyze the feedback to understand what's wrong with the current implementation points\n2. Review existing points and identify which ones need modification or removal\n3. Use plan_point_remove to remove inadequate points if necessary\n4. Use plan_add_points to create improved implementation points\n5. Ensure all points have:\n   - Clear, specific deliverables\n   - Proper dependencies\n   - Detailed implementation instructions\n   - Clear testing and review instructions\n   - Expected inputs and outputs\n6. Points should align with the architecture and cover all requirements\n\n**Quality Guidelines:**\n- Each point should be implementable by one specialist\n- Dependencies should be minimal and realistic\n- Instructions should be clear and testable\n- Points should follow logical implementation order\n\n**Expected Output:** Improved set of implementation points that address all feedback issues.",
+            "description": "Template for reworking plan points creation step. Supports placeholders: <plan_needwork>, <plan_long_description>, <plan_architecture>, <plan_points_count>, <plan_translated_request>, etc.",
+            "scope": "window"
+          },
           "codingagent.plan.recommendedModePlanRework": {
             "type": "string",
             "default": "Architect",
@@ -612,6 +642,12 @@
             "type": "string",
             "default": "Use the plan_change tool to update both descriptions. Do not provide only text responses.\n\n**User's Original Request:** <plan_translated_request>\n\n**Required Steps:**\n1. Create a clear, concise short description that summarizes what the plan will accomplish\n2. Create a comprehensive long description that includes all user requirements and technical details\n3. **IMMEDIATELY call plan_change tool** with both new descriptions\n4. After tool execution, provide a two-sentence summary of what you did\n\n**Important:** Your response will be considered FAILED if you do not call the plan_change tool. Only text responses without tool calls will be rejected.\n\n**Expected Output:** plan_change tool execution followed by a brief summary.",
             "description": "Template for plan description update prompt. Placeholders: <plan_translated_request>, <plan_short_description>, <plan_long_description>",
+            "scope": "window"
+          },
+          "codingagent.plan.creation.callbackDescriptionUpdate": {
+            "type": "string",
+            "default": "plan.descriptionsUpdated",
+            "description": "Callback function to check if description update step is completed. Available checks: plan.descriptionsUpdated, plan.needsWork (negated)",
             "scope": "window"
           },
           "codingagent.plan.creation.recommendedModeDescriptionUpdate": {
@@ -650,6 +686,12 @@
             "description": "Template for architecture creation prompt. Placeholders: <plan_short_description>, <plan_long_description>, <plan_translated_request>",
             "scope": "window"
           },
+          "codingagent.plan.creation.callbackArchitectureCreation": {
+            "type": "string",
+            "default": "plan.architectureCreated",
+            "description": "Callback function to check if architecture creation step is completed. Available checks: plan.architectureCreated, plan.needsWork (negated)",
+            "scope": "window"
+          },
           "codingagent.plan.creation.recommendedModeArchitectureCreation": {
             "type": "string",
             "default": "Architect",
@@ -664,8 +706,14 @@
           },
           "codingagent.plan.creation.promptArchitectureReview": {
             "type": "string",
-            "default": "<checklist>\n\n**Plan Architecture:**\n<plan_architecture>\n\n**Plan Long Description:**\n<plan_long_description>",
+            "default": "<checklist>\n\n**Plan Architecture:**\n<plan_architecture>\n\n**Plan Long Description:**\n<plan_long_description>\n\nIf you find any problem or problems, use plan_need_works tool to specify found problems. If everything looks fine and no aditional work is needed, use tool plan_reviewed to set it.",
             "description": "Template for plan architecture review prompt. Placeholder <checklist> is replaced with current checklist item. Supports placeholders: <checklist>, <plan_architecture>, <plan_long_description>, etc.",
+            "scope": "window"
+          },
+          "codingagent.plan.creation.callbackArchitectureReview": {
+            "type": "string",
+            "default": "plan.architectureReviewed",
+            "description": "Callback function to check if architecture review step is completed. Available checks: plan.reviewed, plan.architectureReviewed, plan.needsWork (negated)",
             "scope": "window"
           },
           "codingagent.plan.creation.recommendedModeArchitectureReview": {
@@ -674,10 +722,22 @@
             "description": "Recommended mode for architecture review step",
             "scope": "window"
           },
+          "codingagent.plan.creation.checklistPlanPointsCreation": {
+            "type": "string",
+            "default": "* Are all implementation points clearly defined with specific deliverables?\n* Do the points cover all requirements from the long description?\n* Are the dependencies between points logical and minimal?\n* Does each point have clear testing and review instructions?\n* Are expected inputs and outputs specified for each point?",
+            "description": "Checklist for plan points creation validation (one item per line, starting with '* ')",
+            "scope": "window"
+          },
           "codingagent.plan.creation.promptPlanPointsCreation": {
             "type": "string",
-            "default": "Create Implementation Points**\n\nPlease create detailed implementation points for this plan based on the architecture and requirements.\n\n**Plan Information:**\n- Long Description: <plan_long_description>\n- Architecture: <plan_architecture>\n- User Request: <plan_translated_request>\n\n**Instructions:**\n1. Break down the implementation into logical, manageable points\n2. Each point should focus on a specific deliverable or component\n3. Include all necessary details for each point:\n   - Clear short name and description\n   - Detailed implementation instructions\n   - Review and testing instructions\n   - Expected inputs and outputs\n   - Dependencies on other points\n4. Order points based on logical dependencies\n5. Use plan_add_points tool to add all points\n\n**Quality Guidelines:**\n- Each point should be implementable by one specialist\n- Dependencies should be minimal and realistic\n- Instructions should be clear and testable\n- Points should align with the architecture\n\n**Expected Output:** Complete set of implementation points covering all requirements.",
+            "default": "**Create Implementation Points**\n\nPlease create detailed implementation points for this plan based on the architecture and requirements.\n\n**Plan Information:**\n- Long Description: <plan_long_description>\n- Architecture: <plan_architecture>\n- User Request: <plan_translated_request>\n\n**Instructions:**\n1. Break down the implementation into logical, manageable points\n2. Each point should focus on a specific deliverable or component\n3. Include all necessary details for each point:\n   - Clear short name and description\n   - Detailed implementation instructions\n   - Review and testing instructions\n   - Expected inputs and outputs\n   - Dependencies on other points\n4. Order points based on logical dependencies\n5. Use plan_add_points tool to add all points\n\n**Quality Guidelines:**\n- Each point should be implementable by one specialist\n- Dependencies should be minimal and realistic\n- Instructions should be clear and testable\n- Points should align with the architecture\n\n**Expected Output:** Complete set of implementation points covering all requirements.",
             "description": "Template for plan points creation prompt. Placeholders: <plan_long_description>, <plan_architecture>, <plan_translated_request>",
+            "scope": "window"
+          },
+          "codingagent.plan.creation.callbackPlanPointsCreation": {
+            "type": "string",
+            "default": "plan.pointsCreated",
+            "description": "Callback function to check if plan points creation step is completed. Available checks: plan.pointsCreated, plan.needsWork (negated)",
             "scope": "window"
           },
           "codingagent.plan.creation.recommendedModePlanPointsCreation": {

@@ -87,7 +87,8 @@ export interface PlanEvaluationResult {
   isDone: boolean;
   nextStepPrompt: string; // Always required now - even for done plans
   failedStep?: 'plan_rework' | 'plan_review' | 'rework' | 'implementation' | 'code_review' | 'testing' | 'acceptance' | 
-               'plan_description_update' | 'plan_description_review' | 'plan_architecture_creation' | 'plan_architecture_rework' | 'plan_architecture_review' | 'plan_points_creation' | 'plan_points_rework' | '';
+               'plan_description_update' | 'plan_description_review' | 'plan_architecture_creation' | 'plan_architecture_rework' | 'plan_architecture_review' | 'plan_points_creation' | 'plan_points_rework' |
+               'plan_description_update_rework' | 'plan_description_review_rework' | 'plan_architecture_creation_rework' | 'plan_architecture_review_rework' | 'plan_points_creation_rework' | '';
   failedPoints?: string[];
   reason?: string;
   recommendedMode?: string; // New: recommended mode for this step from configuration
@@ -1575,12 +1576,37 @@ export class PlanningService {
         ? plan.needsWorkComments[0] 
         : 'Plan needs rework';
       
+      // Determine which step-specific rework template to use based on current creation step
+      let reworkPromptKey = 'codingagent.plan.promptPlanRework'; // default fallback
+      let failedStepType: 'plan_rework' | 'plan_description_update_rework' | 'plan_description_review_rework' | 'plan_architecture_creation_rework' | 'plan_architecture_review_rework' | 'plan_points_creation_rework' = 'plan_rework';
+
+      if (plan.creationStep === 'description_update' && !plan.descriptionsUpdated) {
+        reworkPromptKey = 'codingagent.plan.creation.promptDescriptionUpdateRework';
+        failedStepType = 'plan_description_update_rework';
+      } else if (plan.creationStep === 'description_review' && !plan.descriptionsReviewed) {
+        reworkPromptKey = 'codingagent.plan.creation.promptDescriptionReviewRework';
+        failedStepType = 'plan_description_review_rework';
+      } else if (plan.creationStep === 'architecture_creation' && !plan.architectureCreated) {
+        reworkPromptKey = 'codingagent.plan.creation.promptArchitectureCreationRework';
+        failedStepType = 'plan_architecture_creation_rework';
+      } else if (plan.creationStep === 'architecture_review' && !plan.architectureReviewed) {
+        reworkPromptKey = 'codingagent.plan.creation.promptArchitectureReviewRework';
+        failedStepType = 'plan_architecture_review_rework';
+      } else if (plan.creationStep === 'points_creation' && !plan.pointsCreated) {
+        reworkPromptKey = 'codingagent.plan.creation.promptPlanPointsCreationRework';
+        failedStepType = 'plan_points_creation_rework';
+      }
+
+      // Get the step-specific rework template and apply placeholders
+      const reworkTemplate = this.getConfig(reworkPromptKey);
+      const reworkPrompt = this.replacePlaceholders(reworkTemplate, planId);
+      
       return {
         success: true,
         result: {
           isDone: false,
-          nextStepPrompt: this.generateCorrectionPrompt('plan_rework', [], firstComment, planId),
-          failedStep: 'plan_rework',
+          nextStepPrompt: reworkPrompt,
+          failedStep: failedStepType,
           reason: firstComment,
           recommendedMode: this.getRecommendedMode('plan_rework'),
           doneCallback: (success?: boolean, info?: string) => {
@@ -1727,14 +1753,16 @@ export class PlanningService {
     if (plan.architecture && plan.architectureCreated && !plan.architectureReviewed) {
       const validationResult = this.validateArchitectureJson(plan.architecture);
       if (!validationResult.success) {
-        const reworkPrompt = `**PLAN CREATION STEP: Fix Architecture Design**\n\nThe architecture design has validation issues that need to be resolved.\n\n**Current Architecture:** ${plan.architecture}\n\n**Validation Issues:** ${validationResult.error}\n\n**Instructions:**\n1. Please fix the architecture JSON format issues\n2. Ensure the JSON is valid and properly structured\n3. Include required components and connections arrays\n4. Each component must have at least id and name properties\n5. Use the plan_set_architecture tool to update the architecture\n\n**Expected Output:** Valid architecture JSON that passes validation.`;
+        // Use step-specific rework template for architecture creation
+        const reworkTemplate = this.getConfig('codingagent.plan.creation.promptArchitectureCreationRework');
+        const reworkPrompt = this.replacePlaceholders(reworkTemplate, planId);
         
         return {
           success: true,
           result: {
             isDone: false,
             nextStepPrompt: reworkPrompt,
-            failedStep: 'plan_architecture_rework',
+            failedStep: 'plan_architecture_creation_rework',
             reason: `Architecture validation failed: ${validationResult.error}`,
             recommendedMode: this.getConfig('codingagent.plan.creation.recommendedModeArchitectureCreation'),
             doneCallback: (success?: boolean, info?: string) => {
@@ -1843,12 +1871,16 @@ export class PlanningService {
       }
       
       if (validationResult.issue) {
+        // Use step-specific rework template for plan points creation
+        const reworkTemplate = this.getConfig('codingagent.plan.creation.promptPlanPointsCreationRework');
+        const reworkPrompt = this.replacePlaceholders(reworkTemplate, planId);
+        
         return {
           success: true,
           result: {
             isDone: false,
-            nextStepPrompt: `Please fix this issue in the plan points: ${validationResult.issue.message}`,
-            failedStep: 'plan_points_rework',
+            nextStepPrompt: reworkPrompt,
+            failedStep: 'plan_points_creation_rework',
             failedPoints: validationResult.issue.pointId ? [validationResult.issue.pointId] : undefined,
             reason: validationResult.issue.message,
             recommendedMode: this.getConfig('codingagent.plan.creation.recommendedModePlanPointsCreation')
