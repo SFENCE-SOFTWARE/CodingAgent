@@ -1661,6 +1661,10 @@ export class PlanningService {
     if (!plan.descriptionsReviewed) {
       plan.creationStep = 'description_review';
       
+      // Reset plan.reviewed flag for this review step
+      plan.reviewed = false;
+      plan.reviewedComment = undefined;
+      
       // Initialize checklist if not done already
       if (!plan.creationChecklist) {
         const checklistText = this.getConfig('codingagent.plan.creation.checklistDescriptionReview');
@@ -1779,6 +1783,10 @@ export class PlanningService {
     if (plan.architectureCreated && plan.architecture && !plan.architectureReviewed) {
       plan.creationStep = 'architecture_review';
       
+      // Reset plan.reviewed flag for this review step
+      plan.reviewed = false;
+      plan.reviewedComment = undefined;
+      
       // Initialize checklist if not done already
       if (!plan.creationChecklist || plan.creationChecklist.length === 0) {
         const checklistText = this.getConfig('codingagent.plan.creation.checklistArchitectureReview');
@@ -1787,6 +1795,9 @@ export class PlanningService {
 
       plan.updatedAt = Date.now();
       this.savePlan(plan);
+
+      // Get completion callback configuration
+      const callbackConfig = this.getConfig('codingagent.plan.creation.callbackArchitectureReview');
 
       // If we have checklist items, return the first one
       if (plan.creationChecklist && plan.creationChecklist.length > 0) {
@@ -1819,7 +1830,8 @@ export class PlanningService {
                   this.savePlan(currentPlan);
                 }
               }
-            }
+            },
+            completionCallback: callbackConfig ? () => this.evaluateCompletionCallback(callbackConfig, planId) : undefined
           }
         };
       } else {

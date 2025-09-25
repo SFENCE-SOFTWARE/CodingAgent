@@ -712,7 +712,7 @@
           },
           "codingagent.plan.creation.callbackArchitectureReview": {
             "type": "string",
-            "default": "plan.architectureReviewed",
+            "default": "plan.reviewed",
             "description": "Callback function to check if architecture review step is completed. Available checks: plan.reviewed, plan.architectureReviewed, plan.needsWork (negated)",
             "scope": "window"
           },
