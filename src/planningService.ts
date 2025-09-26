@@ -1189,6 +1189,7 @@ export class PlanningService {
    * Evaluates plan completion status and generates corrective prompts if needed
    * Focuses only on implementation workflow: points need rework -> points not reviewed -> points not tested -> points not implemented -> plan accepted
    * Rule: Points which are not implemented cannot be marked as not reviewed or not tested
+   * Note: plan.needsWork is handled only in evaluatePlanCreation, not here
    */
   public evaluatePlanCompletion(planId: string): { success: boolean; result?: PlanEvaluationResult; error?: string } {
     const plan = this.plans.get(planId);
@@ -1196,7 +1197,25 @@ export class PlanningService {
       return { success: false, error: `Plan with ID '${planId}' not found` };
     }
 
-    // Step 1: Check if any points need rework (highest priority)
+    // Step 0: Procedural validation for unreviewed plans
+    if (!plan.reviewed) {
+      const validationResult = this.validatePlanProcedurally(planId);
+      if (validationResult.success && validationResult.issue) {
+        // Found procedural issue - return plan_review failure
+        return {
+          success: true,
+          result: {
+            isDone: false,
+            nextStepPrompt: `Plan review failed: ${validationResult.issue.message}`, // Direct message instead of template
+            failedStep: 'plan_review',
+            reason: `Procedural validation failed: ${validationResult.issue.message}`,
+            recommendedMode: this.getRecommendedMode('plan_review')
+          }
+        };
+      }
+    }
+
+    // Step 1: Check if any points need rework (first priority)
     const reworkPoints = plan.points.filter(p => p.needRework);
     if (reworkPoints.length > 0) {
       // Return only the first point that needs rework
@@ -2001,7 +2020,8 @@ export class PlanningService {
         'codingagent.plan.creation.promptArchitectureReviewRework': 'The architecture review needs rework. Please address the issues and complete the review.\n\n**Problems Found:** <rework_reason>\n\n**Required Steps:**\n1. Review the validation errors\n2. Address the architecture issues\n3. Use appropriate review tools (plan_reviewed or plan_need_works)\n4. Complete the review process',
         'codingagent.plan.creation.promptPlanPointsCreation': 'Create plan points for this project. Use the plan_create_points tool to add all necessary plan points.\n\n**User\'s Original Request:** <plan_translated_request>\n\n**Current Plan Context:**\n- **Short Description:** <plan_short_description>\n- **Long Description:** <plan_long_description>\n- **Architecture:** <plan_architecture>\n\n**Required Steps:**\n1. Break down the project into manageable plan points\n2. **IMMEDIATELY call plan_create_points tool** with all plan points\n3. After tool execution, provide a brief summary of the plan points\n\n**Important:** Your response will be considered FAILED if you do not call the plan_create_points tool.',
         'codingagent.plan.creation.recommendedModePlanPointsCreation': 'Architect',
-        'codingagent.plan.creation.promptPlanPointsCreationRework': 'The plan points need rework due to validation issues. Please fix and use the plan_create_points tool again.\n\n**Problems Found:** <rework_reason>\n\n**Required Steps:**\n1. Review the validation errors\n2. Fix the plan points format and content\n3. **IMMEDIATELY call plan_create_points tool** with the corrected plan points\n4. After tool execution, provide a brief summary of what was fixed'
+        'codingagent.plan.creation.promptPlanPointsCreationRework': 'The plan points need rework due to validation issues. Please fix and use the plan_create_points tool again.\n\n**Problems Found:** <rework_reason>\n\n**Required Steps:**\n1. Review the validation errors\n2. Fix the plan points format and content\n3. **IMMEDIATELY call plan_create_points tool** with the corrected plan points\n4. After tool execution, provide a brief summary of what was fixed',
+        'codingagent.plan.creation.promptCreationComplete': 'PLAN CREATION COMPLETED SUCCESSFULLY! The plan now includes comprehensive descriptions, architecture, and detailed implementation points.\n\n**Plan Summary:**\n- **Name:** <plan_name>\n- **Description:** <plan_short_description>\n- **Points:** <plan_points_count> implementation points\n- **Status:** Ready for implementation\n\nThe plan is now ready to be executed. You can proceed with implementing the plan points in the recommended order.'
       };
       
       result = fallbackConfig[key] || '';

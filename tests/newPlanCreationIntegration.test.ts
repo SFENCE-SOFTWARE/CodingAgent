@@ -68,10 +68,24 @@ suite('New Plan Creation Integration Tests', () => {
     assert.strictEqual(evaluationResult.result?.failedStep, 'plan_description_review');
     assert.strictEqual(evaluationResult.result?.recommendedMode, 'Plan Reviewer');
 
-    // Step 6: Complete description review (simulate Reviewer mode)
-    const reviewEvaluationResult = evaluationResult; // Store the review evaluation result
-    if (reviewEvaluationResult.result?.doneCallback) {
-      reviewEvaluationResult.result.doneCallback(true, 'Descriptions reviewed and approved');
+    // Step 6: Complete description review (simulate Reviewer mode) - need to complete all checklist items
+    let reviewEvaluationResult = evaluationResult;
+    
+    // Call callback 3 times to complete all checklist items (based on fallback config)
+    for (let i = 0; i < 3; i++) {
+      if (reviewEvaluationResult.result?.doneCallback) {
+        reviewEvaluationResult.result.doneCallback(true, `Description review item ${i + 1} completed`);
+      }
+      
+      // Get next evaluation result for next checklist item (except for last iteration)
+      if (i < 2) {
+        reviewEvaluationResult = planningService.evaluatePlanCreation('integration-test-plan', 'Create comprehensive web server');
+        assert.ok(reviewEvaluationResult.success);
+        // After completing some checklist items, we might transition to next step
+        assert.ok(reviewEvaluationResult.result?.failedStep === 'plan_description_review' || 
+                 reviewEvaluationResult.result?.failedStep === 'plan_architecture_creation',
+                 `Expected description review or architecture creation, got: ${reviewEvaluationResult.result?.failedStep}`);
+      }
     }
 
     // Step 7: Evaluate after description review - should need architecture creation
@@ -81,51 +95,65 @@ suite('New Plan Creation Integration Tests', () => {
     assert.strictEqual(evaluationResult.result?.recommendedMode, 'Architect');
 
     // Step 8: Add architecture (simulate Architect mode)
-
-    // Step 5: Mark plan as reviewed (simulate Plan Reviewer mode)
-    const reviewResult = planningService.setPlanReviewed('integration-test-plan', 'Plan looks comprehensive and well-structured');
-    assert.ok(reviewResult.success, 'Plan review should succeed');
-
-    // Step 6: Evaluate - should need architecture creation
-    evaluationResult = planningService.evaluatePlanCreation('integration-test-plan', 'Vytvoř webový server s REST API');
-    assert.ok(evaluationResult.success);
-    assert.strictEqual(evaluationResult.result?.isDone, false);
-    assert.strictEqual(evaluationResult.result?.failedStep, 'architecture_creation');
-    assert.strictEqual(evaluationResult.result?.recommendedMode, 'Architect');
-
-        // Step 4: Add architecture (simulate Architect mode)
     const architectureResult = planningService.setArchitecture(
       'integration-test-plan',
-      `## Web Server Architecture
-      
-### Technology Stack
-- **Runtime**: Node.js 18+ with TypeScript
-- **Framework**: Express.js 4.x
-- **Authentication**: JWT-based authentication system
-- **Database**: PostgreSQL with TypeORM
-- **Validation**: Joi or express-validator
-- **Error Handling**: Centralized error middleware
-
-### System Components
-1. **HTTP Server Layer**: Express.js routing and middleware
-2. **Authentication Layer**: JWT token validation
-3. **Business Logic Layer**: Service classes for business rules
-4. **Data Access Layer**: Repository pattern with TypeORM
-5. **Database Layer**: PostgreSQL database
-
-### API Endpoint Structure
-- POST /api/auth/login - User authentication
-- GET /api/users - List users (authenticated)
-- POST /api/users - Create user
-- GET /api/users/:id - Get specific user
-- PUT /api/users/:id - Update user
-- DELETE /api/users/:id - Delete user
-
-### Security Considerations
-- JWT token expiration and refresh mechanism
-- Input validation and sanitization
-- SQL injection prevention through ORM
-- Rate limiting for API endpoints`
+      JSON.stringify({
+        "components": [
+          {
+            "id": "http-server",
+            "name": "HTTP Server Layer",
+            "description": "Express.js routing and middleware"
+          },
+          {
+            "id": "auth-layer",
+            "name": "Authentication Layer", 
+            "description": "JWT token validation"
+          },
+          {
+            "id": "business-logic",
+            "name": "Business Logic Layer",
+            "description": "Service classes for business rules"
+          },
+          {
+            "id": "data-access",
+            "name": "Data Access Layer",
+            "description": "Repository pattern with TypeORM"
+          },
+          {
+            "id": "database",
+            "name": "Database Layer",
+            "description": "PostgreSQL database"
+          }
+        ],
+        "connections": [
+          {
+            "from": "http-server",
+            "to": "auth-layer",
+            "description": "Authentication middleware"
+          },
+          {
+            "from": "auth-layer",
+            "to": "business-logic",
+            "description": "Authenticated requests"
+          },
+          {
+            "from": "business-logic",
+            "to": "data-access",
+            "description": "Data operations"
+          },
+          {
+            "from": "data-access",
+            "to": "database",
+            "description": "SQL queries"
+          }
+        ],
+        "technology_stack": {
+          "runtime": "Node.js 18+ with TypeScript",
+          "framework": "Express.js 4.x",
+          "database": "PostgreSQL with TypeORM",
+          "authentication": "JWT-based system"
+        }
+      })
     );
     assert.ok(architectureResult.success, 'Architecture addition should succeed');
 
@@ -133,12 +161,27 @@ suite('New Plan Creation Integration Tests', () => {
     evaluationResult = planningService.evaluatePlanCreation('integration-test-plan', 'Vytvoř webový server s REST API');
     assert.ok(evaluationResult.success);
     assert.strictEqual(evaluationResult.result?.isDone, false);
-    assert.strictEqual(evaluationResult.result?.failedStep, 'architecture_review');
+    assert.strictEqual(evaluationResult.result?.failedStep, 'plan_architecture_review');
     assert.strictEqual(evaluationResult.result?.recommendedMode, 'Plan Reviewer');
 
-    // Step 9: Mark architecture as reviewed (simulate callback)
-    if (evaluationResult.result?.doneCallback) {
-      evaluationResult.result.doneCallback(true, 'Architecture approved - good separation of concerns');
+    // Step 9: Mark architecture as reviewed (simulate Reviewer mode) - complete all checklist items
+    let archReviewEvaluationResult = evaluationResult;
+    
+    // Architecture review also has checklist, complete all items similar to description review
+    for (let i = 0; i < 3; i++) {
+      if (archReviewEvaluationResult.result?.doneCallback) {
+        archReviewEvaluationResult.result.doneCallback(true, `Architecture review item ${i + 1} completed`);
+      }
+      
+      // Get next evaluation result for next checklist item (except for last iteration)
+      if (i < 2) {
+        archReviewEvaluationResult = planningService.evaluatePlanCreation('integration-test-plan', 'Create comprehensive web server');
+        assert.ok(archReviewEvaluationResult.success);
+        // After completing some checklist items, we might transition to next step
+        assert.ok(archReviewEvaluationResult.result?.failedStep === 'plan_architecture_review' || 
+                 archReviewEvaluationResult.result?.failedStep === 'plan_points_creation',
+                 `Expected architecture review or points creation, got: ${archReviewEvaluationResult.result?.failedStep}`);
+      }
     }
 
     // Step 10: Evaluate - should need plan points
@@ -177,7 +220,7 @@ suite('New Plan Creation Integration Tests', () => {
     evaluationResult = planningService.evaluatePlanCreation('integration-test-plan', 'Vytvoř webový server s REST API');
     assert.ok(evaluationResult.success);
     assert.strictEqual(evaluationResult.result?.isDone, true, 'Plan creation workflow should be complete');
-    assert.ok(evaluationResult.result?.nextStepPrompt.includes('Plan creation completed successfully'), 'Should show completion message');
+    assert.ok(evaluationResult.result?.nextStepPrompt.includes('PLAN CREATION COMPLETED SUCCESSFULLY'), 'Should show completion message');
   });
 
   test('should handle plan creation rework cycle', () => {

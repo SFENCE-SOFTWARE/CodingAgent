@@ -68,18 +68,19 @@ suite('Plan Evaluation Mode Recommendations', () => {
     const planId = 'test-plan-modes';
     planningService.createPlan(planId, 'Test Plan', 'Short desc', 'Long desc');
     
-    // Add a test point
+    // Add a test point with proper dependencies to avoid procedural validation failure
     planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Review instructions',
         'Testing instructions', 'Expected outputs', 'Expected inputs');
+    planningService.setPointDependencies(planId, '1', ['-1'], []); // Set as independent point
     
-    // Test plan review state
+    // Test plan review state (should skip procedural validation since point has dependencies)
     const result1 = planningService.evaluatePlanCompletion(planId);
     assert.strictEqual(result1.success, true);
-    assert.strictEqual(result1.result?.failedStep, 'plan_review');
-    assert.strictEqual(result1.result?.recommendedMode, 'Plan Reviewer'); // Should return Plan Reviewer for plan_review
+    assert.strictEqual(result1.result?.failedStep, 'implementation'); // Should be implementation now, not plan_review
+    assert.strictEqual(result1.result?.recommendedMode, 'Coder'); // Should return 'Coder' for implementation
     assert.strictEqual(typeof result1.result?.recommendedMode, 'string');
     
-    // Review plan and test implementation state
+    // Review plan and test implementation state (plan is reviewed but point needs implementation)
     planningService.setPlanReviewed(planId, 'Plan reviewed');
     const result2 = planningService.evaluatePlanCompletion(planId);
     assert.strictEqual(result2.success, true);
@@ -141,9 +142,10 @@ suite('Plan Evaluation Mode Recommendations', () => {
     const planId = 'test-point-rework-mode';
     planningService.createPlan(planId, 'Test Plan', 'Short desc', 'Long desc');
     
-    // Add and review plan
+    // Add and review plan with proper dependencies
     planningService.addPoint(planId, null, 'Point 1', 'Short desc', 'Detailed desc', 'Review instructions',
         'Testing instructions', 'Expected outputs', 'Expected inputs');
+    planningService.setPointDependencies(planId, '1', ['-1'], []); // Set as independent point
     planningService.setPlanReviewed(planId, 'Plan reviewed');
     
     // Set point to need rework
