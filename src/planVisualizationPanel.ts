@@ -194,13 +194,22 @@ export class PlanVisualizationPanel {
     let mermaid = 'graph TD\n';
     
     try {
-      if (architectureData.nodes && Array.isArray(architectureData.nodes)) {
-        // Add nodes with proper styling
-        architectureData.nodes.forEach((node: any, index: number) => {
+      // Support both node/edges format and components/connections format
+      const nodes = architectureData.nodes || architectureData.components;
+      const edges = architectureData.edges || architectureData.connections;
+      
+      if (nodes && Array.isArray(nodes)) {
+        // Add nodes/components with proper styling
+        nodes.forEach((node: any, index: number) => {
           const nodeId = node.id || `node${index}`;
           const nodeLabel = node.label || node.name || nodeId;
+          const nodeDescription = node.description ? `\\n${node.description}` : '';
+          const fullLabel = `${nodeLabel}${nodeDescription}`;
           const nodeShape = this._getMermaidShape(node.type || 'default');
-          mermaid += `    ${nodeId}${nodeShape.start}"${nodeLabel}"${nodeShape.end}\n`;
+          
+          // Escape quotes in labels and limit description length
+          const escapedLabel = this._escapeMermaidLabel(fullLabel);
+          mermaid += `    ${nodeId}${nodeShape.start}"${escapedLabel}"${nodeShape.end}\n`;
           
           // Add styling for different node types
           const nodeType = (node.type || 'default').toLowerCase();
@@ -210,6 +219,10 @@ export class PlanVisualizationPanel {
             mermaid += `    ${nodeId}:::service\n`;
           } else if (nodeType === 'component' || nodeType === 'module') {
             mermaid += `    ${nodeId}:::component\n`;
+          } else if (nodeType === 'frontend') {
+            mermaid += `    ${nodeId}:::frontend\n`;
+          } else if (nodeType === 'backend') {
+            mermaid += `    ${nodeId}:::backend\n`;
           } else if (nodeType === 'decision') {
             mermaid += `    ${nodeId}:::decision\n`;
           }
@@ -218,13 +231,20 @@ export class PlanVisualizationPanel {
         mermaid += '\n';
         
         // Add edges/connections
-        if (architectureData.edges && Array.isArray(architectureData.edges)) {
-          architectureData.edges.forEach((edge: any) => {
+        if (edges && Array.isArray(edges)) {
+          edges.forEach((edge: any) => {
             const fromId = edge.from || edge.source;
             const toId = edge.to || edge.target;
-            const label = edge.label ? ` -->|"${edge.label}"| ` : ' --> ';
+            const edgeDescription = edge.description || edge.label || '';
+            
             if (fromId && toId) {
-              mermaid += `    ${fromId}${label}${toId}\n`;
+              if (edgeDescription) {
+                // Escape and limit edge label length
+                const escapedDescription = this._escapeMermaidLabel(edgeDescription, 30);
+                mermaid += `    ${fromId} -->|"${escapedDescription}"| ${toId}\n`;
+              } else {
+                mermaid += `    ${fromId} --> ${toId}\n`;
+              }
             }
           });
         }
@@ -233,6 +253,8 @@ export class PlanVisualizationPanel {
         mermaid += '\n    classDef database fill:#e1f5fe,stroke:#0277bd,stroke-width:2px,color:#000\n';
         mermaid += '    classDef service fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000\n';
         mermaid += '    classDef component fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px,color:#000\n';
+        mermaid += '    classDef frontend fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#000\n';
+        mermaid += '    classDef backend fill:#fff8e1,stroke:#f57c00,stroke-width:2px,color:#000\n';
         mermaid += '    classDef decision fill:#fff3e0,stroke:#ef6c00,stroke-width:2px,color:#000\n';
         
       } else {
@@ -280,6 +302,10 @@ export class PlanVisualizationPanel {
       case 'component':
       case 'module':
         return { start: '[', end: ']' };
+      case 'frontend':
+        return { start: '[', end: ']' };
+      case 'backend':
+        return { start: '[[', end: ']]' };
       case 'decision':
         return { start: '{', end: '}' };
       case 'process':
@@ -287,6 +313,26 @@ export class PlanVisualizationPanel {
       default:
         return { start: '[', end: ']' };
     }
+  }
+
+  /**
+   * Escapes and optionally truncates text for use in Mermaid labels
+   */
+  private _escapeMermaidLabel(text: string, maxLength: number = 60): string {
+    if (!text) {
+      return '';
+    }
+    
+    // Truncate long text
+    let truncated = text.length > maxLength ? text.substring(0, maxLength - 3) + '...' : text;
+    
+    // Escape special characters for Mermaid
+    return truncated
+      .replace(/"/g, '#quot;')
+      .replace(/\n/g, '\\n')
+      .replace(/\r/g, '')
+      .replace(/\t/g, ' ')
+      .trim();
   }
 
   private _getPlanVisualizationHtml(plan: any, logs: any[] = []): string {
