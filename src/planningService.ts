@@ -102,6 +102,7 @@ export interface PlanEvaluationResult {
 
 export class PlanningService {
   private static instance: PlanningService;
+  private static instancesByWorkspace = new Map<string, PlanningService>();
   private plans: Map<string, Plan> = new Map();
   private plansDirectory: string;
   private lastLogTimestamp: number = 0;
@@ -117,14 +118,24 @@ export class PlanningService {
   }
 
   public static getInstance(workspaceRoot?: string): PlanningService {
-    if (!PlanningService.instance) {
-      PlanningService.instance = new PlanningService(workspaceRoot);
+    // If no workspaceRoot is provided, use the default instance
+    if (!workspaceRoot) {
+      if (!PlanningService.instance) {
+        PlanningService.instance = new PlanningService(workspaceRoot);
+      }
+      return PlanningService.instance;
     }
-    return PlanningService.instance;
+    
+    // For specific workspaceRoot, use per-workspace instances
+    if (!PlanningService.instancesByWorkspace.has(workspaceRoot)) {
+      PlanningService.instancesByWorkspace.set(workspaceRoot, new PlanningService(workspaceRoot));
+    }
+    return PlanningService.instancesByWorkspace.get(workspaceRoot)!;
   }
 
   public static resetInstance(): void {
     PlanningService.instance = undefined as any;
+    PlanningService.instancesByWorkspace.clear();
   }
 
   private ensureDirectoryExists(): void {
