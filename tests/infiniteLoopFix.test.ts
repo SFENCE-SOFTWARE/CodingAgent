@@ -16,14 +16,16 @@ const mockConfig = {
 };
 
 // Mock vscode configuration
-(vscode as any).workspace = {
-  getConfiguration: (section?: string) => ({
+Object.defineProperty(vscode.workspace, 'getConfiguration', {
+  value: (section?: string) => ({
     get: (key: string, defaultValue?: any) => {
       const fullKey = section ? `${section}.${key}` : key;
       return mockConfig[fullKey as keyof typeof mockConfig] || defaultValue;
     }
-  })
-};
+  }),
+  writable: true,
+  configurable: true
+});
 
 function assert(condition: boolean, message: string): void {
   if (!condition) {

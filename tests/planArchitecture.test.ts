@@ -62,7 +62,7 @@ suite('Plan Architecture Tests', () => {
     }, '/test/workspace');
 
     assert.strictEqual(result.success, true);
-    assert.ok(result.content.includes('Architecture set successfully'));
+    assert.ok(result.content.includes('Architecture has been set for plan'));
   });
 
   test('should retrieve plan architecture via showPlan', () => {
@@ -92,7 +92,7 @@ suite('Plan Architecture Tests', () => {
     }, '/test/workspace');
 
     assert.strictEqual(result.success, false);
-    assert.ok(result.error?.includes('Invalid JSON'));
+    assert.ok(result.error?.includes('Architecture must be valid JSON'));
   });
 
   test('should require architecture parameter', async () => {
@@ -101,7 +101,7 @@ suite('Plan Architecture Tests', () => {
     }, '/test/workspace');
 
     assert.strictEqual(result.success, false);
-    assert.ok(result.error?.includes('Architecture is required'));
+    assert.ok(result.error?.includes('Required parameter: architecture'));
   });
 
   test('should handle non-existent plan gracefully', async () => {

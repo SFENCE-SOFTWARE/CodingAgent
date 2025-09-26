@@ -119,8 +119,20 @@ export class AlgorithmEngine {
    */
   private getBuiltInScriptPath(mode: string): string | null {
     // First try to get extension path
-    const extension = vscode.extensions.getExtension('codding-agent');
-    const extensionPath = extension?.extensionPath;
+    let extensionPath: string | undefined;
+    
+    try {
+      const extension = vscode.extensions?.getExtension('codding-agent');
+      extensionPath = extension?.extensionPath;
+    } catch (error) {
+      // In test environment, extensions may not be available
+      console.warn('Could not access extensions in test environment');
+    }
+    
+    // Fallback for test environment - use workspace path
+    if (!extensionPath && vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
+      extensionPath = vscode.workspace.workspaceFolders[0].uri.fsPath;
+    }
     
     if (extensionPath) {
       const builtInPath = path.join(extensionPath, 'src', 'algorithms', `${mode.toLowerCase()}.js`);

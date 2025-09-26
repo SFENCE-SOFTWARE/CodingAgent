@@ -6,28 +6,65 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { AlgorithmEngine, AlgorithmContext, AlgorithmResult } from '../src/algorithmEngine';
 
+// Mock configuration state
+const mockConfigState = new Map<string, any>();
+
+// Mock vscode configuration
+Object.defineProperty(vscode.workspace, 'getConfiguration', {
+  value: (section?: string) => ({
+    get: (key: string, defaultValue?: any) => {
+      const fullKey = section ? `${section}.${key}` : key;
+      return mockConfigState.get(fullKey) || defaultValue;
+    },
+    update: async (key: string, value: any, target?: any) => {
+      const fullKey = section ? `${section}.${key}` : key;
+      mockConfigState.set(fullKey, value);
+      return Promise.resolve();
+    }
+  }),
+  writable: true,
+  configurable: true
+});
+
+// Mock workspace path
+const mockWorkspacePath = '/tmp/test-workspace';
+
+// Mock vscode.extensions
+Object.defineProperty(vscode, 'extensions', {
+  value: {
+    getExtension: (id: string) => ({
+      extensionPath: mockWorkspacePath
+    })
+  },
+  writable: true,
+  configurable: true
+});
+
+// Mock workspace folders
+Object.defineProperty(vscode.workspace, 'workspaceFolders', {
+  value: [{
+    uri: { fsPath: mockWorkspacePath },
+    name: 'test-workspace',
+    index: 0
+  }],
+  writable: true,
+  configurable: true
+});
+
 suite('AlgorithmEngine Tests', () => {
   let algorithmEngine: AlgorithmEngine;
   const testMode = 'TestMode';
   const testWorkspace = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
 
   setup(() => {
+    // Clear mock state
+    mockConfigState.clear();
     algorithmEngine = AlgorithmEngine.getInstance();
   });
 
   teardown(async () => {
     // Clean up test configuration
-    try {
-      const config = vscode.workspace.getConfiguration('codingagent.algorithm');
-      if (config && config.update) {
-        await config.update('enabled', {}, 1);
-        await config.update('scriptPath', {}, 1);
-        await config.update('variables', {}, 1);
-      }
-    } catch (error) {
-      // Ignore cleanup errors in test environment
-      console.warn('Failed to clean up test configuration:', error);
-    }
+    mockConfigState.clear();
   });
 
   test('AlgorithmEngine singleton', () => {
@@ -81,10 +118,11 @@ suite('AlgorithmEngine Tests', () => {
   });
 
   test('executeAlgorithm - returns error when script not found', async () => {
+    const nonExistentMode = 'NonExistentMode';
     const config = vscode.workspace.getConfiguration('codingagent.algorithm');
-    await config.update('enabled', { [testMode]: true }, 1);
+    await config.update('enabled', { [nonExistentMode]: true }, 1);
     
-    const result = await algorithmEngine.executeAlgorithm(testMode, 'test message');
+    const result = await algorithmEngine.executeAlgorithm(nonExistentMode, 'test message');
     assert.strictEqual(result.handled, false, 'Should not handle when script not found');
     assert.ok(result.error?.includes('not found'), 'Should return error about script not found');
   });

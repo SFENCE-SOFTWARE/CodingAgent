@@ -99,7 +99,9 @@ export class MockLLMService {
   }
 
   private detectStepType(prompt: string, stepType?: string): string {
-    if (stepType) return stepType;
+    if (stepType) {
+      return stepType;
+    }
     
     const lowerPrompt = prompt.toLowerCase();
     
