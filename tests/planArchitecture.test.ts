@@ -22,8 +22,8 @@ suite('Plan Architecture Tests', () => {
     planningService = PlanningService.getInstance(testWorkspaceRoot);
     architectureTool = new PlanSetArchitectureTool();
     
-    // Create a test plan
-    const planId = `test-plan-${Date.now()}`;
+    // Create a test plan - use a consistent ID that doesn't change during test execution
+    const planId = `test-plan-${Math.floor(Date.now() / 1000)}`;  // Use seconds instead of milliseconds for more stability
     const createResult = planningService.createPlan(
       planId,
       'Test Architecture Plan',
@@ -59,8 +59,8 @@ suite('Plan Architecture Tests', () => {
     const result = await architectureTool.execute({
       plan_id: testPlanId,
       architecture: JSON.stringify(architectureData)
-    }, '/test/workspace');
-
+    }, testWorkspaceRoot);
+    
     assert.strictEqual(result.success, true);
     assert.ok(result.content.includes('Architecture has been set for plan'));
   });
@@ -89,7 +89,7 @@ suite('Plan Architecture Tests', () => {
     const result = await architectureTool.execute({
       plan_id: testPlanId,
       architecture: '{ invalid json'
-    }, '/test/workspace');
+    }, testWorkspaceRoot);
 
     assert.strictEqual(result.success, false);
     assert.ok(result.error?.includes('Architecture must be valid JSON'));
@@ -98,7 +98,7 @@ suite('Plan Architecture Tests', () => {
   test('should require architecture parameter', async () => {
     const result = await architectureTool.execute({
       plan_id: testPlanId
-    }, '/test/workspace');
+    }, testWorkspaceRoot);
 
     assert.strictEqual(result.success, false);
     assert.ok(result.error?.includes('Required parameter: architecture'));
@@ -108,7 +108,7 @@ suite('Plan Architecture Tests', () => {
     const result = await architectureTool.execute({
       plan_id: 'non-existent-plan',
       architecture: '{"test": true}'
-    }, '/test/workspace');
+    }, testWorkspaceRoot);
 
     assert.strictEqual(result.success, false);
     assert.ok(result.error?.includes('Plan with ID'));
