@@ -1286,7 +1286,51 @@ export class PlanningService {
       };
     }
 
-    // Step 5: Check if plan is accepted (lowest priority)
+    // Step 5: Check if plan needs review (after all points are complete)
+    if (!plan.reviewed) {
+      // Initialize checklist if needed
+      this.initializeReviewChecklist(planId);
+      
+      // Get current checklist
+      const checklistResult = this.getPlanReviewChecklist(planId);
+      if (checklistResult.success && checklistResult.checklist && checklistResult.checklist.length > 0) {
+        // Return first checklist item
+        const firstItem = checklistResult.checklist[0];
+        const prompt = this.generateCorrectionPrompt('plan_review', [], 'Plan needs to be reviewed', planId);
+        
+        // If the prompt contains <checklist>, replace it; otherwise append the checklist item
+        let checklistPrompt: string;
+        if (prompt.includes('<checklist>')) {
+          checklistPrompt = prompt.replace(/<checklist>/g, firstItem);
+        } else {
+          checklistPrompt = `${prompt}\n\nCurrent checklist item: ${firstItem}`;
+        }
+        
+        return {
+          success: true,
+          result: {
+            isDone: false,
+            nextStepPrompt: checklistPrompt,
+            failedStep: 'plan_review',
+            reason: 'Plan needs to be reviewed',
+            recommendedMode: this.getRecommendedMode('plan_review'),
+            doneCallback: (success?: boolean, info?: string) => {
+              if (success) {
+                this.removeFirstChecklistItem(planId);
+              }
+            }
+          }
+        };
+      } else {
+        // No checklist items, mark plan as reviewed
+        plan.reviewed = true;
+        plan.reviewedComment = 'Plan review completed';
+        plan.updatedAt = Date.now();
+        this.savePlan(plan);
+      }
+    }
+
+    // Step 6: Check if plan is accepted (lowest priority)
     if (!plan.accepted) {
       return {
         success: true,
