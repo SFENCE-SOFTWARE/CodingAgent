@@ -23,7 +23,7 @@ suite('Plan Architecture Tests', () => {
     architectureTool = new PlanSetArchitectureTool();
     
     // Create a test plan - use a consistent ID that doesn't change during test execution
-    const planId = `test-plan-${Math.floor(Date.now() / 1000)}`;  // Use seconds instead of milliseconds for more stability
+    const planId = `test-plan-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;  // Ensure true uniqueness
     const createResult = planningService.createPlan(
       planId,
       'Test Architecture Plan',

@@ -220,7 +220,7 @@ suite('New Plan Creation Workflow Tests', () => {
     assert.ok(currentEval.success);
     assert.ok(currentEval.result);
     assert.strictEqual(currentEval.result.failedStep, 'plan_points_creation', 'Should move to points creation');
-    assert.ok(currentEval.result.nextStepPrompt.includes('plan_add_points tool'), 'Should include points prompt');
+    assert.ok(currentEval.result.nextStepPrompt.includes('plan_create_points tool'), 'Should include points prompt');
     assert.strictEqual(currentEval.result.recommendedMode, 'Architect', 'Should recommend Architect mode');
   });
 
