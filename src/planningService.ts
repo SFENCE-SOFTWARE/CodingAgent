@@ -1577,7 +1577,7 @@ export class PlanningService {
         : 'Plan needs rework';
       
       // Determine which step-specific rework template to use based on current creation step
-      let reworkPromptKey = 'codingagent.plan.promptPlanRework'; // default fallback
+      let reworkPromptKey: string;
       let failedStepType: 'plan_rework' | 'plan_description_update_rework' | 'plan_description_review_rework' | 'plan_architecture_creation_rework' | 'plan_architecture_review_rework' | 'plan_points_creation_rework' = 'plan_rework';
 
       if (plan.creationStep === 'description_update' && !plan.descriptionsUpdated) {
@@ -1595,6 +1595,10 @@ export class PlanningService {
       } else if (plan.creationStep === 'points_creation' && !plan.pointsCreated) {
         reworkPromptKey = 'codingagent.plan.creation.promptPlanPointsCreationRework';
         failedStepType = 'plan_points_creation_rework';
+      } else {
+        // Generic fallback - use description update rework as the most general one
+        reworkPromptKey = 'codingagent.plan.creation.promptDescriptionUpdateRework';
+        failedStepType = 'plan_rework';
       }
 
       // Get the step-specific rework template and apply placeholders
@@ -1984,13 +1988,17 @@ export class PlanningService {
       const fallbackConfig: Record<string, string> = {
         'codingagent.plan.creation.promptDescriptionUpdate': 'Use the plan_change tool to update both descriptions. Do not provide only text responses.\n\n**User\'s Original Request:** <plan_translated_request>\n\n**Required Steps:**\n1. Create a clear, concise short description that summarizes what the plan will accomplish\n2. Create a comprehensive long description that includes all user requirements and technical details\n3. **IMMEDIATELY call plan_change tool** with both new descriptions\n4. After tool execution, provide a two-sentence summary of what you did\n\n**Important:** Your response will be considered FAILED if you do not call the plan_change tool. Only text responses without tool calls will be rejected.\n\n**Expected Output:** plan_change tool execution followed by a brief summary.',
         'codingagent.plan.creation.recommendedModeDescriptionUpdate': 'Architect',
+        'codingagent.plan.creation.promptDescriptionUpdateRework': 'The descriptions need rework due to validation issues. Please fix and use the plan_change tool again.\n\n**Problems Found:** <rework_reason>\n\n**Required Steps:**\n1. Review the validation errors\n2. Fix the short and long descriptions\n3. **IMMEDIATELY call plan_change tool** with the corrected descriptions\n4. After tool execution, provide a brief summary of what was fixed',
         'codingagent.plan.creation.promptDescriptionReview': '<checklist>\n\nIf you find any problem or problems, use plan_need_works tool to specify found problems. If everything looks fine and no additional work is needed, use tool plan_reviewed to set it.',
         'codingagent.plan.creation.recommendedModeDescriptionReview': 'Reviewer',
+        'codingagent.plan.creation.promptDescriptionReviewRework': 'The description review needs rework. Please address the issues and complete the review.\n\n**Problems Found:** <rework_reason>\n\n**Required Steps:**\n1. Review the validation errors\n2. Address the description issues\n3. Use appropriate review tools (plan_reviewed or plan_need_works)\n4. Complete the review process',
+        'codingagent.plan.creation.checklistDescriptionReview': 'Are the short and long descriptions clear and comprehensive?\nDo the descriptions match the user requirements?\nIs the technical scope well defined?',
         'codingagent.plan.creation.promptArchitectureCreation': 'Create the comprehensive plan architecture for this project. Use the plan_set_architecture tool to specify the technical architecture.\n\n**User\'s Original Request:** <plan_translated_request>\n\n**Current Plan Context:**\n- **Short Description:** <plan_short_description>\n- **Long Description:** <plan_long_description>\n\n**Required Steps:**\n1. Analyze the requirements and determine the technical architecture\n2. **IMMEDIATELY call plan_set_architecture tool** with the architecture details\n3. After tool execution, provide a brief summary of the architecture\n\n**Important:** Your response will be considered FAILED if you do not call the plan_set_architecture tool. Only text responses without tool calls will be rejected.',
         'codingagent.plan.creation.recommendedModeArchitectureCreation': 'Architect',
         'codingagent.plan.creation.promptArchitectureCreationRework': 'The architecture needs rework due to validation issues. Please fix and use the plan_set_architecture tool again.\n\n**Problems Found:** <rework_reason>\n\n**Required Steps:**\n1. Review the validation errors\n2. Fix the architecture JSON format and content\n3. **IMMEDIATELY call plan_set_architecture tool** with the corrected architecture\n4. After tool execution, provide a brief summary of what was fixed',
         'codingagent.plan.creation.promptArchitectureReview': '<checklist>\n\nIf you find any problem or problems, use plan_need_works tool to specify found problems. If everything looks fine and no additional work is needed, use tool plan_reviewed to set it.',
         'codingagent.plan.creation.recommendedModeArchitectureReview': 'Reviewer',
+        'codingagent.plan.creation.promptArchitectureReviewRework': 'The architecture review needs rework. Please address the issues and complete the review.\n\n**Problems Found:** <rework_reason>\n\n**Required Steps:**\n1. Review the validation errors\n2. Address the architecture issues\n3. Use appropriate review tools (plan_reviewed or plan_need_works)\n4. Complete the review process',
         'codingagent.plan.creation.promptPlanPointsCreation': 'Create plan points for this project. Use the plan_create_points tool to add all necessary plan points.\n\n**User\'s Original Request:** <plan_translated_request>\n\n**Current Plan Context:**\n- **Short Description:** <plan_short_description>\n- **Long Description:** <plan_long_description>\n- **Architecture:** <plan_architecture>\n\n**Required Steps:**\n1. Break down the project into manageable plan points\n2. **IMMEDIATELY call plan_create_points tool** with all plan points\n3. After tool execution, provide a brief summary of the plan points\n\n**Important:** Your response will be considered FAILED if you do not call the plan_create_points tool.',
         'codingagent.plan.creation.recommendedModePlanPointsCreation': 'Architect',
         'codingagent.plan.creation.promptPlanPointsCreationRework': 'The plan points need rework due to validation issues. Please fix and use the plan_create_points tool again.\n\n**Problems Found:** <rework_reason>\n\n**Required Steps:**\n1. Review the validation errors\n2. Fix the plan points format and content\n3. **IMMEDIATELY call plan_create_points tool** with the corrected plan points\n4. After tool execution, provide a brief summary of what was fixed'
