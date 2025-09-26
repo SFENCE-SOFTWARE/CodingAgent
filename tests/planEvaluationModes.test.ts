@@ -129,8 +129,8 @@ suite('Plan Evaluation Mode Recommendations', () => {
     // Set plan to need rework
     planningService.setPlanNeedsWork(planId, ['Architecture needs revision']);
     
-    // Test plan rework state
-    const result = planningService.evaluatePlanCompletion(planId);
+    // Test plan rework state - use evaluatePlanCreation since plan.needsWork is handled there
+    const result = planningService.evaluatePlanCreation(planId);
     assert.strictEqual(result.success, true);
     assert.strictEqual(result.result?.failedStep, 'plan_rework');
     assert.strictEqual(result.result?.recommendedMode, 'Architect'); // Should return Architect for plan_rework

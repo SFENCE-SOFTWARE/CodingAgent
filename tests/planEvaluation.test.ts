@@ -41,8 +41,8 @@ suite('Plan Evaluation Tests', () => {
     // Set plan to need rework (highest priority) with array of comments
     planningService.setPlanNeedsWork(planId, ['Architecture needs major revision']);
     
-    // Evaluate the plan
-    const result = planningService.evaluatePlanCompletion(planId);
+    // Evaluate the plan - use evaluatePlanCreation since plan.needsWork is handled there
+    const result = planningService.evaluatePlanCreation(planId);
     assert.strictEqual(result.success, true);
     assert.strictEqual(result.result?.isDone, false);
     assert.strictEqual(result.result?.failedStep, 'plan_rework');
