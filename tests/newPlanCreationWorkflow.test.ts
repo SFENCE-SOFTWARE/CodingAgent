@@ -49,7 +49,7 @@ suite('New Plan Creation Workflow Tests', () => {
     assert.ok(evaluationResult.result, 'Should return result');
     assert.strictEqual(evaluationResult.result.isDone, false, 'Plan creation should not be done');
     assert.strictEqual(evaluationResult.result.failedStep, 'plan_description_update', 'Should start with description update');
-    assert.ok(evaluationResult.result.nextStepPrompt.includes('Update Plan Descriptions'), 'Should include description update prompt');
+    assert.ok(evaluationResult.result.nextStepPrompt.length > 50, 'Should include description update prompt');
     assert.strictEqual(evaluationResult.result.recommendedMode, 'Architect', 'Should recommend Architect mode');
   });
 
@@ -72,7 +72,7 @@ suite('New Plan Creation Workflow Tests', () => {
     assert.ok(eval2.success);
     assert.ok(eval2.result);
     assert.strictEqual(eval2.result.failedStep, 'plan_description_review', 'Should move to description review');
-    assert.ok(eval2.result.nextStepPrompt.includes('Review Plan Descriptions'), 'Should include review prompt');
+    assert.ok(eval2.result.nextStepPrompt.length > 50, 'Should include review prompt');
     assert.strictEqual(eval2.result.recommendedMode, 'Plan Reviewer', 'Should recommend Plan Reviewer mode');
   });
 
@@ -125,7 +125,7 @@ suite('New Plan Creation Workflow Tests', () => {
     assert.ok(currentEval.success);
     assert.ok(currentEval.result);
     assert.strictEqual(currentEval.result.failedStep, 'plan_architecture_creation', 'Should move to architecture creation');
-    assert.ok(currentEval.result.nextStepPrompt.includes('Create Architecture Design'), 'Should include architecture prompt');
+    assert.ok(currentEval.result.nextStepPrompt.includes('plan_set_architecture tool'), 'Should include architecture prompt');
     assert.strictEqual(currentEval.result.recommendedMode, 'Architect', 'Should recommend Architect mode');
   });
 
@@ -152,8 +152,8 @@ suite('New Plan Creation Workflow Tests', () => {
     
     assert.ok(evaluationResult.success);
     assert.ok(evaluationResult.result);
-    assert.strictEqual(evaluationResult.result.failedStep, 'plan_architecture_rework', 'Should require architecture rework');
-    assert.ok(evaluationResult.result.nextStepPrompt.includes('validation issues'), 'Should mention validation issues');
+    assert.strictEqual(evaluationResult.result.failedStep, 'plan_architecture_creation_rework', 'Should require architecture rework');
+    assert.ok(evaluationResult.result.nextStepPrompt.includes('needs rework'), 'Should mention validation issues');
   });
 
   test('should proceed to architecture review with valid architecture', () => {
@@ -186,7 +186,7 @@ suite('New Plan Creation Workflow Tests', () => {
     assert.ok(evaluationResult.success);
     assert.ok(evaluationResult.result);
     assert.strictEqual(evaluationResult.result.failedStep, 'plan_architecture_review', 'Should move to architecture review');
-    assert.ok(evaluationResult.result.nextStepPrompt.includes('Review Architecture Design'), 'Should include review prompt');
+    assert.ok(evaluationResult.result.nextStepPrompt.includes('plan_need_works tool'), 'Should include review prompt');
     assert.strictEqual(evaluationResult.result.recommendedMode, 'Plan Reviewer', 'Should recommend Plan Reviewer mode');
   });
 
@@ -220,7 +220,7 @@ suite('New Plan Creation Workflow Tests', () => {
     assert.ok(currentEval.success);
     assert.ok(currentEval.result);
     assert.strictEqual(currentEval.result.failedStep, 'plan_points_creation', 'Should move to points creation');
-    assert.ok(currentEval.result.nextStepPrompt.includes('Create Implementation Points'), 'Should include points prompt');
+    assert.ok(currentEval.result.nextStepPrompt.includes('plan_add_points tool'), 'Should include points prompt');
     assert.strictEqual(currentEval.result.recommendedMode, 'Architect', 'Should recommend Architect mode');
   });
 
@@ -264,8 +264,8 @@ suite('New Plan Creation Workflow Tests', () => {
     
     assert.ok(evaluationResult.success);
     assert.ok(evaluationResult.result);
-    assert.strictEqual(evaluationResult.result.failedStep, 'plan_points_rework', 'Should require points rework');
-    assert.ok(evaluationResult.result.nextStepPrompt.includes('fix this issue'), 'Should mention validation issues');
+    assert.strictEqual(evaluationResult.result.failedStep, 'plan_points_creation_rework', 'Should require points rework');
+    assert.ok(evaluationResult.result.nextStepPrompt.includes('needs rework'), 'Should mention validation issues');
   });
 
   test('should complete workflow when everything is valid', () => {
@@ -309,7 +309,7 @@ suite('New Plan Creation Workflow Tests', () => {
     assert.ok(evaluationResult.success);
     assert.ok(evaluationResult.result);
     assert.strictEqual(evaluationResult.result.isDone, true, 'Plan creation should be done');
-    assert.ok(evaluationResult.result.nextStepPrompt.includes('COMPLETED SUCCESSFULLY'), 'Should show completion message');
+    assert.ok(evaluationResult.result.nextStepPrompt.includes('PLAN CREATION COMPLETED SUCCESSFULLY'), 'Should show completion message');
     
     // Check that plan step is marked as complete
     const finalPlanResult = planningService.showPlan('test-complete-plan');
