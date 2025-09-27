@@ -740,6 +740,42 @@
             "description": "Callback function to check if plan points creation step is completed. Available checks: plan.pointsToolsCalled, plan.pointsCreated, plan.needsWork (negated)",
             "scope": "window"
           },
+          "codingagent.plan.creation.callbackDescriptionUpdateRework": {
+            "type": "string",
+            "default": "plan.planChangeToolCalled",
+            "description": "Callback function to check if description update rework step is completed. Available checks: plan.planChangeToolCalled, plan.descriptionsUpdated, plan.needsWork (negated)",
+            "scope": "window"
+          },
+          "codingagent.plan.creation.callbackDescriptionReviewRework": {
+            "type": "string", 
+            "default": "plan.reviewed",
+            "description": "Callback function to check if description review rework step is completed. Available checks: plan.reviewed, plan.descriptionsReviewed, plan.needsWork (negated)",
+            "scope": "window"
+          },
+          "codingagent.plan.creation.callbackArchitectureCreationRework": {
+            "type": "string",
+            "default": "plan.setArchitectureToolCalled",
+            "description": "Callback function to check if architecture creation rework step is completed. Available checks: plan.setArchitectureToolCalled, plan.architectureCreated, plan.needsWork (negated)",
+            "scope": "window"
+          },
+          "codingagent.plan.creation.callbackArchitectureReviewRework": {
+            "type": "string",
+            "default": "plan.reviewed", 
+            "description": "Callback function to check if architecture review rework step is completed. Available checks: plan.reviewed, plan.architectureReviewed, plan.needsWork (negated)",
+            "scope": "window"
+          },
+          "codingagent.plan.creation.callbackPlanPointsCreationRework": {
+            "type": "string",
+            "default": "plan.pointsToolsCalled",
+            "description": "Callback function to check if plan points creation rework step is completed. Available checks: plan.pointsToolsCalled, plan.pointsCreated, plan.needsWork (negated)",
+            "scope": "window"
+          },
+          "codingagent.plan.creation.callbackPlanRework": {
+            "type": "string",
+            "default": "!plan.needsWork",
+            "description": "Generic callback function to check if any rework step is completed. Available checks: !plan.needsWork, plan.reviewed",
+            "scope": "window"
+          },
           "codingagent.plan.creation.recommendedModePlanPointsCreation": {
             "type": "string",
             "default": "Architect",

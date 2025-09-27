@@ -1750,6 +1750,30 @@ export class PlanningService {
       const reworkTemplate = this.getConfig(reworkPromptKey);
       const reworkPrompt = this.replacePlaceholders(reworkTemplate, planId);
       
+      // Get completion callback configuration for rework step
+      let callbackConfigKey: string;
+      switch (failedStepType) {
+        case 'plan_description_update_rework':
+          callbackConfigKey = 'codingagent.plan.creation.callbackDescriptionUpdateRework';
+          break;
+        case 'plan_description_review_rework':
+          callbackConfigKey = 'codingagent.plan.creation.callbackDescriptionReviewRework';
+          break;
+        case 'plan_architecture_creation_rework':
+          callbackConfigKey = 'codingagent.plan.creation.callbackArchitectureCreationRework';
+          break;
+        case 'plan_architecture_review_rework':
+          callbackConfigKey = 'codingagent.plan.creation.callbackArchitectureReviewRework';
+          break;
+        case 'plan_points_creation_rework':
+          callbackConfigKey = 'codingagent.plan.creation.callbackPlanPointsCreationRework';
+          break;
+        default:
+          callbackConfigKey = 'codingagent.plan.creation.callbackPlanRework';
+          break;
+      }
+      const callbackConfig = this.getConfig(callbackConfigKey);
+      
       return {
         success: true,
         result: {
@@ -1762,7 +1786,8 @@ export class PlanningService {
             // Accept optional feedback from orchestrator/LLM when the change was applied.
             // Currently we ignore feedback content and simply remove the first need-work comment.
             this.removeFirstNeedWorkComment(planId);
-          }
+          },
+          completionCallback: callbackConfig ? () => this.evaluateCompletionCallback(callbackConfig, planId) : undefined
         }
       };
     }
@@ -1928,6 +1953,9 @@ export class PlanningService {
         const reworkTemplate = this.getConfig('codingagent.plan.creation.promptArchitectureCreationRework');
         const reworkPrompt = this.replacePlaceholders(reworkTemplate, planId);
         
+        // Get completion callback configuration for architecture creation rework
+        const callbackConfig = this.getConfig('codingagent.plan.creation.callbackArchitectureCreationRework');
+        
         return {
           success: true,
           result: {
@@ -1938,7 +1966,8 @@ export class PlanningService {
             recommendedMode: this.getConfig('codingagent.plan.creation.recommendedModeArchitectureCreation'),
             doneCallback: (success?: boolean, info?: string) => {
               // Architecture will be validated again on next evaluation
-            }
+            },
+            completionCallback: callbackConfig ? () => this.evaluateCompletionCallback(callbackConfig, planId) : undefined
           }
         };
       }
@@ -2066,6 +2095,9 @@ export class PlanningService {
         const reworkTemplate = this.getConfig('codingagent.plan.creation.promptPlanPointsCreationRework');
         const reworkPrompt = this.replacePlaceholders(reworkTemplate, planId);
         
+        // Get completion callback configuration for plan points creation rework
+        const callbackConfig = this.getConfig('codingagent.plan.creation.callbackPlanPointsCreationRework');
+        
         return {
           success: true,
           result: {
@@ -2074,7 +2106,8 @@ export class PlanningService {
             failedStep: 'plan_points_creation_rework',
             failedPoints: validationResult.issue.pointId ? [validationResult.issue.pointId] : undefined,
             reason: validationResult.issue.message,
-            recommendedMode: this.getConfig('codingagent.plan.creation.recommendedModePlanPointsCreation')
+            recommendedMode: this.getConfig('codingagent.plan.creation.recommendedModePlanPointsCreation'),
+            completionCallback: callbackConfig ? () => this.evaluateCompletionCallback(callbackConfig, planId) : undefined
           }
         };
       }
@@ -2186,7 +2219,15 @@ export class PlanningService {
         'codingagent.plan.creation.callbackDescriptionReview': 'plan.reviewed',
         'codingagent.plan.creation.callbackArchitectureCreation': 'plan.setArchitectureToolCalled',
         'codingagent.plan.creation.callbackArchitectureReview': 'plan.reviewed',
-        'codingagent.plan.creation.callbackPlanPointsCreation': 'plan.pointsToolsCalled'
+        'codingagent.plan.creation.callbackPlanPointsCreation': 'plan.pointsToolsCalled',
+        // Rework callbacks for different steps
+        'codingagent.plan.creation.callbackDescriptionUpdateRework': 'plan.planChangeToolCalled',
+        'codingagent.plan.creation.callbackDescriptionReviewRework': 'plan.reviewed',
+        'codingagent.plan.creation.callbackArchitectureCreationRework': 'plan.setArchitectureToolCalled',
+        'codingagent.plan.creation.callbackArchitectureReviewRework': 'plan.reviewed',
+        'codingagent.plan.creation.callbackPlanPointsCreationRework': 'plan.pointsToolsCalled',
+        // Generic rework callback
+        'codingagent.plan.creation.callbackPlanRework': '!plan.needsWork'
       };
       
       result = fallbackConfig[key] || '';
