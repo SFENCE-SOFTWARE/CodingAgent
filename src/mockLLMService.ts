@@ -145,7 +145,9 @@ export class MockLLMService {
   }
 
   private detectStepType(prompt: string, stepType?: string): string {
-    if (stepType) {
+    // Always detect from prompt content, ignore stepType parameter when it's a mode name
+    const modeNames = ['Coder', 'Architect', 'Ask', 'Plan Reviewer', 'default'];
+    if (stepType && !modeNames.includes(stepType)) {
       return stepType;
     }
     
@@ -166,15 +168,26 @@ export class MockLLMService {
       return 'translation';
     }
     
-    if (lowerPrompt.includes('description') && lowerPrompt.includes('update')) {
+    // Better detection for specific plan workflow steps based on tool mentions or workflow context
+    if (lowerPrompt.includes('plan_change') || 
+        (lowerPrompt.includes('use the plan_change tool') || lowerPrompt.includes('call plan_change tool'))) {
       return 'plan_description_update';
-    } else if (lowerPrompt.includes('description') && lowerPrompt.includes('review')) {
+    } else if (lowerPrompt.includes('plan_reviewed') && lowerPrompt.includes('description')) {
       return 'plan_description_review';
-    } else if (lowerPrompt.includes('architecture') && lowerPrompt.includes('creat')) {
+    } else if (lowerPrompt.includes('plan_set_architecture') || 
+               (lowerPrompt.includes('architecture') && (lowerPrompt.includes('create') || lowerPrompt.includes('design')))) {
       return 'plan_architecture_creation';
-    } else if (lowerPrompt.includes('architecture') && lowerPrompt.includes('review')) {
+    } else if (lowerPrompt.includes('plan_reviewed') && lowerPrompt.includes('architecture')) {
       return 'plan_architecture_review';
-    } else if (lowerPrompt.includes('points') || lowerPrompt.includes('task')) {
+    } else if (lowerPrompt.includes('plan_need_works')) {
+      // Could be any review step that needs work
+      if (lowerPrompt.includes('architecture')) {
+        return 'plan_architecture_review';
+      } else if (lowerPrompt.includes('description')) {
+        return 'plan_description_review';
+      }
+      return 'plan_architecture_review'; // default to architecture
+    } else if (lowerPrompt.includes('plan_add_points') || lowerPrompt.includes('implementation points') || lowerPrompt.includes('create.*points')) {
       return 'plan_points_creation';
     } else if (lowerPrompt.includes('mode')) {
       return 'mode_selection';

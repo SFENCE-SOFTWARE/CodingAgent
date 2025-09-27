@@ -6,6 +6,7 @@ import { PlanningService } from './planningService';
 import { PlanContextManager } from './planContextManager';
 import { MockLLMService, MockLLMConfig } from './mockLLMService';
 import { AlgorithmEngine } from './algorithmEngine';
+import { ToolsService } from './tools';
 
 export interface OrchestratorTestConfig {
   planName: string;
@@ -37,6 +38,7 @@ export class OrchestratorTestRunner {
   private planContextManager: PlanContextManager;
   private mockLLM: MockLLMService;
   private algorithmEngine: AlgorithmEngine;
+  private toolsService: ToolsService;
   private config: OrchestratorTestConfig;
   private notices: string[] = [];
 
@@ -46,6 +48,7 @@ export class OrchestratorTestRunner {
     this.planContextManager = PlanContextManager.getInstance();
     this.mockLLM = new MockLLMService(config.mockLLM);
     this.algorithmEngine = AlgorithmEngine.getInstance();
+    this.toolsService = this.createMockToolsService(config.workspaceRoot);
   }
 
   /**
@@ -211,6 +214,15 @@ export class OrchestratorTestRunner {
         return mockVars[name];
       },
 
+      tools: {
+        execute: async (toolName: string, args: any) => {
+          console.log(`[Context-TOOL] Executing ${toolName} with args:`, JSON.stringify(args, null, 2));
+          const result = await this.toolsService.executeTool(toolName, args);
+          console.log(`[Context-TOOL] Tool ${toolName} result:`, result.success ? 'SUCCESS' : 'ERROR', result.content || result.error);
+          return result;
+        }
+      },
+
       planningService: this.planningService,
       planContextManager: this.planContextManager,
 
@@ -219,6 +231,14 @@ export class OrchestratorTestRunner {
     };
 
     return context;
+  }
+
+  private createMockToolsService(workspaceRoot: string): ToolsService {
+    // Create a mock ToolsService for testing
+    const toolsService = new ToolsService();
+    // Override the workspaceRoot property using reflection
+    (toolsService as any).workspaceRoot = workspaceRoot;
+    return toolsService;
   }
 
   private extractStepInfo(result: string): { step: string; action: string; result: string } {

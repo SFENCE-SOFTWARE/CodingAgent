@@ -52,15 +52,15 @@ export class ChatService {
     // Register this ChatService instance with the algorithm engine
     this.algorithmEngine.setChatService(this);
     
-    // Register planning service with algorithm engine
-    const planningService = PlanningService.getInstance();
+    // Get workspace root first
+    this.workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || null;
+    
+    // Register planning service with algorithm engine - USE SAME WORKSPACE-SPECIFIC INSTANCE AS TOOLS!
+    const planningService = PlanningService.getInstance(this.workspaceRoot || undefined);
     this.algorithmEngine.setPlanningService(planningService);
     
     // Register tools service with algorithm engine
     this.algorithmEngine.setToolsService(this.tools);
-    
-    // Get workspace root for history persistence
-    this.workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || null;
     
     // Load existing chat history
     this.loadChatHistory();

@@ -81,6 +81,35 @@ export class PlanNeedWorksTool implements BaseTool {
       const result = planningService.setPlanNeedsWork(currentPlanId, validComments);
 
       if (result.success) {
+        // Get the plan to check current creation step and reset appropriate workflow flags
+        const plan = (planningService as any).plans.get(currentPlanId);
+        if (plan) {
+          // Reset workflow-specific flags based on current creation step
+          switch (plan.creationStep) {
+            case 'description_review':
+              plan.descriptionsReviewed = false;
+              break;
+            case 'architecture_review':
+              plan.architectureReviewed = false;
+              break;
+            case 'description_update':
+              plan.descriptionsUpdated = false;
+              break;
+            case 'architecture_creation':
+              plan.architectureCreated = false;
+              break;
+            case 'points_creation':
+              plan.pointsCreated = false;
+              break;
+            // Add other steps as needed
+            default:
+              // For other steps, the generic needsWork flag is sufficient
+              break;
+          }
+          plan.updatedAt = Date.now();
+          (planningService as any).savePlan(plan);
+        }
+
         const commentsList = validComments.map((comment, index) => `${index + 1}. ${comment}`).join('\n  ');
         return {
           success: true,

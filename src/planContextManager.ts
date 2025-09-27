@@ -1,11 +1,24 @@
 // src/planContextManager.ts
 
+// Global instance to survive module reloads
+declare global {
+  var __codingAgentPlanContextManagerInstance: PlanContextManager | undefined;
+}
+
 /**
  * Singleton manager for tracking the current active plan context
  * This is used to maintain plan_id consistency across the application
  */
 export class PlanContextManager {
-  private static instance: PlanContextManager | null = null;
+  // Use global storage that survives module reloads
+  private static get instance(): PlanContextManager | undefined {
+    return global.__codingAgentPlanContextManagerInstance;
+  }
+  
+  private static set instance(value: PlanContextManager | undefined) {
+    global.__codingAgentPlanContextManagerInstance = value;
+  }
+
   private currentPlanId: string | null = null;
   private updateCallback: ((planId: string | null) => void) | null = null;
 
@@ -56,6 +69,6 @@ export class PlanContextManager {
    * Reset the manager state (useful for testing)
    */
   public static resetInstance(): void {
-    PlanContextManager.instance = null;
+    PlanContextManager.instance = undefined;
   }
 }

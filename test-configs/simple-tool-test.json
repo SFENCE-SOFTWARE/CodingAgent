@@ -1,0 +1,36 @@
+{
+  "testName": "Simple Tool Test",
+  "description": "Direct test of specific tools with minimal orchestrator overhead",
+  "maxIterations": 5,
+  "workspaceRoot": "/tmp/test-simple-tools", 
+  "planName": "simple-test-plan",
+  "planDescription": "Simple test plan",
+  "createPlanFirst": true,
+  "mockLLM": {
+    "scenarios": [
+      {
+        "stepType": "plan_change",
+        "action": "CUSTOM",
+        "customResponse": "I'll use plan_change to update the descriptions.",
+        "toolCalls": ["plan_change"]
+      },
+      {
+        "stepType": "plan_reviewed", 
+        "action": "CUSTOM",
+        "customResponse": "I'll mark the plan as reviewed using plan_reviewed.",
+        "toolCalls": ["plan_reviewed"]
+      },
+      {
+        "stepType": "plan_need_works",
+        "action": "CUSTOM",
+        "customResponse": "The plan needs work. Using plan_need_works tool.",
+        "toolCalls": ["plan_need_works"]
+      }
+    ],
+    "defaultAction": "REVIEWED",
+    "verbose": true,
+    "enableIterationTracking": false,
+    "simulateCallbacks": false,
+    "detectCycles": false
+  }
+}

@@ -100,9 +100,28 @@ export interface PlanEvaluationResult {
   completionCallback?: () => boolean;
 }
 
+// Global instances to survive module reloads
+declare global {
+  var __codingAgentPlanningServiceInstance: PlanningService | undefined;
+  var __codingAgentPlanningServiceInstancesByWorkspace: Map<string, PlanningService> | undefined;
+}
+
 export class PlanningService {
-  private static instance: PlanningService;
-  private static instancesByWorkspace = new Map<string, PlanningService>();
+  // Use global storage that survives module reloads
+  private static get instance(): PlanningService | undefined {
+    return global.__codingAgentPlanningServiceInstance;
+  }
+  
+  private static set instance(value: PlanningService | undefined) {
+    global.__codingAgentPlanningServiceInstance = value;
+  }
+  
+  private static get instancesByWorkspace(): Map<string, PlanningService> {
+    if (!global.__codingAgentPlanningServiceInstancesByWorkspace) {
+      global.__codingAgentPlanningServiceInstancesByWorkspace = new Map<string, PlanningService>();
+    }
+    return global.__codingAgentPlanningServiceInstancesByWorkspace;
+  }
   private plans: Map<string, Plan> = new Map();
   private plansDirectory: string;
   private lastLogTimestamp: number = 0;
@@ -134,8 +153,10 @@ export class PlanningService {
   }
 
   public static resetInstance(): void {
-    PlanningService.instance = undefined as any;
-    PlanningService.instancesByWorkspace.clear();
+    global.__codingAgentPlanningServiceInstance = undefined;
+    if (global.__codingAgentPlanningServiceInstancesByWorkspace) {
+      global.__codingAgentPlanningServiceInstancesByWorkspace.clear();
+    }
   }
 
   private ensureDirectoryExists(): void {
@@ -171,6 +192,12 @@ export class PlanningService {
                 details: plan.name
               });
               this.savePlan(plan); // Save migrated plan
+            }
+            
+            // Check if plan already exists in memory and is newer than disk
+            const existingPlan = this.plans.get(plan.id);
+            if (existingPlan && existingPlan.updatedAt && plan.updatedAt && existingPlan.updatedAt > plan.updatedAt) {
+              continue; // Keep the newer version in memory
             }
             
             this.plans.set(plan.id, plan);
@@ -535,6 +562,7 @@ export class PlanningService {
       return { success: false, error: `Plan with ID '${planId}' not found` };
     }
 
+    console.log(`[DEBUG] showPlan: plan ${planId} reviewed = ${plan.reviewed}, in memory`);
     const result = {
       id: plan.id,
       name: plan.name,
@@ -837,6 +865,7 @@ export class PlanningService {
       return { success: false, error: `Plan with ID '${planId}' not found` };
     }
 
+    console.log(`[DEBUG] setPlanReviewed: Setting plan ${planId} reviewed = true, was ${plan.reviewed}`);
     plan.reviewed = true;
     plan.reviewedComment = comment;
     plan.needsWork = false;
@@ -849,6 +878,7 @@ export class PlanningService {
     this.addLogEntry(plan, 'plan', 'reviewed', planId, `Plan new state reviewed`, comment ? comment : plan.name);
     
     this.savePlan(plan);
+    console.log(`[DEBUG] setPlanReviewed: After savePlan, plan.reviewed = ${plan.reviewed}`);
 
     return { success: true };
   }
@@ -1744,12 +1774,13 @@ export class PlanningService {
     if (!plan.descriptionsReviewed) {
       plan.creationStep = 'description_review';
       
-      // Reset plan.reviewed flag for this review step ONLY if it's not already set
-      // This prevents resetting the flag after LLM has already called plan_reviewed
-      if (plan.reviewed !== true) {
-        plan.reviewed = false;
-        plan.reviewedComment = undefined;
-      }
+      // CRITICAL FIX: Do NOT reset plan.reviewed flag during workflow evaluation
+      // The plan.reviewed flag should only be set by plan_reviewed/plan_need_works tools
+      // Resetting it here causes plan state loss in orchestrator workflows
+      // if (plan.reviewed !== true) {
+      //   plan.reviewed = false;
+      //   plan.reviewedComment = undefined;
+      // }
       
       // Initialize checklist if not done already
       if (!plan.creationChecklist) {
@@ -1869,12 +1900,13 @@ export class PlanningService {
     if (plan.architectureCreated && plan.architecture && !plan.architectureReviewed) {
       plan.creationStep = 'architecture_review';
       
-      // Reset plan.reviewed flag for this review step ONLY if it's not already set
-      // This prevents resetting the flag after LLM has already called plan_reviewed
-      if (plan.reviewed !== true) {
-        plan.reviewed = false;
-        plan.reviewedComment = undefined;
-      }
+      // CRITICAL FIX: Do NOT reset plan.reviewed flag during workflow evaluation
+      // The plan.reviewed flag should only be set by plan_reviewed/plan_need_works tools
+      // Resetting it here causes plan state loss in orchestrator workflows
+      // if (plan.reviewed !== true) {
+      //   plan.reviewed = false;
+      //   plan.reviewedComment = undefined;
+      // }
       
       // Initialize checklist if not done already
       if (!plan.creationChecklist || plan.creationChecklist.length === 0) {

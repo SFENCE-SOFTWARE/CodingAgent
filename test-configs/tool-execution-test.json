@@ -1,0 +1,36 @@
+{
+  "testName": "Tool Execution Test",
+  "description": "Test that tools are actually executed and modify workflow flags",
+  "maxIterations": 8,
+  "workspaceRoot": "/tmp/test-tool-execution",
+  "planName": "tool-execution-test-plan",
+  "planDescription": "Test plan for tool execution validation",
+  "mockLLM": {
+    "scenarios": [
+      {
+        "stepType": "categorization",
+        "action": "CUSTOM",
+        "customResponse": "NEW tool-execution-test-plan",
+        "toolCalls": []
+      },
+      {
+        "stepType": "language_detection", 
+        "action": "CUSTOM",
+        "customResponse": "English",
+        "toolCalls": []
+      },
+      {
+        "stepType": "plan_description_update",
+        "action": "CUSTOM",
+        "customResponse": "I will update the plan descriptions using the plan_change tool.",
+        "toolCalls": ["plan_change"]
+      }
+    ],
+    "defaultAction": "REVIEWED",
+    "verbose": true,
+    "enableIterationTracking": true,
+    "simulateCallbacks": true,
+    "detectCycles": false,
+    "executeTools": true
+  }
+}

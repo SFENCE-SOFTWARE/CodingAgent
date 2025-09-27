@@ -1,0 +1,74 @@
+{
+  "testName": "Direct Tool Workflow Test",
+  "description": "Direct test of plan_reviewed and plan_need_works tools with workflow flags",
+  "maxIterations": 8,
+  "workspaceRoot": "/tmp/test-direct-tools",
+  "planName": "direct-tool-test-plan",
+  "planDescription": "Test plan for direct tool testing",
+  "mockLLM": {
+    "scenarios": [
+      {
+        "stepType": "categorization",
+        "action": "CUSTOM", 
+        "customResponse": "NEW direct-tool-test-plan",
+        "toolCalls": []
+      },
+      {
+        "stepType": "language_detection",
+        "action": "CUSTOM",
+        "customResponse": "English",
+        "toolCalls": []
+      },
+      {
+        "stepType": "plan_description_update",
+        "action": "CUSTOM",
+        "customResponse": "I'll update the plan descriptions to be more detailed and comprehensive.",
+        "toolCalls": ["plan_change"]
+      },
+      {
+        "stepType": "plan_description_review",
+        "iteration": 1,
+        "action": "CUSTOM",
+        "customResponse": "After reviewing the descriptions, they look good and meet the requirements. I'll mark them as reviewed.",
+        "toolCalls": ["plan_reviewed"]
+      },
+      {
+        "stepType": "plan_architecture_creation",
+        "action": "CUSTOM",
+        "customResponse": "I'll create the architecture design for this plan.",
+        "toolCalls": ["plan_set_architecture"]
+      },
+      {
+        "stepType": "plan_architecture_review",
+        "iteration": 1,
+        "action": "CUSTOM",
+        "customResponse": "The architecture needs improvements. Missing key components and better structure.",
+        "toolCalls": ["plan_need_works"]
+      },
+      {
+        "stepType": "plan_architecture_creation_rework",
+        "action": "CUSTOM",
+        "customResponse": "I've reworked the architecture with better components and structure.",
+        "toolCalls": ["plan_set_architecture"]
+      },
+      {
+        "stepType": "plan_architecture_review",
+        "iteration": 2,
+        "action": "CUSTOM",
+        "customResponse": "The reworked architecture now meets all requirements. Approving it.",
+        "toolCalls": ["plan_reviewed"]
+      },
+      {
+        "stepType": "plan_points_creation",
+        "action": "CUSTOM",
+        "customResponse": "Creating implementation points for the plan.",
+        "toolCalls": ["plan_add_points"]
+      }
+    ],
+    "defaultAction": "REVIEWED",
+    "verbose": true,
+    "enableIterationTracking": true,
+    "simulateCallbacks": true,
+    "detectCycles": false
+  }
+}

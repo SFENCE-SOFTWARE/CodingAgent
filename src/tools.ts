@@ -4,6 +4,7 @@ import * as vscode from 'vscode';
 import { BaseTool, ToolDefinition, ToolResult, ToolInfo } from './types';
 import { ChangeTrackingService } from './changeTrackingService';
 import { MemoryService } from './memoryService';
+import { PlanningService } from './planningService';
 
 // Import all tool classes
 import { ListFilesTool } from './tools/listFiles';
@@ -132,7 +133,7 @@ export class ToolsService {
       new ExecutePythonTool(),
 
       // Planning tools
-      new PlanNewTool(this.workspaceRoot),
+      new PlanNewTool(),
       new PlanOpenTool(),
       new PlanListTool(),
       new PlanAddPointsTool(),
@@ -294,11 +295,7 @@ export class ToolsService {
    * Get planning service
    */
   getPlanningService() {
-    // Find a planning tool to get the service
-    const planTool = Array.from(this.tools.values()).find(tool => tool instanceof PlanNewTool) as PlanNewTool | undefined;
-    if (planTool) {
-      return planTool.getPlanningService();
-    }
-    return null;
+    // Get PlanningService directly using the workspace root
+    return PlanningService.getInstance(this.workspaceRoot);
   }
 }

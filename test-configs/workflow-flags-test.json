@@ -1,0 +1,69 @@
+{
+  "testName": "Workflow Flags Update Test",
+  "description": "Test that plan_reviewed and plan_need_works tools properly update workflow flags based on current creation step",
+  "maxIterations": 15,
+  "workspaceRoot": "/tmp/test-workflow-flags",
+  "planName": "workflow-flags-test-plan",
+  "planDescription": "Test plan for workflow flags functionality",
+  "mockLLM": {
+    "scenarios": [
+      {
+        "stepType": "categorization",
+        "action": "CUSTOM",
+        "customResponse": "CREATE workflow-flags-test-plan",
+        "toolCalls": []
+      },
+      {
+        "stepType": "language_detection",
+        "action": "CUSTOM",
+        "customResponse": "English",
+        "toolCalls": []
+      },
+      {
+        "stepType": "plan_description_update",
+        "action": "CUSTOM",
+        "customResponse": "Updated plan descriptions with detailed information.",
+        "toolCalls": ["plan_change"]
+      },
+      {
+        "stepType": "plan_description_review",
+        "iteration": 1,
+        "action": "CUSTOM",
+        "customResponse": "Plan descriptions look good and meet requirements.",
+        "toolCalls": ["plan_reviewed"]
+      },
+      {
+        "stepType": "plan_architecture_creation", 
+        "action": "CUSTOM",
+        "customResponse": "Created architecture design.",
+        "toolCalls": ["plan_set_architecture"]
+      },
+      {
+        "stepType": "plan_architecture_review",
+        "iteration": 1,
+        "action": "NEED_WORK",
+        "customResponse": "Architecture needs improvements in component structure.",
+        "toolCalls": ["plan_need_works"]
+      },
+      {
+        "stepType": "plan_architecture_creation_rework",
+        "iteration": 1,
+        "action": "CUSTOM",
+        "customResponse": "Reworked architecture with improved component structure.",
+        "toolCalls": ["plan_set_architecture"]
+      },
+      {
+        "stepType": "plan_architecture_review",
+        "iteration": 2,
+        "action": "REVIEWED",
+        "customResponse": "Architecture now meets all requirements.",
+        "toolCalls": ["plan_reviewed"]
+      }
+    ],
+    "defaultAction": "REVIEWED",
+    "verbose": true,
+    "enableIterationTracking": true,
+    "simulateCallbacks": true,
+    "detectCycles": false
+  }
+}

@@ -5,17 +5,6 @@ import { PlanningService } from '../planningService';
 import { PlanContextManager } from '../planContextManager';
 
 export class PlanNewTool implements BaseTool {
-  private planningService: PlanningService | null = null;
-
-  constructor(workspaceRoot?: string) {
-    if (workspaceRoot) {
-      this.planningService = PlanningService.getInstance(workspaceRoot);
-    }
-  }
-
-  getPlanningService(): PlanningService | null {
-    return this.planningService;
-  }
 
   getToolInfo(): ToolInfo {
     return {
