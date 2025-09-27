@@ -1,0 +1,129 @@
+{
+  "testName": "Complete Plan Creation Cycle with Need Work and Reviewed States",
+  "description": "Comprehensive test that simulates the entire plan creation workflow including multiple need_rework cycles and final review acceptance",
+  "planName": "test-complete-plan-creation-cycle",
+  "planDescription": "Test plan to validate complete creation workflow with rework cycles",
+  "maxIterations": 50,
+  "workspaceRoot": "/tmp/orchestrator-test-complete-cycle",
+  "mockLLM": {
+    "scenarios": [
+      {
+        "stepType": "categorization",
+        "action": "CUSTOM",
+        "customResponse": "NEW test-complete-plan-creation-cycle",
+        "toolCalls": []
+      },
+      {
+        "stepType": "language_detection", 
+        "action": "CUSTOM",
+        "customResponse": "English",
+        "toolCalls": []
+      },
+      {
+        "stepType": "plan_description_update",
+        "iteration": 1,
+        "action": "CUSTOM",
+        "customResponse": "I have updated the plan descriptions with detailed requirements and clear objectives.",
+        "toolCalls": ["plan_change"]
+      },
+      {
+        "stepType": "plan_description_review",
+        "iteration": 1,
+        "action": "NEED_WORK",
+        "customResponse": "The descriptions need improvement. The short description is too vague and the long description lacks technical details.",
+        "toolCalls": ["plan_need_works"]
+      },
+      {
+        "stepType": "plan_description_update_rework",
+        "iteration": 2,
+        "action": "CUSTOM", 
+        "customResponse": "I have reworked the plan descriptions based on the review feedback, adding more technical details and clarifying objectives.",
+        "toolCalls": ["plan_change"]
+      },
+      {
+        "stepType": "plan_description_review",
+        "iteration": 2,
+        "action": "REVIEWED",
+        "customResponse": "The descriptions now meet the quality standards and clearly define the project scope.",
+        "toolCalls": ["plan_reviewed"]
+      },
+      {
+        "stepType": "plan_architecture_creation",
+        "iteration": 1,
+        "action": "CUSTOM",
+        "customResponse": "I have created a comprehensive architectural design with all necessary components and connections.",
+        "toolCalls": ["plan_set_architecture"]
+      },
+      {
+        "stepType": "plan_architecture_review",
+        "iteration": 1,
+        "action": "NEED_WORK",
+        "customResponse": "The architecture is missing some key components and connections are not properly defined.",
+        "toolCalls": ["plan_need_works"]
+      },
+      {
+        "stepType": "plan_architecture_creation_rework",
+        "iteration": 2,
+        "action": "CUSTOM",
+        "customResponse": "I have reworked the architecture based on feedback, adding missing components and properly defining all connections.",
+        "toolCalls": ["plan_set_architecture"]
+      },
+      {
+        "stepType": "plan_architecture_review",
+        "iteration": 2,
+        "action": "REVIEWED",
+        "customResponse": "The architecture now includes all necessary components and connections are properly defined.",
+        "toolCalls": ["plan_reviewed"]
+      },
+      {
+        "stepType": "plan_points_creation",
+        "iteration": 1,
+        "action": "CUSTOM",
+        "customResponse": "I have created detailed implementation points covering all aspects of the plan with clear dependencies.",
+        "toolCalls": ["plan_add_points"]
+      },
+      {
+        "stepType": "plan_points_creation_review",
+        "iteration": 1,
+        "action": "NEED_WORK",
+        "customResponse": "Some implementation points lack sufficient detail and dependencies are not properly defined.",
+        "toolCalls": ["plan_need_works"]
+      },
+      {
+        "stepType": "plan_points_creation_rework",
+        "iteration": 2,
+        "action": "CUSTOM",
+        "customResponse": "I have reworked the implementation points with more detailed descriptions and corrected dependencies.",
+        "toolCalls": ["plan_add_points"]
+      },
+      {
+        "stepType": "plan_points_creation_review",
+        "iteration": 2,
+        "action": "REVIEWED",
+        "customResponse": "Implementation points are now properly detailed with correct dependencies.",
+        "toolCalls": ["plan_reviewed"]
+      }
+    ],
+    "defaultAction": "REVIEWED",
+    "verbose": true,
+    "enableIterationTracking": true,
+    "simulateCallbacks": true
+  },
+  "expectedSteps": [
+    "plan_description_update",
+    "plan_description_review",
+    "plan_description_update_rework", 
+    "plan_description_review",
+    "plan_architecture_creation",
+    "plan_architecture_review",
+    "plan_architecture_creation_rework",
+    "plan_architecture_review", 
+    "plan_points_creation",
+    "plan_points_creation_review",
+    "plan_points_creation_rework",
+    "plan_points_creation_review"
+  ],
+  "expectedOutcome": "plan_creation_complete",
+  "validateCallbacks": true,
+  "checkCycleDetection": true
+}

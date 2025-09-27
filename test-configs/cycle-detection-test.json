@@ -1,0 +1,42 @@
+{
+  "testName": "Plan Creation Cycle Detection Test",
+  "description": "Minimal test to detect infinite cycles in plan creation workflow",
+  "planName": "test-cycle-detection",
+  "planDescription": "Simple test plan for cycle detection",
+  "maxIterations": 10,
+  "workspaceRoot": "/tmp/cycle-detection-test",
+  "mockLLM": {
+    "scenarios": [
+      {
+        "stepType": "categorization",
+        "action": "CUSTOM", 
+        "customResponse": "NEW test-cycle-detection",
+        "toolCalls": []
+      },
+      {
+        "stepType": "language_detection",
+        "action": "CUSTOM",
+        "customResponse": "English",
+        "toolCalls": []
+      },
+      {
+        "stepType": "plan_description_update",
+        "action": "CUSTOM",
+        "customResponse": "Updated plan descriptions successfully.",
+        "toolCalls": ["plan_change"]
+      },
+      {
+        "stepType": "plan_description_review",
+        "action": "NEED_WORK",
+        "customResponse": "Description needs more work.",
+        "toolCalls": ["plan_need_works"]
+      }
+    ],
+    "defaultAction": "NEED_WORK",
+    "verbose": true,
+    "detectCycles": true
+  },
+  "expectCycle": true,
+  "maxExpectedCycles": 3,
+  "testPurpose": "Validate that algorithm detects and handles infinite cycles properly"
+}

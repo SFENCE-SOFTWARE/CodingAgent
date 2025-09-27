@@ -68,23 +68,8 @@ export class OrchestratorTestRunner {
         // Ignore cleanup errors
       }
 
-      // Create test plan
-      const planResult = this.planningService.createPlan(
-        this.config.planName,
-        this.config.planDescription,
-        '', // original request (empty for test)
-        this.config.workspaceRoot
-      );
-
-      if (!planResult.success) {
-        throw new Error(`Failed to create plan: ${planResult.error}`);
-      }
-
-      // Set active plan
-      this.planContextManager.setCurrentPlanId(this.config.planName);
-
-      console.log(`[OrchestratorTest] Created plan: ${this.config.planName}`);
-      console.log(`[OrchestratorTest] Starting orchestrator workflow...`);
+      console.log(`[OrchestratorTest] Starting orchestrator workflow for plan: ${this.config.planName}`);
+      console.log(`[OrchestratorTest] Note: Plan will be created by orchestrator algorithm, not pre-created`);
 
       // Create mock context for orchestrator
       const context = this.createMockContext();
@@ -101,9 +86,12 @@ export class OrchestratorTestRunner {
       const orchestratorFunction = new Function('context', orchestratorCode + '\n return handleUserMessage;');
       const handleUserMessage = orchestratorFunction(context);
 
-      // Run the workflow
+      // Run the workflow - use a request that will trigger plan creation
       let iteration = 0;
       const maxIterations = this.config.maxIterations;
+
+      // Use test plan description as the request that will trigger plan creation
+      const testRequest = this.config.planDescription;
 
       while (iteration < maxIterations) {
         iteration++;
@@ -112,7 +100,7 @@ export class OrchestratorTestRunner {
         console.log(`[OrchestratorTest] === Iteration ${iteration} ===`);
 
         try {
-          const result = await handleUserMessage(`OPEN test-callback-review`, context);
+          const result = await handleUserMessage(testRequest, context);
           
           const stepInfo = this.extractStepInfo(result);
           const currentNotices = [...this.notices];

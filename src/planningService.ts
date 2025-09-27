@@ -1744,9 +1744,12 @@ export class PlanningService {
     if (!plan.descriptionsReviewed) {
       plan.creationStep = 'description_review';
       
-      // Reset plan.reviewed flag for this review step
-      plan.reviewed = false;
-      plan.reviewedComment = undefined;
+      // Reset plan.reviewed flag for this review step ONLY if it's not already set
+      // This prevents resetting the flag after LLM has already called plan_reviewed
+      if (plan.reviewed !== true) {
+        plan.reviewed = false;
+        plan.reviewedComment = undefined;
+      }
       
       // Initialize checklist if not done already
       if (!plan.creationChecklist) {
@@ -1866,9 +1869,12 @@ export class PlanningService {
     if (plan.architectureCreated && plan.architecture && !plan.architectureReviewed) {
       plan.creationStep = 'architecture_review';
       
-      // Reset plan.reviewed flag for this review step
-      plan.reviewed = false;
-      plan.reviewedComment = undefined;
+      // Reset plan.reviewed flag for this review step ONLY if it's not already set
+      // This prevents resetting the flag after LLM has already called plan_reviewed
+      if (plan.reviewed !== true) {
+        plan.reviewed = false;
+        plan.reviewedComment = undefined;
+      }
       
       // Initialize checklist if not done already
       if (!plan.creationChecklist || plan.creationChecklist.length === 0) {

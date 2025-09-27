@@ -1,0 +1,90 @@
+{
+  "testName": "Plan Creation Workflow with Proper Tool Simulation",
+  "description": "Test that simulates the actual plan creation workflow with real tool names and proper orchestrator integration",
+  "planName": "test-plan-creation-workflow",
+  "planDescription": "Test plan for validating plan creation workflow",
+  "maxIterations": 30,
+  "workspaceRoot": "/tmp/test-plan-workflow",
+  "mockLLM": {
+    "scenarios": [
+      {
+        "stepType": "categorization",
+        "action": "CUSTOM",
+        "customResponse": "NEW test-plan-creation-workflow",
+        "toolCalls": []
+      },
+      {
+        "stepType": "language_detection",
+        "action": "CUSTOM",
+        "customResponse": "English",
+        "toolCalls": []
+      },
+      {
+        "stepType": "plan_description_update",
+        "action": "CUSTOM",
+        "customResponse": "I have updated the plan descriptions with comprehensive details about the project requirements and objectives.",
+        "toolCalls": ["plan_change"]
+      },
+      {
+        "stepType": "plan_description_review",
+        "iteration": 1,
+        "action": "NEED_WORK",
+        "customResponse": "I found several issues that need to be addressed. The descriptions lack sufficient technical detail and clarity in requirements.",
+        "toolCalls": ["plan_need_works"]
+      },
+      {
+        "stepType": "plan_description_update",
+        "iteration": 2,
+        "action": "CUSTOM",
+        "customResponse": "I have reworked the plan descriptions based on the review feedback, adding more technical details and clarifying all requirements.",
+        "toolCalls": ["plan_change"]
+      },
+      {
+        "stepType": "plan_description_review",
+        "iteration": 2,
+        "action": "REVIEWED",
+        "customResponse": "The descriptions now meet all quality standards and clearly define the project scope and objectives.",
+        "toolCalls": ["plan_reviewed"]
+      },
+      {
+        "stepType": "plan_architecture_creation",
+        "action": "CUSTOM",
+        "customResponse": "I have created a comprehensive architectural design with all necessary components and their connections.",
+        "toolCalls": ["plan_set_architecture"]
+      },
+      {
+        "stepType": "plan_architecture_review",
+        "iteration": 1,
+        "action": "NEED_WORK",
+        "customResponse": "The architecture design has some gaps. Missing critical components and some connections are not properly defined.",
+        "toolCalls": ["plan_need_works"]
+      },
+      {
+        "stepType": "plan_architecture_creation",
+        "iteration": 2,
+        "action": "CUSTOM",
+        "customResponse": "I have reworked the architecture based on feedback, adding the missing components and properly defining all connections.",
+        "toolCalls": ["plan_set_architecture"]
+      },
+      {
+        "stepType": "plan_architecture_review",
+        "iteration": 2,
+        "action": "REVIEWED",
+        "customResponse": "The architecture now includes all necessary components and connections are properly defined.",
+        "toolCalls": ["plan_reviewed"]
+      },
+      {
+        "stepType": "plan_points_creation",
+        "action": "CUSTOM",
+        "customResponse": "I have created detailed implementation points with clear dependencies and acceptance criteria.",
+        "toolCalls": ["plan_add_points"]
+      }
+    ],
+    "defaultAction": "REVIEWED",
+    "verbose": true,
+    "enableIterationTracking": true,
+    "simulateCallbacks": false,
+    "detectCycles": false
+  },
+  "testPurpose": "Validate that plan creation workflow proceeds correctly through all steps and handles need_work/reviewed cycles properly"
+}

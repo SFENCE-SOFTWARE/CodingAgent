@@ -2,6 +2,7 @@
 
 export interface MockLLMScenario {
   stepType: string;
+  iteration?: number; // Optional iteration number for repeated scenarios
   action: 'NEED_WORK' | 'REVIEWED' | 'ARCHITECTURE_SET' | 'POINTS_CREATED' | 'ERROR' | 'CUSTOM';
   customResponse?: string;
   toolCalls?: string[];
@@ -11,22 +12,30 @@ export interface MockLLMConfig {
   scenarios: MockLLMScenario[];
   defaultAction: 'NEED_WORK' | 'REVIEWED' | 'ARCHITECTURE_SET' | 'POINTS_CREATED';
   verbose: boolean;
+  enableIterationTracking?: boolean; // Track iterations for each step type
+  simulateCallbacks?: boolean; // Simulate completion callbacks
+  detectCycles?: boolean; // Enable cycle detection
 }
 
 /**
  * Mock LLM service that simulates different responses based on step types
  */
 export class MockLLMService {
-  private scenarios: Map<string, MockLLMScenario> = new Map();
-  private callHistory: Array<{ step: string; prompt: string; response: string; toolCalls: string[] }> = [];
+  private scenarios: Map<string, MockLLMScenario[]> = new Map();
+  private callHistory: Array<{ step: string; prompt: string; response: string; toolCalls: string[]; iteration: number }> = [];
   private config: MockLLMConfig;
+  private stepIterations: Map<string, number> = new Map(); // Track iterations per step type
+  private cycleDetector: Map<string, number> = new Map(); // Detect cycles
   
   constructor(config: MockLLMConfig) {
     this.config = config;
     
-    // Build scenarios map
+    // Build scenarios map - group by stepType
     for (const scenario of config.scenarios) {
-      this.scenarios.set(scenario.stepType, scenario);
+      if (!this.scenarios.has(scenario.stepType)) {
+        this.scenarios.set(scenario.stepType, []);
+      }
+      this.scenarios.get(scenario.stepType)!.push(scenario);
     }
   }
 
@@ -35,7 +44,31 @@ export class MockLLMService {
    */
   async sendToLLM(prompt: string, stepType?: string): Promise<string> {
     const detectedStep = this.detectStepType(prompt, stepType);
-    const scenario = this.scenarios.get(detectedStep);
+    
+    // Track iterations for this step type
+    const currentIteration = (this.stepIterations.get(detectedStep) || 0) + 1;
+    this.stepIterations.set(detectedStep, currentIteration);
+    
+    // Cycle detection
+    if (this.config.detectCycles) {
+      const cycleCount = this.cycleDetector.get(detectedStep) || 0;
+      this.cycleDetector.set(detectedStep, cycleCount + 1);
+      
+      if (cycleCount > 5) { // Allow max 5 iterations before considering it a cycle
+        throw new Error(`Detected infinite cycle for step: ${detectedStep} (${cycleCount} iterations)`);
+      }
+    }
+    
+    // Find appropriate scenario for this step and iteration
+    const scenarioList = this.scenarios.get(detectedStep);
+    let scenario: MockLLMScenario | undefined;
+    
+    if (scenarioList && scenarioList.length > 0) {
+      // Find scenario matching current iteration, or use the last available
+      scenario = scenarioList.find(s => s.iteration === currentIteration) || 
+                scenarioList.find(s => !s.iteration) || 
+                scenarioList[scenarioList.length - 1];
+    }
     
     let response: string;
     let toolCalls: string[] = [];
@@ -52,11 +85,11 @@ export class MockLLMService {
           break;
         case 'ARCHITECTURE_SET':
           response = this.generateArchitectureResponse();
-          toolCalls = ['plan_architecture'];
+          toolCalls = ['plan_set_architecture'];
           break;
         case 'POINTS_CREATED':
           response = this.generatePointsResponse();
-          toolCalls = ['plan_point_create'];
+          toolCalls = ['plan_add_points'];
           break;
         case 'ERROR':
           throw new Error('Simulated LLM error');
@@ -70,13 +103,25 @@ export class MockLLMService {
     } else {
       // Handle special orchestrator steps
       if (detectedStep === 'categorization') {
-        response = 'OPEN test-callback-review';
+        response = 'CREATE test-plan';
       } else if (detectedStep === 'language_detection') {
         response = 'English';
       } else if (detectedStep === 'translation') {
-        response = 'OPEN test-callback-review';
+        response = prompt; // No translation needed
       } else {
-        response = this.generateDefaultResponse();
+        // Use default action from config
+        switch (this.config.defaultAction) {
+          case 'NEED_WORK':
+            response = this.generateNeedWorkResponse();
+            toolCalls = ['plan_need_works'];
+            break;
+          case 'REVIEWED':
+            response = this.generateReviewedResponse();
+            toolCalls = ['plan_reviewed'];
+            break;
+          default:
+            response = this.generateDefaultResponse();
+        }
       }
     }
     
@@ -85,11 +130,12 @@ export class MockLLMService {
       step: detectedStep,
       prompt: prompt.substring(0, 200) + '...',
       response,
-      toolCalls
+      toolCalls,
+      iteration: currentIteration
     });
     
     if (this.config.verbose) {
-      console.log(`[MockLLM] Step: ${detectedStep}, Response: ${response}, Tools: ${toolCalls.join(', ')}`);
+      console.log(`[MockLLM] Step: ${detectedStep} (iteration ${currentIteration}), Response: ${response}, Tools: ${toolCalls.join(', ')}`);
     }
     
     // Simulate tool execution side effects
@@ -181,8 +227,31 @@ export class MockLLMService {
   /**
    * Get the call history for analysis
    */
-  getCallHistory(): Array<{ step: string; prompt: string; response: string; toolCalls: string[] }> {
+  getCallHistory(): Array<{ step: string; prompt: string; response: string; toolCalls: string[]; iteration: number }> {
     return [...this.callHistory];
+  }
+  
+  /**
+   * Get step iterations for cycle detection
+   */
+  getStepIterations(): Map<string, number> {
+    return new Map(this.stepIterations);
+  }
+  
+  /**
+   * Get cycle detector state
+   */
+  getCycleState(): Map<string, number> {
+    return new Map(this.cycleDetector);
+  }
+  
+  /**
+   * Reset mock state for new test
+   */
+  reset(): void {
+    this.callHistory = [];
+    this.stepIterations.clear();
+    this.cycleDetector.clear();
   }
 
   /**
@@ -196,6 +265,6 @@ export class MockLLMService {
    * Get available modes (mock)
    */
   getAvailableModes(): string {
-    return 'Coder, Reviewer, Architect';
+    return 'Coder, Reviewer, Architect, Plan Reviewer, Tester, Approver';
   }
 }
