@@ -1952,7 +1952,9 @@
       { id: 'copyPrompts', label: 'Prompts', default: true },
       { id: 'copyAnswers', label: 'Answers', default: true },
       { id: 'copyThinking', label: 'Thinking', default: true },
-      { id: 'copyToolCalls', label: 'Tool calls', default: true }
+      { id: 'copyToolCalls', label: 'Tool calls', default: true },
+      { id: 'copyNotices', label: 'Notice messages', default: true },
+      { id: 'copyErrors', label: 'Error messages', default: true }
     ];
 
     items.forEach(it => {
@@ -2001,22 +2003,44 @@
       const includeAnswers = document.getElementById('copyAnswers').checked;
       const includeThinking = document.getElementById('copyThinking').checked;
       const includeToolCalls = document.getElementById('copyToolCalls').checked;
+      const includeNotices = document.getElementById('copyNotices').checked;
+      const includeErrors = document.getElementById('copyErrors').checked;
 
       // Build markdown based on selection
-      const messages = document.querySelectorAll('.message:not(.system)');
+      const messages = document.querySelectorAll('.message');
       const conversationMarkdown = [];
 
       messages.forEach(messageEl => {
         const isUser = messageEl.classList.contains('user');
         const isAssistant = messageEl.classList.contains('assistant');
-        const role = isUser ? 'User' : (isAssistant ? 'Assistant' : 'Other');
+        const isError = messageEl.classList.contains('error');
+        const isSystem = messageEl.classList.contains('system');
+        const isNotice = messageEl.classList.contains('notice');
+        
+        let role = 'Other';
+        if (isUser) role = 'User';
+        else if (isAssistant) role = 'Assistant';
+        else if (isError) role = 'Error';
+        else if (isSystem || isNotice) role = 'Notice';
+        
         const timestamp = (messageEl.querySelector('.message-timestamp') || {}).textContent || '';
         const originalContent = messageEl.getAttribute('data-original-content') || '';
 
         let sectionParts = [];
 
+        // Handle user prompts
         if (isUser && includePrompts) {
           sectionParts.push(originalContent);
+        }
+
+        // Handle error messages
+        if (isError && includeErrors) {
+          sectionParts.push('⚠️ **Error:** ' + originalContent);
+        }
+
+        // Handle notice messages (system messages)
+        if ((isSystem || isNotice) && includeNotices) {
+          sectionParts.push('ℹ️ **Notice:** ' + originalContent);
         }
 
         if (isAssistant && includeThinking) {
