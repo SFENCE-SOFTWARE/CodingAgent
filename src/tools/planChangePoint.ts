@@ -126,6 +126,9 @@ export class PlanChangePointTool implements BaseTool {
       const result = planningService.changePoint(plan_id, point_id, updates);
 
       if (result.success) {
+        // Mark that a points manipulation tool was called for algorithmic evaluation
+        planningService.markPointsToolsCalled(plan_id);
+        
         const changedFields = Object.keys(updates).join(', ');
         return {
           success: true,

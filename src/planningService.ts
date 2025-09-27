@@ -57,6 +57,11 @@ export interface Plan {
   architectureReviewed?: boolean; // Whether architecture has been reviewed
   pointsCreated?: boolean;       // Whether points have been created
   creationChecklist?: string[];  // Current checklist for creation workflow
+  // New: Tool call detection flags for algorithmic evaluation
+  planChangeToolCalled?: boolean;    // Whether plan_change tool was called (for descriptions step)
+  setArchitectureToolCalled?: boolean; // Whether set_architecture tool was called (for architecture step)
+  pointsToolsCalled?: boolean;       // Whether any points manipulation tool was called (add/change/remove points)
+  lastToolCallTimestamp?: number;    // Timestamp of last relevant tool call
   createdAt: number;
   updatedAt: number;
 }
@@ -193,6 +198,24 @@ export class PlanningService {
               });
               this.savePlan(plan); // Save migrated plan
             }
+
+            // Migration: Add tool call detection flags if they don't exist
+            let needsSave = false;
+            if (plan.planChangeToolCalled === undefined) {
+              plan.planChangeToolCalled = false;
+              needsSave = true;
+            }
+            if (plan.setArchitectureToolCalled === undefined) {
+              plan.setArchitectureToolCalled = false;
+              needsSave = true;
+            }
+            if (plan.pointsToolsCalled === undefined) {
+              plan.pointsToolsCalled = false;
+              needsSave = true;
+            }
+            if (needsSave) {
+              this.savePlan(plan); // Save migrated plan with new flags
+            }
             
             // Check if plan already exists in memory and is newer than disk
             const existingPlan = this.plans.get(plan.id);
@@ -291,6 +314,10 @@ export class PlanningService {
       needsWork: false,
       accepted: false,
       logs: [],
+      // Initialize tool call detection flags
+      planChangeToolCalled: false,
+      setArchitectureToolCalled: false,
+      pointsToolsCalled: false,
       createdAt: Date.now(),
       updatedAt: Date.now()
     };
@@ -333,6 +360,10 @@ export class PlanningService {
       detectedLanguage,
       originalRequest,
       translatedRequest,
+      // Initialize tool call detection flags
+      planChangeToolCalled: false,
+      setArchitectureToolCalled: false,
+      pointsToolsCalled: false,
       createdAt: Date.now(),
       updatedAt: Date.now()
     };
@@ -582,6 +613,11 @@ export class PlanningService {
       detectedLanguage: plan.detectedLanguage,
       originalRequest: plan.originalRequest,
       translatedRequest: plan.translatedRequest,
+      // Tool call detection flags
+      planChangeToolCalled: plan.planChangeToolCalled,
+      setArchitectureToolCalled: plan.setArchitectureToolCalled,
+      pointsToolsCalled: plan.pointsToolsCalled,
+      lastToolCallTimestamp: plan.lastToolCallTimestamp,
       points: plan.points.map(point => ({
         id: point.id,
         shortName: point.shortName,
@@ -1735,6 +1771,8 @@ export class PlanningService {
     if (!plan.descriptionsUpdated) {
       console.log(`[PlanningService] Plan ${planId}: descriptionsUpdated = ${plan.descriptionsUpdated}, entering description_update step`);
       plan.creationStep = 'description_update';
+      // Clear tool call flags when starting a new step
+      this.clearToolCallFlags(planId);
       plan.updatedAt = Date.now();
       this.savePlan(plan);
 
@@ -1742,6 +1780,9 @@ export class PlanningService {
         this.getConfig('codingagent.plan.creation.promptDescriptionUpdate'),
         planId
       );
+
+      // Get completion callback configuration for tool call detection
+      const callbackConfig = this.getConfig('codingagent.plan.creation.callbackDescriptionUpdate');
 
       return {
         success: true,
@@ -1765,7 +1806,8 @@ export class PlanningService {
                 console.error(`[PlanningService] ERROR: Plan ${planId} not found in memory during doneCallback!`);
               }
             }
-          }
+          },
+          completionCallback: callbackConfig ? () => this.evaluateCompletionCallback(callbackConfig, planId) : undefined
         }
       };
     }
@@ -1773,6 +1815,8 @@ export class PlanningService {
     // Step 2: Check if plan descriptions need review
     if (!plan.descriptionsReviewed) {
       plan.creationStep = 'description_review';
+      // Clear tool call flags when starting a new step
+      this.clearToolCallFlags(planId);
       
       // CRITICAL FIX: Do NOT reset plan.reviewed flag during workflow evaluation
       // The plan.reviewed flag should only be set by plan_reviewed/plan_need_works tools
@@ -1840,6 +1884,8 @@ export class PlanningService {
     // Step 3: Check if architecture needs to be created
     if (!plan.architectureCreated || !plan.architecture) {
       plan.creationStep = 'architecture_creation';
+      // Clear tool call flags when starting a new step
+      this.clearToolCallFlags(planId);
       plan.updatedAt = Date.now();
       this.savePlan(plan);
 
@@ -1847,6 +1893,9 @@ export class PlanningService {
         this.getConfig('codingagent.plan.creation.promptArchitectureCreation'),
         planId
       );
+
+      // Get completion callback configuration for tool call detection
+      const callbackConfig = this.getConfig('codingagent.plan.creation.callbackArchitectureCreation');
 
       return {
         success: true,
@@ -1865,7 +1914,8 @@ export class PlanningService {
                 this.savePlan(currentPlan);
               }
             }
-          }
+          },
+          completionCallback: callbackConfig ? () => this.evaluateCompletionCallback(callbackConfig, planId) : undefined
         }
       };
     }
@@ -1899,6 +1949,8 @@ export class PlanningService {
     // Step 5: Check if architecture needs review (only if architecture is valid and created)
     if (plan.architectureCreated && plan.architecture && !plan.architectureReviewed) {
       plan.creationStep = 'architecture_review';
+      // Clear tool call flags when starting a new step
+      this.clearToolCallFlags(planId);
       
       // CRITICAL FIX: Do NOT reset plan.reviewed flag during workflow evaluation
       // The plan.reviewed flag should only be set by plan_reviewed/plan_need_works tools
@@ -1966,6 +2018,8 @@ export class PlanningService {
     // Step 6: Check if points need to be created
     if (!plan.pointsCreated || plan.points.length === 0) {
       plan.creationStep = 'points_creation';
+      // Clear tool call flags when starting a new step
+      this.clearToolCallFlags(planId);
       plan.updatedAt = Date.now();
       this.savePlan(plan);
 
@@ -1973,6 +2027,9 @@ export class PlanningService {
         this.getConfig('codingagent.plan.creation.promptPlanPointsCreation'),
         planId
       );
+
+      // Get completion callback configuration for tool call detection
+      const callbackConfig = this.getConfig('codingagent.plan.creation.callbackPlanPointsCreation');
 
       return {
         success: true,
@@ -1991,7 +2048,8 @@ export class PlanningService {
                 this.savePlan(currentPlan);
               }
             }
-          }
+          },
+          completionCallback: callbackConfig ? () => this.evaluateCompletionCallback(callbackConfig, planId) : undefined
         }
       };
     }
@@ -2024,6 +2082,8 @@ export class PlanningService {
 
     // Step 8: Plan creation is complete!
     plan.creationStep = 'complete';
+    // Clear tool call flags when completing creation
+    this.clearToolCallFlags(planId);
     plan.updatedAt = Date.now();
     this.savePlan(plan);
 
@@ -2120,7 +2180,13 @@ export class PlanningService {
         'codingagent.plan.creation.promptPlanPointsCreation': 'Create plan points for this project. Use the plan_create_points tool to add all necessary plan points.\n\n**User\'s Original Request:** <plan_translated_request>\n\n**Current Plan Context:**\n- **Short Description:** <plan_short_description>\n- **Long Description:** <plan_long_description>\n- **Architecture:** <plan_architecture>\n\n**Required Steps:**\n1. Break down the project into manageable plan points\n2. **IMMEDIATELY call plan_create_points tool** with all plan points\n3. After tool execution, provide a brief summary of the plan points\n\n**Important:** Your response will be considered FAILED if you do not call the plan_create_points tool.',
         'codingagent.plan.creation.recommendedModePlanPointsCreation': 'Architect',
         'codingagent.plan.creation.promptPlanPointsCreationRework': 'The plan points need rework due to validation issues. Please fix and use the plan_create_points tool again.\n\n**Problems Found:** <rework_reason>\n\n**Required Steps:**\n1. Review the validation errors\n2. Fix the plan points format and content\n3. **IMMEDIATELY call plan_create_points tool** with the corrected plan points\n4. After tool execution, provide a brief summary of what was fixed',
-        'codingagent.plan.creation.promptCreationComplete': 'PLAN CREATION COMPLETED SUCCESSFULLY! The plan now includes comprehensive descriptions, architecture, and detailed implementation points.\n\n**Plan Summary:**\n- **Name:** <plan_name>\n- **Description:** <plan_short_description>\n- **Points:** <plan_points_count> implementation points\n- **Status:** Ready for implementation\n\nThe plan is now ready to be executed. You can proceed with implementing the plan points in the recommended order.'
+        'codingagent.plan.creation.promptCreationComplete': 'PLAN CREATION COMPLETED SUCCESSFULLY! The plan now includes comprehensive descriptions, architecture, and detailed implementation points.\n\n**Plan Summary:**\n- **Name:** <plan_name>\n- **Description:** <plan_short_description>\n- **Points:** <plan_points_count> implementation points\n- **Status:** Ready for implementation\n\nThe plan is now ready to be executed. You can proceed with implementing the plan points in the recommended order.',
+        // New tool call detection callbacks
+        'codingagent.plan.creation.callbackDescriptionUpdate': 'plan.planChangeToolCalled',
+        'codingagent.plan.creation.callbackDescriptionReview': 'plan.reviewed',
+        'codingagent.plan.creation.callbackArchitectureCreation': 'plan.setArchitectureToolCalled',
+        'codingagent.plan.creation.callbackArchitectureReview': 'plan.reviewed',
+        'codingagent.plan.creation.callbackPlanPointsCreation': 'plan.pointsToolsCalled'
       };
       
       result = fallbackConfig[key] || '';
@@ -2173,6 +2239,19 @@ export class PlanningService {
         const needsWorkResult = !plan.needsWork;
         console.log(`[PlanningService] evaluateCompletionCallback: !plan.needsWork check result: ${needsWorkResult}`);
         return needsWorkResult;
+      // New: Tool call detection callbacks
+      case 'plan.planChangeToolCalled':
+        const planChangeResult = plan.planChangeToolCalled === true;
+        console.log(`[PlanningService] evaluateCompletionCallback: plan.planChangeToolCalled check result: ${planChangeResult}`);
+        return planChangeResult;
+      case 'plan.setArchitectureToolCalled':
+        const setArchResult = plan.setArchitectureToolCalled === true;
+        console.log(`[PlanningService] evaluateCompletionCallback: plan.setArchitectureToolCalled check result: ${setArchResult}`);
+        return setArchResult;
+      case 'plan.pointsToolsCalled':
+        const pointsToolsResult = plan.pointsToolsCalled === true;
+        console.log(`[PlanningService] evaluateCompletionCallback: plan.pointsToolsCalled check result: ${pointsToolsResult}`);
+        return pointsToolsResult;
       default:
         // For more complex callbacks, could add support for JavaScript evaluation
         // For now, return false for unknown callbacks
@@ -2305,6 +2384,77 @@ export class PlanningService {
     
     // Default to creation phase if unclear
     return true;
+  }
+
+  /**
+   * Mark that plan_change tool was called for the given plan
+   * Used for algorithmic evaluation of description update step completion
+   */
+  public markPlanChangeToolCalled(planId: string): void {
+    const plan = this.plans.get(planId);
+    if (plan) {
+      plan.planChangeToolCalled = true;
+      plan.lastToolCallTimestamp = Date.now();
+      plan.updatedAt = Date.now();
+      this.savePlan(plan);
+      console.log(`[PlanningService] Marked planChangeToolCalled=true for plan ${planId}`);
+    } else {
+      console.warn(`[PlanningService] Cannot mark planChangeToolCalled - plan ${planId} not found`);
+    }
+  }
+
+  /**
+   * Mark that set_architecture tool was called for the given plan
+   * Used for algorithmic evaluation of architecture step completion
+   */
+  public markSetArchitectureToolCalled(planId: string): void {
+    const plan = this.plans.get(planId);
+    if (plan) {
+      plan.setArchitectureToolCalled = true;
+      plan.lastToolCallTimestamp = Date.now();
+      plan.updatedAt = Date.now();
+      this.savePlan(plan);
+      console.log(`[PlanningService] Marked setArchitectureToolCalled=true for plan ${planId}`);
+    } else {
+      console.warn(`[PlanningService] Cannot mark setArchitectureToolCalled - plan ${planId} not found`);
+    }
+  }
+
+  /**
+   * Mark that a points manipulation tool was called for the given plan
+   * Used for algorithmic evaluation of points creation step completion
+   * Applies to: plan_add_points, plan_change_point, plan_point_remove
+   */
+  public markPointsToolsCalled(planId: string): void {
+    const plan = this.plans.get(planId);
+    if (plan) {
+      plan.pointsToolsCalled = true;
+      plan.lastToolCallTimestamp = Date.now();
+      plan.updatedAt = Date.now();
+      this.savePlan(plan);
+      console.log(`[PlanningService] Marked pointsToolsCalled=true for plan ${planId}`);
+    } else {
+      console.warn(`[PlanningService] Cannot mark pointsToolsCalled - plan ${planId} not found`);
+    }
+  }
+
+  /**
+   * Clear tool call flags for the given plan
+   * Usually called when starting a new step
+   */
+  public clearToolCallFlags(planId: string): void {
+    const plan = this.plans.get(planId);
+    if (plan) {
+      plan.planChangeToolCalled = false;
+      plan.setArchitectureToolCalled = false;
+      plan.pointsToolsCalled = false;
+      plan.lastToolCallTimestamp = undefined;
+      plan.updatedAt = Date.now();
+      this.savePlan(plan);
+      console.log(`[PlanningService] Cleared tool call flags for plan ${planId}`);
+    } else {
+      console.warn(`[PlanningService] Cannot clear tool call flags - plan ${planId} not found`);
+    }
   }
 
 }

@@ -85,6 +85,9 @@ export class PlanChangeTool implements BaseTool {
         };
       }
 
+      // Mark that plan_change tool was called for algorithmic evaluation
+      planningService.markPlanChangeToolCalled(currentPlanId);
+
       // Build response message
       const updatedFields: string[] = [];
       if (name) {

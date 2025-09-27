@@ -77,6 +77,9 @@ export class PlanPointRemoveTool implements BaseTool {
             const result = planningService.removePoints(currentPlanId, point_ids);
 
             if (result.success) {
+                // Mark that a points manipulation tool was called for algorithmic evaluation
+                planningService.markPointsToolsCalled(currentPlanId);
+                
                 // Generate summary of removed points
                 const pointSummaries = result.removedPoints?.map(point => 
                     `ID ${point.id}: ${point.shortDescription.substring(0, 50)}${point.shortDescription.length > 50 ? '...' : ''}`

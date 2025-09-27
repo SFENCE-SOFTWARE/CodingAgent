@@ -646,8 +646,8 @@
           },
           "codingagent.plan.creation.callbackDescriptionUpdate": {
             "type": "string",
-            "default": "plan.descriptionsUpdated",
-            "description": "Callback function to check if description update step is completed. Available checks: plan.descriptionsUpdated, plan.needsWork (negated)",
+            "default": "plan.planChangeToolCalled",
+            "description": "Callback function to check if description update step is completed. Available checks: plan.planChangeToolCalled, plan.descriptionsUpdated, plan.needsWork (negated)",
             "scope": "window"
           },
           "codingagent.plan.creation.recommendedModeDescriptionUpdate": {
@@ -688,8 +688,8 @@
           },
           "codingagent.plan.creation.callbackArchitectureCreation": {
             "type": "string",
-            "default": "plan.architectureCreated",
-            "description": "Callback function to check if architecture creation step is completed. Available checks: plan.architectureCreated, plan.needsWork (negated)",
+            "default": "plan.setArchitectureToolCalled",
+            "description": "Callback function to check if architecture creation step is completed. Available checks: plan.setArchitectureToolCalled, plan.architectureCreated, plan.needsWork (negated)",
             "scope": "window"
           },
           "codingagent.plan.creation.recommendedModeArchitectureCreation": {
@@ -736,8 +736,8 @@
           },
           "codingagent.plan.creation.callbackPlanPointsCreation": {
             "type": "string",
-            "default": "plan.pointsCreated",
-            "description": "Callback function to check if plan points creation step is completed. Available checks: plan.pointsCreated, plan.needsWork (negated)",
+            "default": "plan.pointsToolsCalled",
+            "description": "Callback function to check if plan points creation step is completed. Available checks: plan.pointsToolsCalled, plan.pointsCreated, plan.needsWork (negated)",
             "scope": "window"
           },
           "codingagent.plan.creation.recommendedModePlanPointsCreation": {

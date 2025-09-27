@@ -133,6 +133,9 @@ export class PlanAddPointsTool implements BaseTool {
       );
 
       if (result.success) {
+        // Mark that a points manipulation tool was called for algorithmic evaluation
+        planningService.markPointsToolsCalled(currentPlanId);
+        
         const position = after_point_id === null ? 'at the beginning' : `after point '${after_point_id}'`;
         const pointIds = result.pointIds?.join(', ') || '';
         return {

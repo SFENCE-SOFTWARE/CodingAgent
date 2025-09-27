@@ -78,6 +78,9 @@ export class PlanSetArchitectureTool implements BaseTool {
         };
       }
 
+      // Mark that set_architecture tool was called for algorithmic evaluation
+      planningService.markSetArchitectureToolCalled(targetPlanId);
+
       return {
         success: true,
         content: `Architecture has been set for plan '${targetPlanId}'. The architectural design is now stored and will be available in the plan visualization panel.`
