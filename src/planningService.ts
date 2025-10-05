@@ -901,7 +901,6 @@ export class PlanningService {
       return { success: false, error: `Plan with ID '${planId}' not found` };
     }
 
-    console.log(`[DEBUG] setPlanReviewed: Setting plan ${planId} reviewed = true, was ${plan.reviewed}`);
     plan.reviewed = true;
     plan.reviewedComment = comment;
     plan.needsWork = false;
@@ -914,7 +913,6 @@ export class PlanningService {
     this.addLogEntry(plan, 'plan', 'reviewed', planId, `Plan new state reviewed`, comment ? comment : plan.name);
     
     this.savePlan(plan);
-    console.log(`[DEBUG] setPlanReviewed: After savePlan, plan.reviewed = ${plan.reviewed}`);
 
     return { success: true };
   }
@@ -1705,6 +1703,8 @@ export class PlanningService {
     console.log(`[PlanningService] - pointsCreated: ${plan.pointsCreated}`);
     console.log(`[PlanningService] - creationStep: ${plan.creationStep}`);
     console.log(`[PlanningService] - needsWork: ${plan.needsWork}`);
+    console.log(`[PlanningService] - needsWorkComments: ${plan.needsWorkComments ? plan.needsWorkComments.join('; ') : 'none'}`);
+    console.log(`[PlanningService] - creationChecklist: ${plan.creationChecklist ? plan.creationChecklist.join('; ') : 'none'}`);
 
     // Store original request if provided
     if (originalRequest && !plan.originalRequest) {
@@ -1855,6 +1855,8 @@ export class PlanningService {
       if (!plan.creationChecklist) {
         const checklistText = this.getConfig('codingagent.plan.creation.checklistDescriptionReview');
         plan.creationChecklist = this.parseChecklistText(checklistText);
+
+        console.log(`[PlanningService] - created creationChecklist: ${plan.creationChecklist ? plan.creationChecklist.join('; ') : 'none'} from configuration text ${checklistText}`);
       }
 
       plan.updatedAt = Date.now();
@@ -1887,8 +1889,13 @@ export class PlanningService {
                 const currentPlan = this.plans.get(planId);
                 if (currentPlan && currentPlan.creationChecklist) {
                   currentPlan.creationChecklist.shift(); // Remove first item
+                  console.log(`[PlanningService] - shifted creationChecklist: ${currentPlan.creationChecklist ? currentPlan.creationChecklist.join('; ') : 'none'}`);
+
                   if (currentPlan.creationChecklist.length === 0) {
                     currentPlan.descriptionsReviewed = true;
+                  } else {
+                    // Reset reviewed flag for next checklist item
+                    currentPlan.reviewed = false;
                   }
                   currentPlan.updatedAt = Date.now();
                   this.savePlan(currentPlan);
@@ -2027,6 +2034,9 @@ export class PlanningService {
                   currentPlan.creationChecklist.shift(); // Remove first item
                   if (currentPlan.creationChecklist.length === 0) {
                     currentPlan.architectureReviewed = true;
+                  } else {
+                    // Reset reviewed flag for next checklist item
+                    currentPlan.reviewed = false;
                   }
                   currentPlan.updatedAt = Date.now();
                   this.savePlan(currentPlan);
@@ -2202,7 +2212,7 @@ export class PlanningService {
         'codingagent.plan.creation.promptDescriptionReview': '<checklist>\n\nIf you find any problem or problems, use plan_need_works tool to specify found problems. If everything looks fine and no additional work is needed, use tool plan_reviewed to set it.',
         'codingagent.plan.creation.recommendedModeDescriptionReview': 'Plan Reviewer',
         'codingagent.plan.creation.promptDescriptionReviewRework': 'The description review needs rework. Please address the issues and complete the review.\n\n**Problems Found:** <rework_reason>\n\n**Required Steps:**\n1. Review the validation errors\n2. Address the description issues\n3. Use appropriate review tools (plan_reviewed or plan_need_works)\n4. Complete the review process',
-        'codingagent.plan.creation.checklistDescriptionReview': '* Are the short and long descriptions clear and comprehensive?\n* Do the descriptions match the user requirements?\n* Is the technical scope well defined?',
+        'codingagent.plan.creation.checklistDescriptionReview': '* Is the short description an understandable summary of the long description, so that it is not necessary to read the long description to understand it?\n**Short description:**\n<plan_short_description>\n**Long description:**\n<plan_long_description>\n* Does the long description include all of the user\'s requirements?\n**Long description:**\n<plan_long_description>\n**User\'s original request:**\n<plan_translated_request>',
         'codingagent.plan.creation.promptArchitectureCreation': 'Create the comprehensive plan architecture for this project. Use the plan_set_architecture tool to specify the technical architecture.\n\n**User\'s Original Request:** <plan_translated_request>\n\n**Current Plan Context:**\n- **Short Description:** <plan_short_description>\n- **Long Description:** <plan_long_description>\n\n**Required Steps:**\n1. Analyze the requirements and determine the technical architecture\n2. **IMMEDIATELY call plan_set_architecture tool** with the architecture details\n3. After tool execution, provide a brief summary of the architecture\n\n**Important:** Your response will be considered FAILED if you do not call the plan_set_architecture tool. Only text responses without tool calls will be rejected.',
         'codingagent.plan.creation.recommendedModeArchitectureCreation': 'Architect',
         'codingagent.plan.creation.promptArchitectureCreationRework': 'The architecture needs rework due to validation issues. Please fix and use the plan_set_architecture tool again.\n\n**Problems Found:** <rework_reason>\n\n**Required Steps:**\n1. Review the validation errors\n2. Fix the architecture JSON format and content\n3. **IMMEDIATELY call plan_set_architecture tool** with the corrected architecture\n4. After tool execution, provide a brief summary of what was fixed',
@@ -2216,13 +2226,13 @@ export class PlanningService {
         'codingagent.plan.creation.promptCreationComplete': 'PLAN CREATION COMPLETED SUCCESSFULLY! The plan now includes comprehensive descriptions, architecture, and detailed implementation points.\n\n**Plan Summary:**\n- **Name:** <plan_name>\n- **Description:** <plan_short_description>\n- **Points:** <plan_points_count> implementation points\n- **Status:** Ready for implementation\n\nThe plan is now ready to be executed. You can proceed with implementing the plan points in the recommended order.',
         // New tool call detection callbacks
         'codingagent.plan.creation.callbackDescriptionUpdate': 'plan.planChangeToolCalled',
-        'codingagent.plan.creation.callbackDescriptionReview': 'plan.reviewed',
+        'codingagent.plan.creation.callbackDescriptionReview': 'plan.descriptionsReviewed',
         'codingagent.plan.creation.callbackArchitectureCreation': 'plan.setArchitectureToolCalled',
         'codingagent.plan.creation.callbackArchitectureReview': 'plan.reviewed',
         'codingagent.plan.creation.callbackPlanPointsCreation': 'plan.pointsToolsCalled',
         // Rework callbacks for different steps
         'codingagent.plan.creation.callbackDescriptionUpdateRework': 'plan.planChangeToolCalled',
-        'codingagent.plan.creation.callbackDescriptionReviewRework': 'plan.reviewed',
+        'codingagent.plan.creation.callbackDescriptionReviewRework': 'plan.descriptionsReviewed',
         'codingagent.plan.creation.callbackArchitectureCreationRework': 'plan.setArchitectureToolCalled',
         'codingagent.plan.creation.callbackArchitectureReviewRework': 'plan.reviewed',
         'codingagent.plan.creation.callbackPlanPointsCreationRework': 'plan.pointsToolsCalled',

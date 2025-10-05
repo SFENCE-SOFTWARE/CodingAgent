@@ -90,18 +90,31 @@ suite('New Plan Creation Workflow Tests', () => {
     assert.ok(eval2.success);
     assert.ok(eval2.result?.doneCallback);
     
-    // Simulate completing first checklist item
-    eval2.result.doneCallback!(true, 'First item completed');
+    // Simulate Plan Reviewer calling setPlanReviewed for first checklist item
+    const reviewResult1 = planningService.setPlanReviewed('test-checklist-plan', 'First item reviewed');
+    assert.ok(reviewResult1.success);
     
-    // Third evaluation - should get second checklist item or proceed to next step
+    // Completion callback should still be false (checklist not empty yet)
+    const completeAfter1 = eval2.result?.completionCallback?.();
+    assert.strictEqual(completeAfter1, false, 'Should not be complete after first item');
+    
+    // Third evaluation - should show second checklist item
     const eval3 = planningService.evaluatePlanCreation('test-checklist-plan', 'Create a web server');
     assert.ok(eval3.success);
+    assert.strictEqual(eval3.result?.failedStep, 'plan_description_review', 'Should still be in description review');
     
-    // The result should either have another checklist item or move to architecture creation
-    const isStillInReview = eval3.result?.failedStep === 'plan_description_review';
-    const movedToArchitecture = eval3.result?.failedStep === 'plan_architecture_creation';
+    // Complete second checklist item
+    const reviewResult2 = planningService.setPlanReviewed('test-checklist-plan', 'Second item reviewed');
+    assert.ok(reviewResult2.success);
     
-    assert.ok(isStillInReview || movedToArchitecture, 'Should either continue review or move to architecture');
+    // Completion callback should now be true (checklist empty)
+    const completeAfter2 = eval3.result?.completionCallback?.();
+    assert.strictEqual(completeAfter2, true, 'Should be complete after all checklist items');
+    
+    // Final evaluation - should move to architecture creation
+    const eval4 = planningService.evaluatePlanCreation('test-checklist-plan', 'Create a web server');
+    assert.ok(eval4.success);
+    assert.strictEqual(eval4.result?.failedStep, 'plan_architecture_creation', 'Should move to architecture creation');
   });
 
   test('should proceed to architecture creation after description review', () => {
