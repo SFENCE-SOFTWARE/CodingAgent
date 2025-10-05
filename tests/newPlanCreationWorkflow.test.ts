@@ -88,30 +88,42 @@ suite('New Plan Creation Workflow Tests', () => {
     // Now should be in description review - get first checklist item
     const eval2 = planningService.evaluatePlanCreation('test-checklist-plan', 'Create a web server');
     assert.ok(eval2.success);
+    assert.strictEqual(eval2.result?.failedStep, 'plan_description_review', 'Should be in description review');
+    
+    // Verify checklist has 2 items initially
+    const planResult = planningService.showPlan('test-checklist-plan');
+    assert.ok(planResult.success && planResult.plan);
+    assert.ok(planResult.plan.creationChecklist);
+    assert.strictEqual(planResult.plan.creationChecklist.length, 2, 'Should have 2 checklist items initially');
+    
+    // Complete first checklist item using doneCallback
     assert.ok(eval2.result?.doneCallback);
+    eval2.result.doneCallback(true, 'First item reviewed');
     
-    // Simulate Plan Reviewer calling setPlanReviewed for first checklist item
-    const reviewResult1 = planningService.setPlanReviewed('test-checklist-plan', 'First item reviewed');
-    assert.ok(reviewResult1.success);
+    // After first review, checklist should have 1 item remaining
+    const planAfter1Result = planningService.showPlan('test-checklist-plan');
+    assert.ok(planAfter1Result.success && planAfter1Result.plan);
+    assert.ok(planAfter1Result.plan.creationChecklist);
+    assert.strictEqual(planAfter1Result.plan.creationChecklist.length, 1, 'Should have 1 checklist item after first review');
+    assert.strictEqual(planAfter1Result.plan.descriptionsReviewed, undefined, 'descriptionsReviewed should still be undefined');
     
-    // Completion callback should still be false (checklist not empty yet)
-    const completeAfter1 = eval2.result?.completionCallback?.();
-    assert.strictEqual(completeAfter1, false, 'Should not be complete after first item');
-    
-    // Third evaluation - should show second checklist item
+    // Should still be in description review step - get next checklist item
     const eval3 = planningService.evaluatePlanCreation('test-checklist-plan', 'Create a web server');
     assert.ok(eval3.success);
     assert.strictEqual(eval3.result?.failedStep, 'plan_description_review', 'Should still be in description review');
     
-    // Complete second checklist item
-    const reviewResult2 = planningService.setPlanReviewed('test-checklist-plan', 'Second item reviewed');
-    assert.ok(reviewResult2.success);
+    // Complete second checklist item using doneCallback
+    assert.ok(eval3.result?.doneCallback);
+    eval3.result.doneCallback(true, 'Second item reviewed');
     
-    // Completion callback should now be true (checklist empty)
-    const completeAfter2 = eval3.result?.completionCallback?.();
-    assert.strictEqual(completeAfter2, true, 'Should be complete after all checklist items');
+    // After second review, checklist should be empty and descriptionsReviewed should be true
+    const planAfter2Result = planningService.showPlan('test-checklist-plan');
+    assert.ok(planAfter2Result.success && planAfter2Result.plan);
+    assert.ok(planAfter2Result.plan.creationChecklist);
+    assert.strictEqual(planAfter2Result.plan.creationChecklist.length, 0, 'Should have 0 checklist items after second review');
+    assert.strictEqual(planAfter2Result.plan.descriptionsReviewed, true, 'descriptionsReviewed should be true');
     
-    // Final evaluation - should move to architecture creation
+    // Should now move to architecture creation
     const eval4 = planningService.evaluatePlanCreation('test-checklist-plan', 'Create a web server');
     assert.ok(eval4.success);
     assert.strictEqual(eval4.result?.failedStep, 'plan_architecture_creation', 'Should move to architecture creation');

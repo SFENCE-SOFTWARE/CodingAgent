@@ -618,6 +618,8 @@ export class PlanningService {
       setArchitectureToolCalled: plan.setArchitectureToolCalled,
       pointsToolsCalled: plan.pointsToolsCalled,
       lastToolCallTimestamp: plan.lastToolCallTimestamp,
+      // Creation workflow checklist
+      creationChecklist: plan.creationChecklist,
       points: plan.points.map(point => ({
         id: point.id,
         shortName: point.shortName,
