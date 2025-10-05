@@ -2,82 +2,372 @@
 
 This is a comprehensive VS Code extension that provides GitHub Copilot Chat-like functionality using any OpenAI-compatible LLM backend. The extension features an advanced multi-agent system, sophisticated planning/orchestrator capabilities, intelligent change tracking, automated testing infrastructure, and robust tool-based interactions.
 
-## Current Version: 0.1.0 (2025-01-XX)
+## Current Version: 0.1.0 (October 2025)
 
 **Architecture Evolution:**
 - **Multi-Agent System**: Coder, Ask, and Architect modes with specialized tools and capabilities
 - **Planning & Orchestration**: Advanced project planning with step-by-step execution, dependency management, and automated orchestration
+- **Change Management**: Visual change tracking with accept/reject, intelligent merging, and backup restoration
+- **Terminal Approval System**: Interactive command approval with auto-approve lists and real-time UI feedback
 - **Algorithm Engine**: Extensible JavaScript-based algorithm execution framework with context isolation
 - **Testing Infrastructure**: Comprehensive testing system including orchestrator test runners and mock services
-- **Change Management**: Visual change tracking with accept/reject, intelligent merging, and backup restoration
 - **Enhanced Tools**: 15+ specialized tools for file operations, terminal commands, web content, and project management
+
+## 🎯 Quick Start for AI Agents
+
+**Essential Commands:**
+```bash
+npm run compile    # TypeScript compilation
+npm run watch      # Development with auto-compile
+npm test          # Full test suite (259 tests)
+npm test -- --grep "pattern"  # Filtered tests
+```
+
+**Key files to understand first:**
+- `src/planningService.ts` - Complex plan creation workflow with checklist progression
+- `src/changeTrackingService.ts` - Visual change management with accept/reject
+- `src/tools/executeTerminal.ts` - Terminal approval system with security controls
+- `src/chatService.ts` - Tool execution loops and streaming
+- `src/algorithmEngine.ts` - Sandboxed JavaScript algorithm execution
 
 ## Architecture Overview
 
-The extension follows a modular service architecture with multiple agents, each specialized for different types of tasks:
+### Core Services Architecture
 
-**Core Services:**
+```typescript
+// Service communication pattern
+ChatService -> ToolsService -> [Individual Tools]
+     ↓             ↓
+PlanningService    ChangeTrackingService
+     ↓             ↓
+AlgorithmEngine    InlineDecorationService
+```
+
+**Critical Service Dependencies:**
 - `ChatService` - Main conversation orchestrator with tool execution loops
-- `OpenAIService` - OpenAI-compatible API client with streaming support  
-- `ToolsService` - Tool registry and execution engine
-- `PlanningService` - Advanced project planning and task management
-- `AlgorithmEngine` - Sandboxed algorithm execution framework
-- `ChangeTrackingService` - File modification tracking and management
-- `PlanContextManager` - Multi-plan context and state management
-- `SettingsPanel` - Comprehensive configuration interface
+- `PlanningService` - Advanced project planning with **checklist-based workflows**
+- `ChangeTrackingService` - File modification tracking with **visual accept/reject**
+- `ToolsService` - Tool registry and execution engine with **terminal approval**
+- `AlgorithmEngine` - **Sandboxed JavaScript execution** for orchestrator algorithms
+
+## 🔑 Critical Workflow Patterns
+
+### 1. Plan Creation Workflow (MOST COMPLEX)
+
+**The planning system uses a sophisticated checklist progression pattern:**
+
+```typescript
+// Key pattern: doneCallback vs completionCallback
+const result = planningService.evaluatePlanCreation(planId, request);
+
+// CRITICAL: Use doneCallback to progress through checklist items
+if (result.result?.doneCallback) {
+  result.result.doneCallback(true, 'Completed step');
+}
+
+// NOT setPlanReviewed() - that's for final plan review only
+```
+
+**Checklist Progression Logic:**
+1. `descriptionsUpdated` → `descriptionsReviewed` (2-item checklist)
+2. `architectureCreated` → `architectureReviewed` (2-item checklist) 
+3. `pointsCreated` → Plan complete
+
+**Essential Files:**
+- `src/planningService.ts:1874` - Description review checklist logic
+- `src/planningService.ts:1893` - Checklist item removal on doneCallback
+- `tests/newPlanCreationWorkflow.test.ts` - Comprehensive workflow tests
+
+### 2. Change Tracking System (VISUAL)
+
+**Change tracking provides visual diff management:**
+
+```typescript
+// File tools automatically integrate with change tracking
+export class WriteFileTool extends ChangeAwareBaseTool {
+  protected async executeOperation(args: any, workspaceRoot: string) {
+    // Implementation - tracking happens automatically
+    const filePath = this.getFilePath(args, workspaceRoot);
+    await fs.promises.writeFile(filePath, args.content);
+    return { success: true };
+  }
+}
+```
+
+**Visual Features:**
+- **Inline decorations** with accept/reject CodeLens actions
+- **Smart merging** - adjacent changes auto-merge, distant changes stay separate
+- **Backup system** with automatic restoration on reject
+- **Persistence** across VS Code sessions
+
+**Key Files:**
+- `src/inlineChangeDecorationService.ts` - Visual decorations and CodeLens
+- `src/changeTrackingService.ts:269` - Accept/reject logic with backup restoration
+
+### 3. Terminal Approval System (SECURITY)
+
+**Terminal commands require user approval with sophisticated auto-approve:**
+
+```typescript
+// Auto-approve configuration pattern
+function isCommandAutoApproved(command: string): boolean {
+  const config = vscode.workspace.getConfiguration('codingagent');
+  const autoApproveCommands = config.get<string>('tools.autoApproveCommands', '');
+  // Parse comma-separated list, check each command component
+}
+```
+
+**Approval Flow:**
+1. Tool execution → approval request → UI panel
+2. User approve/reject → command execution
+3. Output capture with both stdout/stderr
+
+**Key Files:**
+- `src/tools/executeTerminal.ts:47` - Auto-approve logic
+- `media/chat.js:1772` - Terminal approval UI panel
 
 ## Agent Mode System
 
-The extension operates in three specialized modes, each with distinct capabilities:
+The extension operates in three specialized modes with **distinct tool access**:
 
-### 🛠️ Coder Mode
-**Purpose**: Expert programming assistant for development tasks
-**System Message**: "You are an expert programming assistant..."
-**Temperature**: 0.1 (focused, deterministic responses)
+### 🛠️ Coder Mode (Development)
+- **Tools**: File manipulation, terminal, search, planning
+- **Pattern**: Most comprehensive toolset for development tasks
+- **Use**: Code generation, debugging, refactoring, project exploration
 
-**Available Tools:**
-- `read_file` - Read file content with line range support
-- `write_file` - Write or append to files with change tracking
-- `modify_lines` - Universal line modification (insert, delete, replace)
-- `patch_file` - Apply text diffs without full file rewrites
-- `list_files` - Directory listing with recursive options
-- `get_file_size` - File size information
-- `execute_terminal` - Terminal command execution
-- `create_folder` - Directory creation
-- `rename_file` - File and folder renaming/moving
-- `search_in_project` - Project-wide content search
-- `search_in_path` - Path-specific content search
+### ❓ Ask Mode (Research)  
+- **Tools**: File reading, web content, search (limited subset)
+- **Pattern**: Read-only operations with web research capabilities
+- **Use**: Documentation lookup, questions, content analysis
 
-**Use Cases**: Code generation, debugging, refactoring, file manipulation, project exploration
+### 🏗️ Architect Mode (Design)
+- **Tools**: File reading, structure analysis, web research, PDF reading
+- **Pattern**: Analysis and design-focused toolset
+- **Use**: System design, architecture review, documentation
 
-### ❓ Ask Mode  
-**Purpose**: General Q&A and research assistant
-**System Message**: "You are a helpful assistant..."
-**Temperature**: 0.3 (balanced creativity/accuracy)
+**Mode Configuration (package.json):**
+```json
+"codingagent.modes.Coder": {
+  "systemMessage": "You are an expert programming assistant...",
+  "allowedTools": ["read_file", "write_file", "modify_lines", ...],
+  "temperature": 0.1
+}
+```
 
-**Available Tools:**
-- `read_file` - File reading for context
-- `read_webpage_as_html` - Web content fetching (raw HTML)
-- `read_webpage_as_markdown` - Web content as markdown
-- `read_pdf` - PDF text extraction
-- `search_in_project` - Project content search
+## Testing Infrastructure
 
-**Use Cases**: Documentation lookup, general questions, web research, content analysis
+### Test Execution Patterns
 
-### 🏗️ Architect Mode
-**Purpose**: Software architecture and system design consultant  
-**System Message**: "You are a software architecture consultant..."
-**Temperature**: 0.2 (structured, analytical responses)
+```bash
+# Core test patterns
+npm test -- --grep "planningService"     # Planning tests
+npm test -- --grep "changeTracking"      # Change management tests  
+npm test -- --grep "orchestrator"        # Algorithm tests
+npm test -- --grep "terminal"            # Terminal approval tests
+```
 
-**Available Tools:**
-- `read_file` - Architecture document analysis
-- `list_files` - Project structure exploration  
-- `read_webpage_as_html` - External documentation
-- `read_webpage_as_markdown` - Design pattern research
-- `read_pdf` - Technical specification analysis
-- `search_in_project` - Architecture pattern discovery
+### Orchestrator Testing System
 
-**Use Cases**: System design, architecture review, technical documentation, pattern analysis
+**Advanced algorithm testing with mock LLM:**
+
+```bash
+# Run orchestrator tests with configuration
+node scripts/test-orchestrator.js test-configs/basic-plan.json
+```
+
+**Test Configuration Pattern:**
+```json
+{
+  "testName": "Plan Creation Workflow",
+  "maxIterations": 10,
+  "planName": "TestPlan", 
+  "mockLLM": {
+    "responses": [
+      {
+        "trigger": "create.*plan",
+        "response": "I'll create the plan...",
+        "toolCalls": [{"toolName": "createPlan", "args": {...}}]
+      }
+    ]
+  }
+}
+```
+
+**Key Files:**
+- `src/orchestratorTestRunner.ts` - Mock LLM test execution
+- `src/mockLLMService.ts` - LLM response simulation
+- `test-configs/` - Pre-configured test scenarios
+
+## 🔧 Tool System Architecture
+
+### Tool Execution Loop Pattern
+
+```typescript
+// ChatService tool execution pattern
+while (toolCalls.length > 0 && iterationCount < maxIterations) {
+  const results = await this.toolsService.executeTools(toolCalls);
+  const followUpResponse = await this.openai.sendChat(followUpRequest);
+  // Continue if more tool calls needed
+}
+```
+
+### Critical Tool Categories
+
+**File Operations:**
+- `modify_lines` - **Universal line modification** (insert/delete/replace)
+- `write_file` - Write with **automatic change tracking**
+- `patch_file` - Apply text diffs without full rewrites
+
+**System Operations:**
+- `execute_terminal` - **User approval required** with auto-approve lists
+- `list_files` - Directory exploration with recursive options
+
+**Planning Tools:**
+- `plan_new` - Create plans with **automatic workflow orchestration**
+- `plan_reviewed/plan_need_works` - **Critical for checklist progression**
+
+## Algorithm Engine (ADVANCED)
+
+**Sandboxed JavaScript execution for orchestration:**
+
+```typescript
+interface AlgorithmContext {
+  sendToLLM: (message: string) => Promise<string>;
+  tools: { execute: (name: string, args: any) => Promise<ToolResult> };
+  planningService: { evaluatePlanCreation: (...) => Result };
+  console: { log/error/warn/info };
+  isInterrupted: () => boolean;
+}
+```
+
+**Built-in Algorithms:**
+- `src/algorithms/orchestrator.js` - Main orchestration logic
+- `src/algorithms/categorization.js` - Request routing
+- Custom algorithms can be added to `src/algorithms/`
+
+## Development Workflows
+
+### Extension Development
+
+```bash
+# Development cycle
+npm run watch          # Auto-compile TypeScript
+# Press F5 → Extension Development Host
+# Command Palette: "CodingAgent: Open Chat"
+```
+
+### Debugging Patterns
+
+**Planning Workflow Debug:**
+```typescript
+// Check plan state during debugging
+const plan = planningService.showPlan(planId);
+console.log('Checklist length:', plan.plan?.creationChecklist?.length);
+console.log('Step:', plan.plan?.creationStep);
+```
+
+**Change Tracking Debug:**
+```typescript
+// Monitor change callbacks
+changeTracker.setChangeUpdateCallback(async (filePath, changeType) => {
+  console.log(`Change ${changeType} for ${filePath}`);
+});
+```
+
+**Terminal Approval Debug:**
+```typescript
+// Check auto-approve status
+const autoApproved = ExecuteTerminalTool.wouldCommandBeAutoApproved(command);
+console.log('Would auto-approve:', autoApproved);
+```
+
+## Configuration Management
+
+### Settings Schema (Critical)
+
+```json
+{
+  "codingagent.host": "localhost",
+  "codingagent.port": 11434,
+  "codingagent.currentMode": "Coder",
+  "codingagent.enableChangeTracking": true,
+  "codingagent.tools.autoApproveCommands": "ls,pwd,git status"
+}
+```
+
+### Plan Creation Configuration
+
+**Checklist Templates:**
+```json
+{
+  "codingagent.plan.creation.checklistDescriptionReview": "* Item 1\n* Item 2",
+  "codingagent.plan.creation.callbackDescriptionReview": "plan.reviewed"
+}
+```
+
+## Integration Points
+
+### VS Code Extension API
+- **WebView Views** - Activity bar integration with real-time updates
+- **CodeLens Provider** - Accept/reject change actions inline
+- **Decoration API** - Visual change indicators
+- **Terminal API** - Command execution with approval
+
+### OpenAI API Compatibility
+- **Streaming Support** - Real-time response processing
+- **Tool Calls** - Function calling specification
+- **Compatible Backends**: Ollama, llama.cpp, vLLM, LocalAI, OpenAI
+
+## Error Handling Patterns
+
+### Standard Error Pattern
+```typescript
+try {
+  const result = await operation();
+  return { success: true, content: result };
+} catch (error) {
+  const errorMsg = error instanceof Error ? error.message : String(error);
+  return { success: false, error: errorMsg };
+}
+```
+
+### Planning Workflow Errors
+- **Always use showPlan()** instead of direct plan access
+- **Check completionCallback** before manual state changes
+- **Use doneCallback** for workflow progression, not setPlanReviewed
+
+### Change Tracking Errors
+- **Backup restoration** happens automatically on reject
+- **File locks** are handled with retry logic
+- **Merge conflicts** use intelligent line-level resolution
+
+## Best Practices for AI Agents
+
+### Planning Workflows
+1. **Use evaluatePlanCreation** for step-by-step workflow
+2. **Always call doneCallback(true)** to progress checklist items
+3. **Check showPlan() output** for current state validation
+4. **Never manually modify plan.reviewed** during creation workflow
+
+### Change Management
+1. **All file tools auto-track changes** - no manual intervention needed
+2. **Visual feedback** is automatic through decorations
+3. **Accept/reject** works at individual change level
+4. **Backup system** ensures safe rollback on any rejection
+
+### Terminal Operations
+1. **Auto-approve lists** in settings for safe commands
+2. **All commands run in workspace root** regardless of specified cwd
+3. **User approval required** for security-sensitive operations
+4. **Output capture** includes both stdout and stderr
+
+### Testing & Validation
+1. **Use orchestrator tests** for complex workflow validation
+2. **Mock LLM responses** for deterministic testing
+3. **Test configurations** enable repeatable scenarios
+4. **Workflow tracing** provides detailed execution reports
+
+This guide enables AI coding agents to work effectively within the CodingAgent extension's sophisticated multi-agent, planning-oriented framework with advanced change tracking and approval systems.
 
 ## Planning & Orchestration System
 
